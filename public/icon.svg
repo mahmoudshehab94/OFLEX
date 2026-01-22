@@ -1,0 +1,32 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="white"/>
+
+  <!-- Modern delivery van with clean design -->
+  <g transform="translate(80, 160)">
+    <!-- Van body -->
+    <rect x="40" y="60" width="280" height="140" rx="8" fill="#2563eb"/>
+
+    <!-- Van front cabin -->
+    <path d="M 40 60 L 40 140 L 0 140 L 0 100 C 0 77 15 60 40 60 Z" fill="#1e40af"/>
+
+    <!-- Windshield -->
+    <path d="M 35 70 L 35 115 L 5 115 L 5 85 C 5 75 15 70 35 70 Z" fill="#93c5fd"/>
+
+    <!-- Side door line -->
+    <line x1="180" y1="80" x2="180" y2="180" stroke="#1e40af" stroke-width="4"/>
+
+    <!-- Side window -->
+    <rect x="190" y="80" width="110" height="60" rx="4" fill="#93c5fd"/>
+
+    <!-- Wheels -->
+    <circle cx="90" cy="200" r="35" fill="#374151"/>
+    <circle cx="90" cy="200" r="20" fill="#6b7280"/>
+    <circle cx="270" cy="200" r="35" fill="#374151"/>
+    <circle cx="270" cy="200" r="20" fill="#6b7280"/>
+
+    <!-- Speed lines (movement indication) -->
+    <line x1="330" y1="90" x2="360" y2="90" stroke="#2563eb" stroke-width="6" stroke-linecap="round"/>
+    <line x1="330" y1="120" x2="350" y2="120" stroke="#2563eb" stroke-width="6" stroke-linecap="round"/>
+    <line x1="330" y1="150" x2="355" y2="150" stroke="#2563eb" stroke-width="6" stroke-linecap="round"/>
+  </g>
+</svg>

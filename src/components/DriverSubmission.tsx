@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Truck, Clock } from 'lucide-react';
+import { PWAInstallButton } from './PWAInstallButton';
 
 export function DriverSubmission() {
   const [code, setCode] = useState('');
@@ -7,8 +8,8 @@ export function DriverSubmission() {
   const [vehicleNumbers, setVehicleNumbers] = useState('');
   const [startHour, setStartHour] = useState('05');
   const [startMinute, setStartMinute] = useState('00');
-  const [endHour, setEndHour] = useState('');
-  const [endMinute, setEndMinute] = useState('');
+  const [endHour, setEndHour] = useState('14');
+  const [endMinute, setEndMinute] = useState('00');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [vehicleError, setVehicleError] = useState('');
@@ -40,6 +41,12 @@ export function DriverSubmission() {
     setLoading(true);
     setMessage(null);
     setVehicleError('');
+
+    if (!navigator.onLine) {
+      setMessage({ type: 'error', text: 'Keine Internetverbindung. Bitte später erneut versuchen.' });
+      setLoading(false);
+      return;
+    }
 
     if (!vehicleLetters || !vehicleNumbers) {
       setVehicleError('Bitte gültiges Kennzeichen eingeben');
@@ -81,8 +88,8 @@ export function DriverSubmission() {
         setVehicleNumbers('');
         setStartHour('05');
         setStartMinute('00');
-        setEndHour('');
-        setEndMinute('');
+        setEndHour('14');
+        setEndMinute('00');
       } else {
         console.error('❌ Log submission failed:', data);
         setMessage({ type: 'error', text: data.error || 'Ein Fehler ist aufgetreten' });
@@ -271,6 +278,8 @@ export function DriverSubmission() {
             {loading ? 'Wird gespeichert...' : 'Arbeitszeit speichern'}
           </button>
         </form>
+
+        <PWAInstallButton />
 
         <div className="mt-6 text-center">
           <a
