@@ -24,8 +24,10 @@ export const supabase = hasSupabaseConfig
 export interface Driver {
   id: string;
   driver_code: string;
+  driver_name: string;
   license_letters: string;
   license_numbers: string;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -35,11 +37,19 @@ export interface WorkTime {
   start_time: string;
   end_time: string;
   work_date: string;
+  vehicle: string;
+  notes: string | null;
   created_at: string;
 }
 
 export interface DriverWithWorkTimes extends Driver {
   work_times: WorkTime[];
+}
+
+export interface AdminSettings {
+  id: string;
+  password: string;
+  updated_at: string;
 }
 
 export async function testDatabaseConnection(): Promise<{

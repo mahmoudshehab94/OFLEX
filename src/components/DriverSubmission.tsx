@@ -1,22 +1,54 @@
-import { useState } from 'react';
-import { Truck, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Truck, Clock, Calendar } from 'lucide-react';
 import { supabase, hasSupabaseConfig } from '../lib/supabase';
 import { PWAInstallButton } from './PWAInstallButton';
 
 export function DriverSubmission() {
   const [driverCode, setDriverCode] = useState('');
+  const [workDate, setWorkDate] = useState(new Date().toISOString().split('T')[0]);
   const [licenseLetters, setLicenseLetters] = useState('');
   const [licenseNumbers, setLicenseNumbers] = useState('');
   const [startHour, setStartHour] = useState('05');
   const [startMinute, setStartMinute] = useState('00');
-  const [endHour, setEndHour] = useState('14');
-  const [endMinute, setEndMinute] = useState('00');
+  const [endHour, setEndHour] = useState('');
+  const [endMinute, setEndMinute] = useState('');
+  const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [vehicleSuggestions, setVehicleSuggestions] = useState<string[]>([]);
+  const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
+
+  useEffect(() => {
+    if (licenseLetters.length > 0 || licenseNumbers.length > 0) {
+      loadVehicleSuggestions();
+    } else {
+      setVehicleSuggestions([]);
+    }
+  }, [licenseLetters, licenseNumbers]);
+
+  const loadVehicleSuggestions = async () => {
+    if (!supabase) return;
+
+    try {
+      const { data } = await supabase
+        .from('work_times')
+        .select('vehicle')
+        .ilike('vehicle', `${licenseLetters}${licenseNumbers}%`)
+        .limit(5);
+
+      if (data) {
+        const unique = Array.from(new Set(data.map(d => d.vehicle))).filter(v => v);
+        setVehicleSuggestions(unique);
+      }
+    } catch (error) {
+      console.error('Error loading suggestions:', error);
+    }
+  };
 
   const handleLicenseLettersChange = (value: string) => {
     const letters = value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
     setLicenseLetters(letters);
+    setShowVehicleSuggestions(true);
 
     if (letters.length === 2 && document.getElementById('licenseNumbers')) {
       (document.getElementById('licenseNumbers') as HTMLInputElement)?.focus();
@@ -26,6 +58,16 @@ export function DriverSubmission() {
   const handleLicenseNumbersChange = (value: string) => {
     const numbers = value.replace(/[^0-9]/g, '').slice(0, 4);
     setLicenseNumbers(numbers);
+    setShowVehicleSuggestions(true);
+  };
+
+  const handleVehicleSuggestionClick = (vehicle: string) => {
+    const match = vehicle.match(/^([A-Z]+)(\d+)$/);
+    if (match) {
+      setLicenseLetters(match[1]);
+      setLicenseNumbers(match[2]);
+    }
+    setShowVehicleSuggestions(false);
   };
 
   const handleLicenseNumbersKeyDown = (e: React.KeyboardEvent) => {
@@ -42,7 +84,7 @@ export function DriverSubmission() {
     if (!hasSupabaseConfig || !supabase) {
       setMessage({
         type: 'error',
-        text: 'Config error: missing Supabase env vars'
+        text: 'Konfigurationsfehler: Fehlende Supabase-Umgebungsvariablen'
       });
       setLoading(false);
       return;
@@ -54,16 +96,31 @@ export function DriverSubmission() {
       return;
     }
 
+    if (!endHour || !endMinute) {
+      setMessage({ type: 'error', text: 'Bitte Endzeit eingeben' });
+      setLoading(false);
+      return;
+    }
+
     const startTime = `${startHour}:${startMinute}`;
     const endTime = `${endHour}:${endMinute}`;
 
+    const startMinutes = parseInt(startHour) * 60 + parseInt(startMinute);
+    const endMinutes = parseInt(endHour) * 60 + parseInt(endMinute);
+
+    if (endMinutes <= startMinutes) {
+      setMessage({ type: 'error', text: 'Endzeit muss nach Startzeit liegen' });
+      setLoading(false);
+      return;
+    }
+
+    const vehicle = `${licenseLetters}${licenseNumbers}`;
+
     try {
-      const { data: driver, error: driverError } = await supabase
+      const { data: existingDriver, error: driverError } = await supabase
         .from('drivers')
         .select('id')
         .eq('driver_code', driverCode)
-        .eq('license_letters', licenseLetters)
-        .eq('license_numbers', licenseNumbers)
         .maybeSingle();
 
       if (driverError) {
@@ -78,13 +135,15 @@ export function DriverSubmission() {
 
       let driverId: string;
 
-      if (!driver) {
+      if (!existingDriver) {
         const { data: newDriver, error: createError } = await supabase
           .from('drivers')
           .insert({
             driver_code: driverCode,
+            driver_name: '',
             license_letters: licenseLetters,
-            license_numbers: licenseNumbers
+            license_numbers: licenseNumbers,
+            is_active: true
           })
           .select('id')
           .single();
@@ -101,7 +160,7 @@ export function DriverSubmission() {
 
         driverId = newDriver.id;
       } else {
-        driverId = driver.id;
+        driverId = existingDriver.id;
       }
 
       const { error: workTimeError } = await supabase
@@ -110,22 +169,32 @@ export function DriverSubmission() {
           driver_id: driverId,
           start_time: startTime,
           end_time: endTime,
-          work_date: new Date().toISOString().split('T')[0]
+          work_date: workDate,
+          vehicle: vehicle,
+          notes: notes.trim() || null
         });
 
       if (workTimeError) {
         console.error('Work time insertion error:', workTimeError);
-        setMessage({
-          type: 'error',
-          text: `Fehler beim Speichern: ${workTimeError.message}`
-        });
+
+        if (workTimeError.code === '23505') {
+          setMessage({
+            type: 'error',
+            text: 'Für dieses Datum existiert bereits ein Eintrag. Bitte wenden Sie sich an den Administrator.'
+          });
+        } else {
+          setMessage({
+            type: 'error',
+            text: `Fehler beim Speichern: ${workTimeError.message}`
+          });
+        }
         setLoading(false);
         return;
       }
 
       setMessage({
         type: 'success',
-        text: `Arbeitszeit erfolgreich gespeichert!`
+        text: 'Arbeitszeit erfolgreich gespeichert!'
       });
 
       setDriverCode('');
@@ -133,8 +202,10 @@ export function DriverSubmission() {
       setLicenseNumbers('');
       setStartHour('05');
       setStartMinute('00');
-      setEndHour('14');
-      setEndMinute('00');
+      setEndHour('');
+      setEndMinute('');
+      setNotes('');
+      setWorkDate(new Date().toISOString().split('T')[0]);
     } catch (error: any) {
       console.error('Submission error:', error);
       setMessage({
@@ -150,9 +221,9 @@ export function DriverSubmission() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 flex items-center justify-center p-4">
         <div className="bg-red-900/20 border border-red-500 rounded-lg p-6 max-w-md">
-          <h2 className="text-red-400 font-bold text-xl mb-2">Configuration Error</h2>
+          <h2 className="text-red-400 font-bold text-xl mb-2">Konfigurationsfehler</h2>
           <p className="text-red-300">
-            Missing Supabase environment variables. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.
+            Fehlende Supabase-Umgebungsvariablen. Bitte konfigurieren Sie VITE_SUPABASE_URL und VITE_SUPABASE_ANON_KEY in Ihrer .env-Datei.
           </p>
         </div>
       </div>
@@ -172,10 +243,10 @@ export function DriverSubmission() {
         </div>
 
         <h1 className="text-2xl font-bold text-center text-white mb-2">
-          Arbeitszeit erfassen
+          Trans Oflex
         </h1>
         <p className="text-center text-gray-300 mb-8">
-          Geben Sie Ihre tägliche Arbeitszeit ein
+          Arbeitszeit erfassen
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -195,16 +266,33 @@ export function DriverSubmission() {
           </div>
 
           <div>
+            <label htmlFor="workDate" className="block text-sm font-medium text-gray-200 mb-2">
+              <Calendar className="w-4 h-4 inline mr-1" />
+              Datum
+            </label>
+            <input
+              type="date"
+              id="workDate"
+              value={workDate}
+              onChange={(e) => setWorkDate(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              required
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-200 mb-2">
               Kennzeichen
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 relative">
               <div>
                 <input
                   type="text"
                   id="licenseLetters"
                   value={licenseLetters}
                   onChange={(e) => handleLicenseLettersChange(e.target.value)}
+                  onFocus={() => setShowVehicleSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowVehicleSuggestions(false), 200)}
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg uppercase text-white placeholder-gray-400"
                   placeholder="MI"
                   maxLength={2}
@@ -220,6 +308,8 @@ export function DriverSubmission() {
                   value={licenseNumbers}
                   onChange={(e) => handleLicenseNumbersChange(e.target.value)}
                   onKeyDown={handleLicenseNumbersKeyDown}
+                  onFocus={() => setShowVehicleSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowVehicleSuggestions(false), 200)}
                   className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg text-white placeholder-gray-400"
                   placeholder="299"
                   maxLength={4}
@@ -231,13 +321,27 @@ export function DriverSubmission() {
                 <p className="text-xs text-gray-400 mt-1 text-center">Nummer</p>
               </div>
             </div>
+            {showVehicleSuggestions && vehicleSuggestions.length > 0 && (
+              <div className="mt-2 bg-gray-700 border border-gray-600 rounded-lg overflow-hidden">
+                {vehicleSuggestions.map((vehicle, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleVehicleSuggestionClick(vehicle)}
+                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition"
+                  >
+                    {vehicle}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-200 mb-2">
                 <Clock className="w-4 h-4 inline mr-1" />
-                Start
+                von
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -272,7 +376,7 @@ export function DriverSubmission() {
             <div>
               <label className="block text-sm font-medium text-gray-200 mb-2">
                 <Clock className="w-4 h-4 inline mr-1" />
-                Ende
+                bis
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -307,6 +411,20 @@ export function DriverSubmission() {
             </div>
           </div>
 
+          <div>
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-200 mb-2">
+              Notiz (optional)
+            </label>
+            <textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 resize-none"
+              placeholder="Optionale Notizen..."
+              rows={3}
+            />
+          </div>
+
           {message && (
             <div
               className={`p-4 rounded-lg ${
@@ -335,8 +453,12 @@ export function DriverSubmission() {
             href="/admin"
             className="text-xs text-gray-400 hover:text-gray-200 transition"
           >
-            created by - mahmoud shehab
+            Admin-Bereich
           </a>
+        </div>
+
+        <div className="mt-2 text-center text-xs text-gray-500">
+          created by - mahmoud shehab
         </div>
       </div>
     </div>
