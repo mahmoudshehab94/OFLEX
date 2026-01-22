@@ -129,13 +129,105 @@ Deno.serve(async (req: Request) => {
     // PATCH - Update driver
     if (method === "PATCH") {
       const body = await req.json();
-      const { code, name, active } = body;
+      const { code, name, active, newCode } = body;
 
       if (!code) {
         return new Response(
           JSON.stringify({ error: "Code ist erforderlich" }),
           {
             status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      if (newCode !== undefined && newCode !== code) {
+        const parsedNewCode = parseInt(newCode);
+        const parsedOldCode = parseInt(code);
+
+        if (isNaN(parsedNewCode) || parsedNewCode <= 0) {
+          return new Response(
+            JSON.stringify({ error: "Ungültiger neuer Code" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        const { data: existingDriver } = await supabase
+          .from("drivers")
+          .select("code")
+          .eq("code", parsedNewCode)
+          .maybeSingle();
+
+        if (existingDriver) {
+          return new Response(
+            JSON.stringify({ error: "Dieser Fahrercode ist bereits vergeben." }),
+            {
+              status: 409,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        const { error: logsError } = await supabase
+          .from("work_logs")
+          .update({ driver_code: parsedNewCode })
+          .eq("driver_code", parsedOldCode);
+
+        if (logsError) {
+          console.error("Error updating work logs:", logsError);
+          return new Response(
+            JSON.stringify({ error: "Fehler beim Aktualisieren der Einträge" }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        const { error: deleteError } = await supabase
+          .from("drivers")
+          .delete()
+          .eq("code", parsedOldCode);
+
+        if (deleteError) {
+          console.error("Error deleting old driver:", deleteError);
+          return new Response(
+            JSON.stringify({ error: "Fehler beim Aktualisieren des Fahrercodes" }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        const { data, error } = await supabase
+          .from("drivers")
+          .insert({
+            code: parsedNewCode,
+            name: name || '',
+            active: active !== undefined ? active : true,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error creating new driver:", error);
+          return new Response(
+            JSON.stringify({ error: "Fehler beim Aktualisieren des Fahrercodes" }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ driver: data }),
+          {
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         );

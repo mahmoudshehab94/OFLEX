@@ -92,6 +92,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
   const [confirmDeleteDriver, setConfirmDeleteDriver] = useState<{ show: boolean; driver: Driver | null }>({ show: false, driver: null });
   const [confirmDeleteEntry, setConfirmDeleteEntry] = useState<{ show: boolean; entryId: number | null }>({ show: false, entryId: null });
+  const [confirmCodeChange, setConfirmCodeChange] = useState<{ show: boolean; oldCode: number; newCode: string; name: string } | null>(null);
 
   const [pdfDriver, setPdfDriver] = useState('');
   const [pdfDateRange, setPdfDateRange] = useState<'custom' | 'lastWeek' | 'lastMonth' | 'lastYear'>('lastMonth');
@@ -109,6 +110,19 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
   const [compareTimeout1, setCompareTimeout1] = useState<NodeJS.Timeout | null>(null);
   const [compareTimeout2, setCompareTimeout2] = useState<NodeJS.Timeout | null>(null);
   const [comparisonData, setComparisonData] = useState<any>(null);
+
+  const [manualEntryForm, setManualEntryForm] = useState({
+    driver: '',
+    vehicle: '',
+    date: new Date().toISOString().split('T')[0],
+    startTime: '',
+    endTime: '',
+    pauseMinutes: '',
+    note: '',
+    forceCreate: false
+  });
+  const [manualEntryDriverSuggestions, setManualEntryDriverSuggestions] = useState<Driver[]>([]);
+  const [manualEntryTimeout, setManualEntryTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     const response = await fetch(
@@ -698,6 +712,16 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
       return;
     }
 
+    if (newCode !== oldCode) {
+      setConfirmCodeChange({
+        show: true,
+        oldCode,
+        newCode: editDriverForm.code,
+        name: editDriverForm.name.trim()
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       await apiCall('admin-drivers', {
@@ -711,6 +735,94 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
       setEditingDriver(null);
       setEditDriverForm({ code: '', name: '' });
       await loadDrivers();
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmCodeChangeAction = async () => {
+    if (!confirmCodeChange) return;
+
+    setLoading(true);
+    try {
+      await apiCall('admin-drivers', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          code: confirmCodeChange.oldCode,
+          newCode: parseInt(confirmCodeChange.newCode),
+          name: confirmCodeChange.name
+        }),
+      });
+      setMessage({ type: 'success', text: 'Fahrercode wurde aktualisiert' });
+      setConfirmCodeChange(null);
+      setEditingDriver(null);
+      setEditDriverForm({ code: '', name: '' });
+      await loadDrivers();
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManualEntryDriverSearch = async (value: string) => {
+    setManualEntryForm({ ...manualEntryForm, driver: value });
+    if (manualEntryTimeout) clearTimeout(manualEntryTimeout);
+
+    if (value.trim().length > 0) {
+      try {
+        const data = await apiCall('admin-drivers', { method: 'GET' });
+        const filtered = data.drivers.filter((d: Driver) =>
+          d.name.toLowerCase().includes(value.toLowerCase()) ||
+          d.code.toString().includes(value)
+        );
+        setManualEntryDriverSuggestions(filtered);
+      } catch (error) {
+        setManualEntryDriverSuggestions([]);
+      }
+    } else {
+      setManualEntryDriverSuggestions([]);
+    }
+  };
+
+  const handleManualEntrySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!manualEntryForm.driver || !manualEntryForm.vehicle || !manualEntryForm.date || !manualEntryForm.startTime || !manualEntryForm.endTime) {
+      setMessage({ type: 'error', text: 'Bitte füllen Sie alle Pflichtfelder aus' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await apiCall('admin-logs', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'create',
+          driverCode: manualEntryForm.driver,
+          vehicle: manualEntryForm.vehicle,
+          date: manualEntryForm.date,
+          startTime: manualEntryForm.startTime,
+          endTime: manualEntryForm.endTime,
+          pauseMinutes: manualEntryForm.pauseMinutes ? parseInt(manualEntryForm.pauseMinutes) : 0,
+          note: manualEntryForm.note,
+          forceCreate: manualEntryForm.forceCreate
+        }),
+      });
+      setMessage({ type: 'success', text: 'Eintrag gespeichert' });
+      setManualEntryForm({
+        driver: '',
+        vehicle: '',
+        date: new Date().toISOString().split('T')[0],
+        startTime: '',
+        endTime: '',
+        pauseMinutes: '',
+        note: '',
+        forceCreate: false
+      });
+      await loadTodayEntries();
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
     } finally {
@@ -933,7 +1045,16 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                           <tr key={driver.code}>
                             {editingDriver === driver.code ? (
                               <>
-                                <td className="px-6 py-4 text-sm font-mono">{driver.code}</td>
+                                <td className="px-6 py-4 text-sm font-mono">
+                                  <input
+                                    type="number"
+                                    value={editDriverForm.code}
+                                    onChange={(e) => setEditDriverForm({ ...editDriverForm, code: e.target.value })}
+                                    className="px-2 py-1 border rounded w-full"
+                                    disabled={loading}
+                                    min="1"
+                                  />
+                                </td>
                                 <td className="px-6 py-4 text-sm">
                                   <input
                                     type="text"
@@ -1022,6 +1143,19 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                           <>
                             <div className="space-y-2">
                               <label className="block text-sm font-medium text-gray-700">
+                                Fahrercode
+                              </label>
+                              <input
+                                type="number"
+                                value={editDriverForm.code}
+                                onChange={(e) => setEditDriverForm({ ...editDriverForm, code: e.target.value })}
+                                className="w-full px-3 py-2 border rounded-lg"
+                                disabled={loading}
+                                min="1"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="block text-sm font-medium text-gray-700">
                                 Name
                               </label>
                               <input
@@ -1031,7 +1165,6 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                                 className="w-full px-3 py-2 border rounded-lg"
                                 disabled={loading}
                               />
-                              <p className="text-sm text-gray-600 font-mono">Code: {driver.code}</p>
                             </div>
                             <div className="flex gap-2">
                               <button
@@ -1319,6 +1452,147 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
         {activeTab === 'reports' && (
           <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-xl font-bold mb-6">Eintrag manuell hinzufügen</h2>
+              <form onSubmit={handleManualEntrySubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fahrer (Code oder Name) *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Code oder Name eingeben..."
+                      value={manualEntryForm.driver}
+                      onChange={(e) => handleManualEntryDriverSearch(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                    {manualEntryDriverSuggestions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {manualEntryDriverSuggestions.map((driver) => (
+                          <button
+                            key={driver.code}
+                            type="button"
+                            onClick={() => {
+                              setManualEntryForm({ ...manualEntryForm, driver: driver.code.toString() });
+                              setManualEntryDriverSuggestions([]);
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex justify-between items-center"
+                          >
+                            <span>{driver.name}</span>
+                            <span className="text-sm text-gray-500">Code: {driver.code}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fahrzeug *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="z.B. LKW 01"
+                      value={manualEntryForm.vehicle}
+                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, vehicle: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Datum *
+                    </label>
+                    <input
+                      type="date"
+                      value={manualEntryForm.date}
+                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, date: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pause (Minuten)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={manualEntryForm.pauseMinutes}
+                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, pauseMinutes: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      von (Startzeit) *
+                    </label>
+                    <input
+                      type="time"
+                      value={manualEntryForm.startTime}
+                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, startTime: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      bis (Endzeit) *
+                    </label>
+                    <input
+                      type="time"
+                      value={manualEntryForm.endTime}
+                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, endTime: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notiz
+                  </label>
+                  <textarea
+                    placeholder="Optional..."
+                    value={manualEntryForm.note}
+                    onChange={(e) => setManualEntryForm({ ...manualEntryForm, note: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="forceCreate"
+                    checked={manualEntryForm.forceCreate}
+                    onChange={(e) => setManualEntryForm({ ...manualEntryForm, forceCreate: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="forceCreate" className="text-sm text-gray-700">
+                    Trotzdem speichern (Admin) - Mehrere Einträge pro Tag erlauben
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Eintrag speichern
+                </button>
+              </form>
+            </div>
+
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-xl font-bold mb-6">Monatsbericht</h2>
 
@@ -1977,6 +2251,55 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
                 {loading ? 'Löscht...' : 'Löschen'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmCodeChange && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Fahrercode ändern?</h2>
+              <button
+                onClick={() => setConfirmCodeChange(null)}
+                className="text-gray-500 hover:text-gray-700"
+                disabled={loading}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-gray-700 mb-4">
+                Alle bisherigen Einträge werden auf den neuen Fahrercode aktualisiert.
+              </p>
+              <div className="bg-gray-50 p-3 rounded-lg space-y-1">
+                <p className="text-sm">
+                  <span className="font-semibold">Alter Code:</span> {confirmCodeChange.oldCode}
+                </p>
+                <p className="text-sm">
+                  <span className="font-semibold">Neuer Code:</span> {confirmCodeChange.newCode}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmCodeChange(null)}
+                className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                disabled={loading}
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={confirmCodeChangeAction}
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? 'Ändert...' : 'Ändern'}
               </button>
             </div>
           </div>

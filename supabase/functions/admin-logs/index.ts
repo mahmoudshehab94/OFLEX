@@ -140,10 +140,114 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // POST - Delete logs (single or bulk)
+    // POST - Create or Delete logs
     if (method === "POST") {
       const body = await req.json();
-      const { action, id, ids, from, to, code, car } = body;
+      const { action, id, ids, from, to, code, car, driverCode, vehicle, date, startTime, endTime, pauseMinutes, note, forceCreate } = body;
+
+      if (action === "create") {
+        if (!driverCode || !vehicle || !date || !startTime || !endTime) {
+          return new Response(
+            JSON.stringify({ error: "Pflichtfelder fehlen" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        const parsedDriverCode = parseInt(driverCode);
+        if (isNaN(parsedDriverCode)) {
+          return new Response(
+            JSON.stringify({ error: "Ungültiger Fahrer-Code" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        const { data: driverExists } = await supabase
+          .from("drivers")
+          .select("code")
+          .eq("code", parsedDriverCode)
+          .maybeSingle();
+
+        if (!driverExists) {
+          return new Response(
+            JSON.stringify({ error: "Fahrer nicht gefunden" }),
+            {
+              status: 404,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        if (!forceCreate) {
+          const { data: existingEntry } = await supabase
+            .from("work_logs")
+            .select("id")
+            .eq("driver_code", parsedDriverCode)
+            .eq("work_date", date)
+            .maybeSingle();
+
+          if (existingEntry) {
+            return new Response(
+              JSON.stringify({ error: "Für diesen Tag existiert bereits ein Eintrag." }),
+              {
+                status: 409,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              }
+            );
+          }
+        }
+
+        const startParts = startTime.split(':');
+        const endParts = endTime.split(':');
+        const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+        let endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+
+        if (endMinutes <= startMinutes) {
+          endMinutes += 24 * 60;
+        }
+
+        const pause = pauseMinutes ? parseInt(pauseMinutes) : 0;
+        const totalMinutes = endMinutes - startMinutes - pause;
+        const overtimeMinutes = Math.max(0, totalMinutes - (8 * 60));
+
+        const { data, error } = await supabase
+          .from("work_logs")
+          .insert({
+            driver_code: parsedDriverCode,
+            car_number: vehicle,
+            work_date: date,
+            start_time: startTime + ':00',
+            end_time: endTime + ':00',
+            duration_minutes: totalMinutes,
+            overtime_minutes: overtimeMinutes,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error creating entry:", error);
+          return new Response(
+            JSON.stringify({ error: "Fehler beim Erstellen des Eintrags" }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, entry: data }),
+          {
+            status: 201,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
 
       if (action === "delete") {
         // Single delete by ID
