@@ -823,6 +823,9 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
         forceCreate: false
       });
       await loadTodayEntries();
+      if (logFilters.from && logFilters.to) {
+        await loadLogs();
+      }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
     } finally {
@@ -1236,6 +1239,147 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
         {activeTab === 'logs' && (
           <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-xl font-bold mb-6">Eintrag manuell hinzufügen</h2>
+              <form onSubmit={handleManualEntrySubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fahrer (Code oder Name) *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Code oder Name eingeben..."
+                      value={manualEntryForm.driver}
+                      onChange={(e) => handleManualEntryDriverSearch(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                    {manualEntryDriverSuggestions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {manualEntryDriverSuggestions.map((driver) => (
+                          <button
+                            key={driver.code}
+                            type="button"
+                            onClick={() => {
+                              setManualEntryForm({ ...manualEntryForm, driver: driver.code.toString() });
+                              setManualEntryDriverSuggestions([]);
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex justify-between items-center"
+                          >
+                            <span>{driver.name}</span>
+                            <span className="text-sm text-gray-500">Code: {driver.code}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fahrzeug *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="z.B. LKW 01"
+                      value={manualEntryForm.vehicle}
+                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, vehicle: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Datum *
+                    </label>
+                    <input
+                      type="date"
+                      value={manualEntryForm.date}
+                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, date: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pause (Minuten)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={manualEntryForm.pauseMinutes}
+                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, pauseMinutes: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      von (Startzeit) *
+                    </label>
+                    <input
+                      type="time"
+                      value={manualEntryForm.startTime}
+                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, startTime: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      bis (Endzeit) *
+                    </label>
+                    <input
+                      type="time"
+                      value={manualEntryForm.endTime}
+                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, endTime: e.target.value })}
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notiz
+                  </label>
+                  <textarea
+                    placeholder="Optional..."
+                    value={manualEntryForm.note}
+                    onChange={(e) => setManualEntryForm({ ...manualEntryForm, note: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="forceCreate"
+                    checked={manualEntryForm.forceCreate}
+                    onChange={(e) => setManualEntryForm({ ...manualEntryForm, forceCreate: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="forceCreate" className="text-sm text-gray-700">
+                    Trotzdem speichern (Admin) - Mehrere Einträge pro Tag erlauben
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Eintrag speichern
+                </button>
+              </form>
+            </div>
+
             <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
               <h2 className="text-lg font-semibold mb-4">Filter</h2>
               <div className="space-y-4">
@@ -1452,147 +1596,6 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
         {activeTab === 'reports' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-xl font-bold mb-6">Eintrag manuell hinzufügen</h2>
-              <form onSubmit={handleManualEntrySubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fahrer (Code oder Name) *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Code oder Name eingeben..."
-                      value={manualEntryForm.driver}
-                      onChange={(e) => handleManualEntryDriverSearch(e.target.value)}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                    {manualEntryDriverSuggestions.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                        {manualEntryDriverSuggestions.map((driver) => (
-                          <button
-                            key={driver.code}
-                            type="button"
-                            onClick={() => {
-                              setManualEntryForm({ ...manualEntryForm, driver: driver.code.toString() });
-                              setManualEntryDriverSuggestions([]);
-                            }}
-                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex justify-between items-center"
-                          >
-                            <span>{driver.name}</span>
-                            <span className="text-sm text-gray-500">Code: {driver.code}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fahrzeug *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="z.B. LKW 01"
-                      value={manualEntryForm.vehicle}
-                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, vehicle: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Datum *
-                    </label>
-                    <input
-                      type="date"
-                      value={manualEntryForm.date}
-                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, date: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pause (Minuten)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="0"
-                      value={manualEntryForm.pauseMinutes}
-                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, pauseMinutes: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      von (Startzeit) *
-                    </label>
-                    <input
-                      type="time"
-                      value={manualEntryForm.startTime}
-                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, startTime: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      bis (Endzeit) *
-                    </label>
-                    <input
-                      type="time"
-                      value={manualEntryForm.endTime}
-                      onChange={(e) => setManualEntryForm({ ...manualEntryForm, endTime: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notiz
-                  </label>
-                  <textarea
-                    placeholder="Optional..."
-                    value={manualEntryForm.note}
-                    onChange={(e) => setManualEntryForm({ ...manualEntryForm, note: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="forceCreate"
-                    checked={manualEntryForm.forceCreate}
-                    onChange={(e) => setManualEntryForm({ ...manualEntryForm, forceCreate: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="forceCreate" className="text-sm text-gray-700">
-                    Trotzdem speichern (Admin) - Mehrere Einträge pro Tag erlauben
-                  </label>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Eintrag speichern
-                </button>
-              </form>
-            </div>
-
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-xl font-bold mb-6">Monatsbericht</h2>
 
