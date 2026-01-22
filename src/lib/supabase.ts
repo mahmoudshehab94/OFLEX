@@ -25,25 +25,24 @@ export interface Driver {
   id: string;
   driver_code: string;
   driver_name: string;
-  license_letters: string;
-  license_numbers: string;
   is_active: boolean;
   created_at: string;
 }
 
-export interface WorkTime {
+export interface WorkEntry {
   id: string;
   driver_id: string;
+  vehicle: string;
+  date: string;
   start_time: string;
   end_time: string;
-  work_date: string;
-  vehicle: string;
+  break_minutes: number;
   notes: string | null;
   created_at: string;
 }
 
-export interface DriverWithWorkTimes extends Driver {
-  work_times: WorkTime[];
+export interface DriverWithWorkEntries extends Driver {
+  work_entries: WorkEntry[];
 }
 
 export interface AdminSettings {

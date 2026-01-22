@@ -31,7 +31,7 @@ export function DriverSubmission() {
 
     try {
       const { data } = await supabase
-        .from('work_times')
+        .from('work_entries')
         .select('vehicle')
         .ilike('vehicle', `${licenseLetters}${licenseNumbers}%`)
         .limit(5);
@@ -141,8 +141,6 @@ export function DriverSubmission() {
           .insert({
             driver_code: driverCode,
             driver_name: '',
-            license_letters: licenseLetters,
-            license_numbers: licenseNumbers,
             is_active: true
           })
           .select('id')
@@ -163,21 +161,22 @@ export function DriverSubmission() {
         driverId = existingDriver.id;
       }
 
-      const { error: workTimeError } = await supabase
-        .from('work_times')
+      const { error: workEntryError } = await supabase
+        .from('work_entries')
         .insert({
           driver_id: driverId,
+          vehicle: vehicle,
+          date: workDate,
           start_time: startTime,
           end_time: endTime,
-          work_date: workDate,
-          vehicle: vehicle,
+          break_minutes: 0,
           notes: notes.trim() || null
         });
 
-      if (workTimeError) {
-        console.error('Work time insertion error:', workTimeError);
+      if (workEntryError) {
+        console.error('Work entry insertion error:', workEntryError);
 
-        if (workTimeError.code === '23505') {
+        if (workEntryError.code === '23505') {
           setMessage({
             type: 'error',
             text: 'Für dieses Datum existiert bereits ein Eintrag. Bitte wenden Sie sich an den Administrator.'
@@ -185,7 +184,7 @@ export function DriverSubmission() {
         } else {
           setMessage({
             type: 'error',
-            text: `Fehler beim Speichern: ${workTimeError.message}`
+            text: `Fehler beim Speichern: ${workEntryError.message}`
           });
         }
         setLoading(false);
