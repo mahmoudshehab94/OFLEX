@@ -54,7 +54,12 @@ function App() {
   }
 
   if (page === 'admin-dashboard') {
-    return <AdminDashboard onLogout={handleAdminLogout} />;
+    return (
+      <>
+        <AdminDashboard onLogout={handleAdminLogout} />
+        <Diagnostics />
+      </>
+    );
   }
 
   return (
