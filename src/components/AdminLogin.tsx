@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { Lock } from 'lucide-react';
-import { DebugPanel } from './DebugPanel';
-import { logDetailedError } from '../lib/errorHandling';
+import { hasSupabaseConfig } from '../lib/supabase';
 
 interface AdminLoginProps {
-  onLogin: (token: string) => void;
+  onLogin: () => void;
 }
 
 export function AdminLogin({ onLogin }: AdminLoginProps) {
-  const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,63 +16,29 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
     setError('');
     setLoading(true);
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      const errorMsg = 'Konfigurationsfehler: SUPABASE Umgebungsvariablen fehlen (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).';
-      console.error('❌ ' + errorMsg);
-      setError(errorMsg);
+    if (!adminPassword) {
+      setError('Config error: VITE_ADMIN_PASSWORD not set');
       setLoading(false);
       return;
     }
 
-    try {
-      const apiUrl = `${supabaseUrl}/functions/v1/admin-auth`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        logDetailedError('Admin login failed', { response, data });
-
-        let errorMsg = data.error || 'Anmeldung fehlgeschlagen';
-
-        if (response.status === 401 || response.status === 403) {
-          errorMsg = 'Nicht autorisiert (RLS/Policy).';
-        }
-
-        setError(errorMsg);
-        setLoading(false);
-        return;
-      }
-
-      if (data.success && data.token) {
-        localStorage.setItem('adminToken', data.token);
-        onLogin(data.token);
-      } else {
-        setError('Anmeldung fehlgeschlagen');
-      }
-    } catch (err: any) {
-      logDetailedError('Admin login network error', err);
-
-      const errorMsg = err.message?.toLowerCase().includes('fetch') ||
-                       err.message?.toLowerCase().includes('network') ||
-                       err.name === 'TypeError'
-        ? 'Netzwerkfehler: Verbindung zu Supabase fehlgeschlagen.'
-        : (err.message || 'Verbindungsfehler. Bitte versuchen Sie es erneut.');
-
-      setError(errorMsg);
-    } finally {
+    if (!hasSupabaseConfig) {
+      setError('Config error: missing Supabase env vars');
       setLoading(false);
+      return;
     }
+
+    setTimeout(() => {
+      if (password === adminPassword) {
+        localStorage.setItem('adminLoggedIn', 'true');
+        onLogin();
+      } else {
+        setError('Falsches Passwort');
+        setLoading(false);
+      }
+    }, 500);
   };
 
   return (
@@ -101,14 +65,9 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
             <input
               type="text"
               id="username"
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                setError('');
-              }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent transition"
-              required
-              disabled={loading}
+              value="admin"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
+              disabled
             />
           </div>
 
@@ -154,8 +113,6 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
           </a>
         </div>
       </div>
-
-      <DebugPanel />
     </div>
   );
 }

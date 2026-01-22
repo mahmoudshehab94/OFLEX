@@ -1,40 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Truck, Clock } from 'lucide-react';
+import { supabase, hasSupabaseConfig } from '../lib/supabase';
 import { PWAInstallButton } from './PWAInstallButton';
-import { DebugPanel } from './DebugPanel';
-import { getSupabaseErrorMessage, logDetailedError } from '../lib/errorHandling';
 
 export function DriverSubmission() {
-  const [code, setCode] = useState('');
-  const [vehicleLetters, setVehicleLetters] = useState('');
-  const [vehicleNumbers, setVehicleNumbers] = useState('');
+  const [driverCode, setDriverCode] = useState('');
+  const [licenseLetters, setLicenseLetters] = useState('');
+  const [licenseNumbers, setLicenseNumbers] = useState('');
   const [startHour, setStartHour] = useState('05');
   const [startMinute, setStartMinute] = useState('00');
   const [endHour, setEndHour] = useState('14');
   const [endMinute, setEndMinute] = useState('00');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [vehicleError, setVehicleError] = useState('');
 
-  const handleVehicleLettersChange = (value: string) => {
+  const handleLicenseLettersChange = (value: string) => {
     const letters = value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
-    setVehicleLetters(letters);
-    setVehicleError('');
+    setLicenseLetters(letters);
 
-    if (letters.length === 2 && document.getElementById('vehicleNumbers')) {
-      (document.getElementById('vehicleNumbers') as HTMLInputElement)?.focus();
+    if (letters.length === 2 && document.getElementById('licenseNumbers')) {
+      (document.getElementById('licenseNumbers') as HTMLInputElement)?.focus();
     }
   };
 
-  const handleVehicleNumbersChange = (value: string) => {
+  const handleLicenseNumbersChange = (value: string) => {
     const numbers = value.replace(/[^0-9]/g, '').slice(0, 4);
-    setVehicleNumbers(numbers);
-    setVehicleError('');
+    setLicenseNumbers(numbers);
   };
 
-  const handleVehicleNumbersKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && vehicleNumbers === '' && document.getElementById('vehicleLetters')) {
-      (document.getElementById('vehicleLetters') as HTMLInputElement)?.focus();
+  const handleLicenseNumbersKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && licenseNumbers === '' && document.getElementById('licenseLetters')) {
+      (document.getElementById('licenseLetters') as HTMLInputElement)?.focus();
     }
   };
 
@@ -42,92 +38,126 @@ export function DriverSubmission() {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
-    setVehicleError('');
 
-    if (!navigator.onLine) {
-      setMessage({ type: 'error', text: 'Keine Internetverbindung. Bitte später erneut versuchen.' });
+    if (!hasSupabaseConfig || !supabase) {
+      setMessage({
+        type: 'error',
+        text: 'Config error: missing Supabase env vars'
+      });
       setLoading(false);
       return;
     }
 
-    if (!vehicleLetters || !vehicleNumbers) {
-      setVehicleError('Bitte gültiges Kennzeichen eingeben');
+    if (!licenseLetters || !licenseNumbers) {
+      setMessage({ type: 'error', text: 'Bitte gültiges Kennzeichen eingeben' });
       setLoading(false);
       return;
     }
 
-    const carNumber = `${vehicleLetters} ${vehicleNumbers}`;
     const startTime = `${startHour}:${startMinute}`;
     const endTime = `${endHour}:${endMinute}`;
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      const errorMsg = 'Konfigurationsfehler: SUPABASE Umgebungsvariablen fehlen (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).';
-      console.error('❌ ' + errorMsg);
-      setMessage({ type: 'error', text: errorMsg });
-      setLoading(false);
-      return;
-    }
-
     try {
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/driver-submit`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseAnonKey}`,
-          },
-          body: JSON.stringify({
-            code: parseInt(code),
-            car_number: carNumber,
-            start_time: startTime,
-            end_time: endTime,
-          }),
-        }
-      );
+      const { data: driver, error: driverError } = await supabase
+        .from('drivers')
+        .select('id')
+        .eq('driver_code', driverCode)
+        .eq('license_letters', licenseLetters)
+        .eq('license_numbers', licenseNumbers)
+        .maybeSingle();
 
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log('✅ Log submission successful:', data);
+      if (driverError) {
+        console.error('Driver lookup error:', driverError);
         setMessage({
-          type: 'success',
-          text: `${data.message} - ${data.driver_name}`
+          type: 'error',
+          text: `Fehler beim Abrufen des Fahrers: ${driverError.message}`
         });
-        setVehicleLetters('');
-        setVehicleNumbers('');
-        setStartHour('05');
-        setStartMinute('00');
-        setEndHour('14');
-        setEndMinute('00');
-      } else {
-        logDetailedError('Log submission failed', { response, data });
+        setLoading(false);
+        return;
+      }
 
-        let errorMsg = data.error || 'Ein Fehler ist aufgetreten';
+      let driverId: string;
 
-        if (response.status === 401 || response.status === 403) {
-          errorMsg = 'Nicht autorisiert (RLS/Policy).';
+      if (!driver) {
+        const { data: newDriver, error: createError } = await supabase
+          .from('drivers')
+          .insert({
+            driver_code: driverCode,
+            license_letters: licenseLetters,
+            license_numbers: licenseNumbers
+          })
+          .select('id')
+          .single();
+
+        if (createError || !newDriver) {
+          console.error('Driver creation error:', createError);
+          setMessage({
+            type: 'error',
+            text: `Fehler beim Erstellen des Fahrers: ${createError?.message}`
+          });
+          setLoading(false);
+          return;
         }
 
-        setMessage({ type: 'error', text: errorMsg });
+        driverId = newDriver.id;
+      } else {
+        driverId = driver.id;
       }
+
+      const { error: workTimeError } = await supabase
+        .from('work_times')
+        .insert({
+          driver_id: driverId,
+          start_time: startTime,
+          end_time: endTime,
+          work_date: new Date().toISOString().split('T')[0]
+        });
+
+      if (workTimeError) {
+        console.error('Work time insertion error:', workTimeError);
+        setMessage({
+          type: 'error',
+          text: `Fehler beim Speichern: ${workTimeError.message}`
+        });
+        setLoading(false);
+        return;
+      }
+
+      setMessage({
+        type: 'success',
+        text: `Arbeitszeit erfolgreich gespeichert!`
+      });
+
+      setDriverCode('');
+      setLicenseLetters('');
+      setLicenseNumbers('');
+      setStartHour('05');
+      setStartMinute('00');
+      setEndHour('14');
+      setEndMinute('00');
     } catch (error: any) {
-      logDetailedError('Network error during log submission', error);
-
-      const errorMsg = error.message?.toLowerCase().includes('fetch') ||
-                       error.message?.toLowerCase().includes('network') ||
-                       error.name === 'TypeError'
-        ? 'Netzwerkfehler: Verbindung zu Supabase fehlgeschlagen.'
-        : (error.message || 'Verbindungsfehler. Bitte versuchen Sie es erneut.');
-
-      setMessage({ type: 'error', text: errorMsg });
+      console.error('Submission error:', error);
+      setMessage({
+        type: 'error',
+        text: `Fehler: ${error.message}`
+      });
     } finally {
       setLoading(false);
     }
   };
+
+  if (!hasSupabaseConfig) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 flex items-center justify-center p-4">
+        <div className="bg-red-900/20 border border-red-500 rounded-lg p-6 max-w-md">
+          <h2 className="text-red-400 font-bold text-xl mb-2">Configuration Error</h2>
+          <p className="text-red-300">
+            Missing Supabase environment variables. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
   const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
@@ -150,18 +180,17 @@ export function DriverSubmission() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="code" className="block text-sm font-medium text-gray-200 mb-2">
+            <label htmlFor="driverCode" className="block text-sm font-medium text-gray-200 mb-2">
               Fahrer-Code
             </label>
             <input
-              type="number"
-              id="code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
+              type="text"
+              id="driverCode"
+              value={driverCode}
+              onChange={(e) => setDriverCode(e.target.value)}
               className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400"
-              placeholder="z.B. 1, 2, 3..."
+              placeholder="z.B. D001, D002..."
               required
-              min="1"
             />
           </div>
 
@@ -173,12 +202,10 @@ export function DriverSubmission() {
               <div>
                 <input
                   type="text"
-                  id="vehicleLetters"
-                  value={vehicleLetters}
-                  onChange={(e) => handleVehicleLettersChange(e.target.value)}
-                  className={`w-full px-4 py-3 bg-gray-700 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg uppercase text-white placeholder-gray-400 ${
-                    vehicleError ? 'border-red-500' : 'border-gray-600'
-                  }`}
+                  id="licenseLetters"
+                  value={licenseLetters}
+                  onChange={(e) => handleLicenseLettersChange(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg uppercase text-white placeholder-gray-400"
                   placeholder="MI"
                   maxLength={2}
                   required
@@ -189,13 +216,11 @@ export function DriverSubmission() {
               <div>
                 <input
                   type="tel"
-                  id="vehicleNumbers"
-                  value={vehicleNumbers}
-                  onChange={(e) => handleVehicleNumbersChange(e.target.value)}
-                  onKeyDown={handleVehicleNumbersKeyDown}
-                  className={`w-full px-4 py-3 bg-gray-700 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg text-white placeholder-gray-400 ${
-                    vehicleError ? 'border-red-500' : 'border-gray-600'
-                  }`}
+                  id="licenseNumbers"
+                  value={licenseNumbers}
+                  onChange={(e) => handleLicenseNumbersChange(e.target.value)}
+                  onKeyDown={handleLicenseNumbersKeyDown}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg text-white placeholder-gray-400"
                   placeholder="299"
                   maxLength={4}
                   required
@@ -206,9 +231,6 @@ export function DriverSubmission() {
                 <p className="text-xs text-gray-400 mt-1 text-center">Nummer</p>
               </div>
             </div>
-            {vehicleError && (
-              <p className="text-sm text-red-400 mt-2">{vehicleError}</p>
-            )}
           </div>
 
           <div className="space-y-4">
@@ -317,8 +339,6 @@ export function DriverSubmission() {
           </a>
         </div>
       </div>
-
-      <DebugPanel />
     </div>
   );
 }
