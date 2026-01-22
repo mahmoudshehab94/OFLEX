@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Lock } from 'lucide-react';
+import { DebugPanel } from './DebugPanel';
+import { logDetailedError } from '../lib/errorHandling';
 
 interface AdminLoginProps {
   onLogin: (token: string) => void;
@@ -16,13 +18,24 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
     setError('');
     setLoading(true);
 
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      const errorMsg = 'Konfigurationsfehler: SUPABASE Umgebungsvariablen fehlen (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).';
+      console.error('❌ ' + errorMsg);
+      setError(errorMsg);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-auth`;
+      const apiUrl = `${supabaseUrl}/functions/v1/admin-auth`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
         },
         body: JSON.stringify({ username, password }),
       });
@@ -30,7 +43,15 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Anmeldung fehlgeschlagen');
+        logDetailedError('Admin login failed', { response, data });
+
+        let errorMsg = data.error || 'Anmeldung fehlgeschlagen';
+
+        if (response.status === 401 || response.status === 403) {
+          errorMsg = 'Nicht autorisiert (RLS/Policy).';
+        }
+
+        setError(errorMsg);
         setLoading(false);
         return;
       }
@@ -41,9 +62,16 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
       } else {
         setError('Anmeldung fehlgeschlagen');
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Verbindungsfehler. Bitte versuchen Sie es erneut.');
+    } catch (err: any) {
+      logDetailedError('Admin login network error', err);
+
+      const errorMsg = err.message?.toLowerCase().includes('fetch') ||
+                       err.message?.toLowerCase().includes('network') ||
+                       err.name === 'TypeError'
+        ? 'Netzwerkfehler: Verbindung zu Supabase fehlgeschlagen.'
+        : (err.message || 'Verbindungsfehler. Bitte versuchen Sie es erneut.');
+
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -126,6 +154,8 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
           </a>
         </div>
       </div>
+
+      <DebugPanel />
     </div>
   );
 }

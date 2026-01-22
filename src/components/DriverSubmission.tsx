@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Truck, Clock } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
+import { DebugPanel } from './DebugPanel';
+import { getSupabaseErrorMessage, logDetailedError } from '../lib/errorHandling';
 
 export function DriverSubmission() {
   const [code, setCode] = useState('');
@@ -58,14 +60,25 @@ export function DriverSubmission() {
     const startTime = `${startHour}:${startMinute}`;
     const endTime = `${endHour}:${endMinute}`;
 
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      const errorMsg = 'Konfigurationsfehler: SUPABASE Umgebungsvariablen fehlen (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).';
+      console.error('❌ ' + errorMsg);
+      setMessage({ type: 'error', text: errorMsg });
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/driver-submit`,
+        `${supabaseUrl}/functions/v1/driver-submit`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${supabaseAnonKey}`,
           },
           body: JSON.stringify({
             code: parseInt(code),
@@ -91,12 +104,26 @@ export function DriverSubmission() {
         setEndHour('14');
         setEndMinute('00');
       } else {
-        console.error('❌ Log submission failed:', data);
-        setMessage({ type: 'error', text: data.error || 'Ein Fehler ist aufgetreten' });
+        logDetailedError('Log submission failed', { response, data });
+
+        let errorMsg = data.error || 'Ein Fehler ist aufgetreten';
+
+        if (response.status === 401 || response.status === 403) {
+          errorMsg = 'Nicht autorisiert (RLS/Policy).';
+        }
+
+        setMessage({ type: 'error', text: errorMsg });
       }
     } catch (error: any) {
-      console.error('❌ Network error during log submission:', error);
-      setMessage({ type: 'error', text: 'Verbindungsfehler. Bitte versuchen Sie es erneut.' });
+      logDetailedError('Network error during log submission', error);
+
+      const errorMsg = error.message?.toLowerCase().includes('fetch') ||
+                       error.message?.toLowerCase().includes('network') ||
+                       error.name === 'TypeError'
+        ? 'Netzwerkfehler: Verbindung zu Supabase fehlgeschlagen.'
+        : (error.message || 'Verbindungsfehler. Bitte versuchen Sie es erneut.');
+
+      setMessage({ type: 'error', text: errorMsg });
     } finally {
       setLoading(false);
     }
@@ -290,6 +317,8 @@ export function DriverSubmission() {
           </a>
         </div>
       </div>
+
+      <DebugPanel />
     </div>
   );
 }

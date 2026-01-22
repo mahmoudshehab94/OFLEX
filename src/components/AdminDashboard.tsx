@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LogOut, Users, FileText, BarChart3, Plus, Edit, Trash2, Download, Key, X, Moon, Sun } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import { logDetailedError } from '../lib/errorHandling';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -142,9 +143,27 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
     setDarkMode(!darkMode);
   };
 
+  const formatErrorMessage = (error: any, defaultMessage: string): string => {
+    logDetailedError(defaultMessage, error);
+
+    if (error.message?.toLowerCase().includes('fetch') ||
+        error.message?.toLowerCase().includes('network') ||
+        error.name === 'TypeError') {
+      return 'Netzwerkfehler: Verbindung zu Supabase fehlgeschlagen.';
+    }
+
+    return error.message || defaultMessage;
+  };
+
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+    if (!supabaseUrl) {
+      throw new Error('Konfigurationsfehler: VITE_SUPABASE_URL fehlt');
+    }
+
     const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${endpoint}`,
+      `${supabaseUrl}/functions/v1/${endpoint}`,
       {
         ...options,
         headers: {
@@ -156,9 +175,17 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
     );
 
     const data = await response.json();
+
     if (!response.ok) {
-      throw new Error(data.error || 'Request failed');
+      logDetailedError(`API call failed: ${endpoint}`, { response, data });
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Nicht autorisiert (RLS/Policy).');
+      }
+
+      throw new Error(data.error || 'Anfrage fehlgeschlagen');
     }
+
     return data;
   };
 
@@ -168,7 +195,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
       const data = await apiCall('admin-drivers');
       setDrivers(data.drivers || []);
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: formatErrorMessage(error, 'Fahrer konnten nicht geladen werden') });
     } finally {
       setDataLoading(false);
     }
@@ -213,7 +240,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
       const data = await apiCall(`admin-logs?${params.toString()}`);
       setLogs(data.logs || []);
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: formatErrorMessage(error, 'Logs konnten nicht geladen werden') });
     } finally {
       setDataLoading(false);
     }
@@ -237,7 +264,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
       );
       setReportData(data);
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: formatErrorMessage(error, 'Bericht konnte nicht geladen werden') });
       setReportData(null);
     } finally {
       setDataLoading(false);
@@ -612,7 +639,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
         });
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: formatErrorMessage(error, 'Vergleich konnte nicht geladen werden') });
     } finally {
       setLoading(false);
     }
@@ -702,7 +729,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
       setDriverForm({ code: '', name: '', active: true });
       await loadDrivers();
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: formatErrorMessage(error, 'Fahrer konnte nicht hinzugefügt werden') });
     } finally {
       setLoading(false);
     }
@@ -754,7 +781,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
       setEditDriverForm({ code: '', name: '' });
       await loadDrivers();
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: formatErrorMessage(error, 'Fahrer konnte nicht aktualisiert werden') });
     } finally {
       setLoading(false);
     }
@@ -779,7 +806,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
       setEditDriverForm({ code: '', name: '' });
       await loadDrivers();
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: formatErrorMessage(error, 'Fahrercode konnte nicht aktualisiert werden') });
     } finally {
       setLoading(false);
     }
@@ -845,7 +872,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
         await loadLogs();
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: formatErrorMessage(error, 'Eintrag konnte nicht erstellt werden') });
     } finally {
       setLoading(false);
     }
@@ -862,7 +889,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
       setEditingDriver(null);
       await loadDrivers();
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: formatErrorMessage(error, 'Fahrer konnte nicht aktualisiert werden') });
     } finally {
       setLoading(false);
     }
@@ -886,7 +913,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
       setConfirmDeleteDriver({ show: false, driver: null });
       await loadDrivers();
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: formatErrorMessage(error, 'Fahrer konnte nicht gelöscht werden') });
     } finally {
       setLoading(false);
     }
@@ -911,7 +938,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
       await loadLogs();
       await loadTodayEntries();
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: formatErrorMessage(error, 'Eintrag konnte nicht gelöscht werden') });
     } finally {
       setLoading(false);
     }
