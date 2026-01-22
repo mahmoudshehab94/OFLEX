@@ -64,5 +64,11 @@ export default defineConfig({
   ],
   optimizeDeps: {
     exclude: ['lucide-react'],
+    include: ['xlsx', 'jspdf'],
+  },
+  server: {
+    fs: {
+      strict: false
+    }
   },
 });
