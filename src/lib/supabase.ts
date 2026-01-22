@@ -7,6 +7,14 @@ export const hasSupabaseConfig = !!(supabaseUrl && supabaseAnonKey);
 
 if (!hasSupabaseConfig) {
   console.warn('⚠️ Supabase environment variables are missing');
+  console.error('❌ CRITICAL: VITE_SUPABASE_URL and/or VITE_SUPABASE_ANON_KEY not configured');
+} else {
+  const expectedUrlPattern = /^https:\/\/[a-z0-9-]+\.supabase\.co$/;
+  if (!expectedUrlPattern.test(supabaseUrl)) {
+    console.error('❌ CRITICAL: Supabase URL format appears invalid. Expected format: https://[project-id].supabase.co');
+  } else {
+    console.log('✅ Supabase configuration loaded from environment variables');
+  }
 }
 
 export const supabase = hasSupabaseConfig

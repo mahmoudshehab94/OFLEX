@@ -112,6 +112,10 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
             Zurück zur Startseite
           </a>
         </div>
+
+        <div className="mt-6 text-center text-xs text-gray-500">
+          created by - mahmoud shehab
+        </div>
       </div>
     </div>
   );
