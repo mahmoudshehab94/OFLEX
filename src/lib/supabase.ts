@@ -22,24 +22,46 @@ const extractProjectRef = (key: string): string => {
   }
 };
 
+const EXPECTED_PROJECT_REF = 'jydiusflnirmtfozdurm';
+
 const urlProjectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
 const anonProjectRef = extractProjectRef(supabaseAnonKey);
 const serviceProjectRef = supabaseServiceKey ? extractProjectRef(supabaseServiceKey) : null;
 
 console.log('🔍 Project References:');
+console.log('  Expected Project:', EXPECTED_PROJECT_REF);
 console.log('  URL Project:', urlProjectRef);
 console.log('  Anon Key Project:', anonProjectRef);
 console.log('  Service Key Project:', serviceProjectRef || 'N/A');
 
+if (urlProjectRef !== EXPECTED_PROJECT_REF) {
+  const errorMessage = `
+╔═══════════════════════════════════════════════════════════════════╗
+║                 ❌ WRONG SUPABASE PROJECT CONNECTED ❌              ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  Expected: ${EXPECTED_PROJECT_REF}                                    ║
+║  Current:  ${urlProjectRef || 'unknown'}                                         ║
+║                                                                   ║
+║  Please update your .env file with the correct Supabase          ║
+║  project URL and anon key.                                       ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+  `;
+  console.error(errorMessage);
+  throw new Error(`WRONG SUPABASE PROJECT: Expected "${EXPECTED_PROJECT_REF}", got "${urlProjectRef}"`);
+}
+
 if (urlProjectRef !== anonProjectRef) {
   console.error('❌ MISMATCH: URL and Anon Key are for different projects!');
+  throw new Error('URL and Anon Key project mismatch');
 }
 if (serviceProjectRef && urlProjectRef !== serviceProjectRef) {
   console.error('❌ MISMATCH: URL and Service Key are for different projects!');
+  throw new Error('URL and Service Key project mismatch');
 }
-if (urlProjectRef === anonProjectRef && (!serviceProjectRef || urlProjectRef === serviceProjectRef)) {
-  console.log('✅ All credentials match the same project');
-}
+
+console.log('✅ All credentials match the correct project:', EXPECTED_PROJECT_REF);
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
