@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
 import {
-  LogOut, Users, Clock, FileText, Edit2, Trash2, Save, X, Ban,
-  Search, FileDown, BarChart3, GitCompare, Plus, Key, CheckCircle
+  LogOut, Users, FileText, Settings, Moon, Download, BarChart2
 } from 'lucide-react';
 import { supabase, Driver, WorkTime, DriverWithWorkTimes, hasSupabaseConfig } from '../lib/supabase';
-import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 
 interface AdminDashboardProps {
   onLogout: () => void;
 }
 
-type Tab = 'berichte' | 'entries' | 'drivers';
+type Tab = 'berichte' | 'eintraege' | 'fahrer';
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('berichte');
@@ -19,45 +17,41 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const [editingDriverId, setEditingDriverId] = useState<string | null>(null);
-  const [editDriverCode, setEditDriverCode] = useState('');
-  const [editDriverName, setEditDriverName] = useState('');
+  // Monatsbericht states
+  const [reportDriverInput, setReportDriverInput] = useState('');
+  const [reportYear, setReportYear] = useState(new Date().getFullYear().toString());
+  const [reportMonth, setReportMonth] = useState((new Date().getMonth() + 1).toString());
 
-  const [newDriverCode, setNewDriverCode] = useState('');
-  const [newDriverName, setNewDriverName] = useState('');
+  // Fahrerabrechnung states
+  const [invoiceDriverInput, setInvoiceDriverInput] = useState('');
+  const [invoicePeriod, setInvoicePeriod] = useState('last-month');
 
-  const [searchType, setSearchType] = useState<'driver' | 'vehicle' | 'both'>('driver');
-  const [searchDriverCode, setSearchDriverCode] = useState('');
-  const [searchVehicle, setSearchVehicle] = useState('');
-  const [searchStartDate, setSearchStartDate] = useState('');
-  const [searchEndDate, setSearchEndDate] = useState('');
-  const [searchResults, setSearchResults] = useState<WorkTime[]>([]);
+  // Fahrer vergleichen states
+  const [compareDriver1Input, setCompareDriver1Input] = useState('');
+  const [compareDriver2Input, setCompareDriver2Input] = useState('');
+  const [compareYear, setCompareYear] = useState(new Date().getFullYear().toString());
+  const [compareMonth, setCompareMonth] = useState((new Date().getMonth() + 1).toString());
 
-  const [statsDriverId, setStatsDriverId] = useState('');
-  const [statsFilter, setStatsFilter] = useState<'current' | 'custom' | 'week' | 'month' | 'year'>('current');
-  const [statsStartDate, setStatsStartDate] = useState('');
-  const [statsEndDate, setStatsEndDate] = useState('');
+  // Eintrag manuell hinzufügen states
+  const [manualDriverInput, setManualDriverInput] = useState('');
+  const [manualVehicle, setManualVehicle] = useState('');
+  const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0]);
+  const [manualPause, setManualPause] = useState('0');
+  const [manualStartTime, setManualStartTime] = useState('');
+  const [manualEndTime, setManualEndTime] = useState('');
+  const [manualNote, setManualNote] = useState('');
+  const [manualAllowMultiple, setManualAllowMultiple] = useState(false);
 
-  const [compareDriver1, setCompareDriver1] = useState('');
-  const [compareDriver2, setCompareDriver2] = useState('');
-  const [compareMonth, setCompareMonth] = useState('');
-
-  const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  // Filter states
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const [filterSearchType, setFilterSearchType] = useState('vehicle');
+  const [filterVehicle, setFilterVehicle] = useState('');
+  const [filteredEntries, setFilteredEntries] = useState<(WorkTime & { driver?: Driver })[]>([]);
 
   useEffect(() => {
     loadDrivers();
   }, []);
-
-  useEffect(() => {
-    if (autoRefresh && activeTab === 'berichte') {
-      const interval = setInterval(loadDrivers, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [autoRefresh, activeTab]);
 
   const loadDrivers = async () => {
     if (!supabase) {
@@ -79,7 +73,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
       if (error) {
         console.error('Load error:', error);
-        setMessage({ type: 'error', text: `Fehler: ${error.message}` });
+        setMessage({ type: 'error', text: `Interner Serverfehler` });
         setLoading(false);
         return;
       }
@@ -87,7 +81,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       setDrivers(data || []);
     } catch (error: any) {
       console.error('Load error:', error);
-      setMessage({ type: 'error', text: `Fehler: ${error.message}` });
+      setMessage({ type: 'error', text: `Interner Serverfehler` });
     } finally {
       setLoading(false);
     }
@@ -106,8 +100,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     return { hours, minutes, totalMinutes };
   };
 
-  const formatDuration = (hours: number, minutes: number): string => {
-    return `${hours}h ${minutes}m`;
+  const formatTimeHHMM = (hours: number, minutes: number): string => {
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
 
   const getTodayEntries = () => {
@@ -127,111 +121,161 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     );
   };
 
-  const addDriver = async () => {
+  const findDriverByCodeOrName = (input: string): Driver | null => {
+    if (!input.trim()) return null;
+    const search = input.trim().toLowerCase();
+    return drivers.find(d =>
+      d.driver_code.toLowerCase() === search ||
+      d.driver_name.toLowerCase() === search
+    ) || null;
+  };
+
+  const calculateMonthlyReport = () => {
+    const driver = findDriverByCodeOrName(reportDriverInput);
+    if (!driver) return null;
+
+    const year = parseInt(reportYear);
+    const month = parseInt(reportMonth);
+
+    const filteredWorkTimes = (driver.work_times || []).filter(wt => {
+      const date = new Date(wt.work_date);
+      return date.getFullYear() === year && date.getMonth() === month - 1;
+    });
+
+    let totalMinutes = 0;
+    filteredWorkTimes.forEach(wt => {
+      const duration = calculateDuration(wt.start_time, wt.end_time);
+      totalMinutes += duration.totalMinutes;
+    });
+
+    const workDays = filteredWorkTimes.length;
+    const totalHours = Math.floor(totalMinutes / 60);
+    const totalMins = totalMinutes % 60;
+
+    // Calculate overtime (assuming 8 hours per day is standard)
+    const standardMinutes = workDays * 8 * 60;
+    const overtimeMinutes = totalMinutes - standardMinutes;
+    const overtimeHours = Math.floor(overtimeMinutes / 60);
+    const overtimeMins = overtimeMinutes % 60;
+
+    return {
+      driver,
+      workDays,
+      totalHours,
+      totalMins,
+      overtimeHours,
+      overtimeMins
+    };
+  };
+
+  const generatePDF = () => {
+    const driver = findDriverByCodeOrName(invoiceDriverInput);
+    if (!driver) {
+      setMessage({ type: 'error', text: 'Bitte Fahrer auswählen' });
+      return;
+    }
+
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('Fahrerabrechnung', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Fahrer: ${driver.driver_name || driver.driver_code}`, 14, 30);
+    doc.text(`Code: ${driver.driver_code}`, 14, 36);
+    doc.text(`Zeitraum: ${invoicePeriod}`, 14, 42);
+    doc.text(`Erstellt: ${new Date().toLocaleDateString('de-DE')}`, 14, 48);
+
+    doc.save(`abrechnung_${driver.driver_code}_${new Date().toISOString().split('T')[0]}.pdf`);
+    setMessage({ type: 'success', text: 'PDF erfolgreich erstellt' });
+  };
+
+  const compareDrivers = () => {
+    const driver1 = findDriverByCodeOrName(compareDriver1Input);
+    const driver2 = findDriverByCodeOrName(compareDriver2Input);
+
+    if (!driver1 || !driver2) return null;
+
+    const year = parseInt(compareYear);
+    const month = parseInt(compareMonth);
+
+    const calculateStats = (driver: DriverWithWorkTimes) => {
+      const filteredWorkTimes = (driver.work_times || []).filter(wt => {
+        const date = new Date(wt.work_date);
+        return date.getFullYear() === year && date.getMonth() === month - 1;
+      });
+
+      let totalMinutes = 0;
+      filteredWorkTimes.forEach(wt => {
+        const duration = calculateDuration(wt.start_time, wt.end_time);
+        totalMinutes += duration.totalMinutes;
+      });
+
+      return {
+        workDays: filteredWorkTimes.length,
+        totalHours: Math.floor(totalMinutes / 60),
+        totalMins: totalMinutes % 60
+      };
+    };
+
+    return {
+      driver1: { ...calculateStats(driver1), name: driver1.driver_name || driver1.driver_code },
+      driver2: { ...calculateStats(driver2), name: driver2.driver_name || driver2.driver_code }
+    };
+  };
+
+  const saveManualEntry = async () => {
     if (!supabase) return;
 
-    if (!newDriverCode.trim() || !newDriverName.trim()) {
-      setMessage({ type: 'error', text: 'Bitte Fahrer-Code und Name eingeben' });
+    const driver = findDriverByCodeOrName(manualDriverInput);
+    if (!driver) {
+      setMessage({ type: 'error', text: 'Fahrer nicht gefunden' });
       return;
+    }
+
+    if (!manualVehicle || !manualStartTime || !manualEndTime) {
+      setMessage({ type: 'error', text: 'Bitte alle Pflichtfelder ausfüllen' });
+      return;
+    }
+
+    // Check if entry already exists for this date
+    if (!manualAllowMultiple) {
+      const { data: existing } = await supabase
+        .from('work_times')
+        .select('id')
+        .eq('driver_id', driver.id)
+        .eq('work_date', manualDate)
+        .maybeSingle();
+
+      if (existing) {
+        setMessage({ type: 'error', text: 'Für dieses Datum existiert bereits ein Eintrag' });
+        return;
+      }
     }
 
     try {
       const { error } = await supabase
-        .from('drivers')
+        .from('work_times')
         .insert({
-          driver_code: newDriverCode.trim(),
-          driver_name: newDriverName.trim(),
-          license_letters: '',
-          license_numbers: '',
-          is_active: true
+          driver_id: driver.id,
+          work_date: manualDate,
+          start_time: manualStartTime,
+          end_time: manualEndTime,
+          vehicle: manualVehicle.toUpperCase(),
+          notes: manualNote || null,
+          break_minutes: parseInt(manualPause) || 0
         });
 
       if (error) {
-        if (error.code === '23505') {
-          setMessage({ type: 'error', text: 'Fahrer-Code bereits vergeben' });
-        } else {
-          setMessage({ type: 'error', text: `Fehler: ${error.message}` });
-        }
-      } else {
-        setMessage({ type: 'success', text: 'Fahrer erfolgreich hinzugefügt' });
-        setNewDriverCode('');
-        setNewDriverName('');
-        loadDrivers();
-      }
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Fehler: ${error.message}` });
-    }
-  };
-
-  const startEditDriver = (driver: Driver) => {
-    setEditingDriverId(driver.id);
-    setEditDriverCode(driver.driver_code);
-    setEditDriverName(driver.driver_name);
-  };
-
-  const cancelEditDriver = () => {
-    setEditingDriverId(null);
-    setEditDriverCode('');
-    setEditDriverName('');
-  };
-
-  const saveDriverEdit = async (driverId: string) => {
-    if (!supabase) return;
-
-    if (!editDriverCode.trim()) {
-      setMessage({ type: 'error', text: 'Fahrer-Code darf nicht leer sein' });
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('drivers')
-        .update({
-          driver_code: editDriverCode.trim(),
-          driver_name: editDriverName.trim()
-        })
-        .eq('id', driverId);
-
-      if (error) {
-        if (error.code === '23505') {
-          setMessage({ type: 'error', text: 'Fahrer-Code bereits vergeben' });
-        } else {
-          setMessage({ type: 'error', text: `Fehler: ${error.message}` });
-        }
-      } else {
-        setMessage({ type: 'success', text: 'Fahrer erfolgreich aktualisiert' });
-        cancelEditDriver();
-        loadDrivers();
-      }
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Fehler: ${error.message}` });
-    }
-  };
-
-  const deleteDriver = async (driverId: string) => {
-    if (!supabase) return;
-
-    const driver = drivers.find(d => d.id === driverId);
-    if (driver && driver.work_times && driver.work_times.length > 0) {
-      setMessage({
-        type: 'error',
-        text: 'Fahrer kann nicht gelöscht werden (hat bestehende Einträge). Bitte deaktivieren Sie stattdessen.'
-      });
-      return;
-    }
-
-    if (!confirm('Möchten Sie diesen Fahrer wirklich löschen?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('drivers')
-        .delete()
-        .eq('id', driverId);
-
-      if (error) {
         setMessage({ type: 'error', text: `Fehler: ${error.message}` });
       } else {
-        setMessage({ type: 'success', text: 'Fahrer erfolgreich gelöscht' });
+        setMessage({ type: 'success', text: 'Eintrag erfolgreich gespeichert' });
+        // Reset form
+        setManualDriverInput('');
+        setManualVehicle('');
+        setManualPause('0');
+        setManualStartTime('');
+        setManualEndTime('');
+        setManualNote('');
+        setManualAllowMultiple(false);
         loadDrivers();
       }
     } catch (error: any) {
@@ -239,106 +283,23 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     }
   };
 
-  const toggleDriverActive = async (driverId: string, currentStatus: boolean) => {
-    if (!supabase) return;
-
-    const newStatus = !currentStatus;
-    const action = newStatus ? 'aktivieren' : 'deaktivieren';
-
-    if (!confirm(`Möchten Sie diesen Fahrer wirklich ${action}?`)) return;
-
-    try {
-      const { error } = await supabase
-        .from('drivers')
-        .update({ is_active: newStatus })
-        .eq('id', driverId);
-
-      if (error) {
-        setMessage({ type: 'error', text: `Fehler: ${error.message}` });
-      } else {
-        setMessage({ type: 'success', text: `Fahrer erfolgreich ${newStatus ? 'aktiviert' : 'deaktiviert'}` });
-        loadDrivers();
-      }
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Fehler: ${error.message}` });
-    }
-  };
-
-  const deleteWorkTime = async (workTimeId: string) => {
-    if (!supabase) return;
-
-    if (!confirm('Möchten Sie diesen Eintrag wirklich löschen? Der Fahrer kann dann für diesen Tag erneut einreichen.')) return;
-
-    try {
-      const { error } = await supabase
-        .from('work_times')
-        .delete()
-        .eq('id', workTimeId);
-
-      if (error) {
-        setMessage({ type: 'error', text: `Fehler: ${error.message}` });
-      } else {
-        setMessage({ type: 'success', text: 'Eintrag erfolgreich gelöscht' });
-        loadDrivers();
-        if (searchResults.length > 0) {
-          performSearch();
-        }
-      }
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Fehler: ${error.message}` });
-    }
-  };
-
-  const performSearch = async () => {
+  const performFilter = async () => {
     if (!supabase) return;
 
     setLoading(true);
-    setMessage(null);
-
     try {
       let query = supabase
         .from('work_times')
-        .select('*');
+        .select('*, driver:drivers(*)');
 
-      if (searchType === 'driver' && searchDriverCode) {
-        const { data: driver } = await supabase
-          .from('drivers')
-          .select('id')
-          .eq('driver_code', searchDriverCode)
-          .maybeSingle();
-
-        if (!driver) {
-          setMessage({ type: 'error', text: 'Fahrer nicht gefunden' });
-          setSearchResults([]);
-          setLoading(false);
-          return;
-        }
-
-        query = query.eq('driver_id', driver.id);
-      } else if (searchType === 'vehicle' && searchVehicle) {
-        query = query.eq('vehicle', searchVehicle.toUpperCase());
-      } else if (searchType === 'both' && searchDriverCode && searchVehicle) {
-        const { data: driver } = await supabase
-          .from('drivers')
-          .select('id')
-          .eq('driver_code', searchDriverCode)
-          .maybeSingle();
-
-        if (!driver) {
-          setMessage({ type: 'error', text: 'Fahrer nicht gefunden' });
-          setSearchResults([]);
-          setLoading(false);
-          return;
-        }
-
-        query = query.eq('driver_id', driver.id).eq('vehicle', searchVehicle.toUpperCase());
+      if (filterStartDate) {
+        query = query.gte('work_date', filterStartDate);
       }
-
-      if (searchStartDate) {
-        query = query.gte('work_date', searchStartDate);
+      if (filterEndDate) {
+        query = query.lte('work_date', filterEndDate);
       }
-      if (searchEndDate) {
-        query = query.lte('work_date', searchEndDate);
+      if (filterSearchType === 'vehicle' && filterVehicle) {
+        query = query.eq('vehicle', filterVehicle.toUpperCase());
       }
 
       const { data, error } = await query.order('work_date', { ascending: false });
@@ -346,9 +307,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       if (error) {
         setMessage({ type: 'error', text: `Fehler: ${error.message}` });
       } else {
-        setSearchResults(data || []);
-        if (data && data.length === 0) {
-          setMessage({ type: 'error', text: 'Keine Einträge gefunden' });
+        setFilteredEntries(data || []);
+        if (!data || data.length === 0) {
+          setMessage({ type: 'error', text: 'Keine Einträge gefunden. Fahrer können über die Startseite Einträge erstellen.' });
         }
       }
     } catch (error: any) {
@@ -358,347 +319,12 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     }
   };
 
-  const applyDateFilter = (filter: 'week' | 'month' | 'year') => {
-    const now = new Date();
-    let startDate: Date;
-
-    switch (filter) {
-      case 'week':
-        startDate = new Date(now);
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case 'month':
-        startDate = new Date(now);
-        startDate.setMonth(now.getMonth() - 1);
-        break;
-      case 'year':
-        startDate = new Date(now);
-        startDate.setFullYear(now.getFullYear() - 1);
-        break;
-    }
-
-    setSearchStartDate(startDate.toISOString().split('T')[0]);
-    setSearchEndDate(now.toISOString().split('T')[0]);
-  };
-
-  const calculateDriverStats = () => {
-    if (!statsDriverId) return null;
-
-    const driver = drivers.find(d => d.id === statsDriverId);
-    if (!driver) return null;
-
-    let workTimes = driver.work_times || [];
-
-    const filterWorkTimes = () => {
-      const now = new Date();
-
-      switch (statsFilter) {
-        case 'current':
-          const currentMonth = now.getMonth();
-          const currentYear = now.getFullYear();
-          return workTimes.filter(wt => {
-            const wtDate = new Date(wt.work_date);
-            return wtDate.getMonth() === currentMonth && wtDate.getFullYear() === currentYear;
-          });
-
-        case 'week':
-          const weekStart = new Date(now);
-          weekStart.setDate(now.getDate() - 7);
-          return workTimes.filter(wt => new Date(wt.work_date) >= weekStart);
-
-        case 'month':
-          const monthStart = new Date(now);
-          monthStart.setMonth(now.getMonth() - 1);
-          return workTimes.filter(wt => new Date(wt.work_date) >= monthStart);
-
-        case 'year':
-          const yearStart = new Date(now);
-          yearStart.setFullYear(now.getFullYear() - 1);
-          return workTimes.filter(wt => new Date(wt.work_date) >= yearStart);
-
-        case 'custom':
-          return workTimes.filter(wt => {
-            const wtDate = new Date(wt.work_date);
-            const start = statsStartDate ? new Date(statsStartDate) : null;
-            const end = statsEndDate ? new Date(statsEndDate) : null;
-            if (start && wtDate < start) return false;
-            if (end && wtDate > end) return false;
-            return true;
-          });
-
-        default:
-          return workTimes;
-      }
-    };
-
-    const filtered = filterWorkTimes();
-
-    let totalMinutes = 0;
-    filtered.forEach(wt => {
-      totalMinutes += calculateDuration(wt.start_time, wt.end_time).totalMinutes;
-    });
-
-    const totalHours = Math.floor(totalMinutes / 60);
-    const remainingMinutes = totalMinutes % 60;
-    const daysWorked = filtered.length;
-    const avgHoursPerDay = daysWorked > 0 ? totalMinutes / 60 / daysWorked : 0;
-
-    const monthlyBreakdown: Record<string, { hours: number; minutes: number; days: number }> = {};
-    filtered.forEach(wt => {
-      const date = new Date(wt.work_date);
-      const key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-      if (!monthlyBreakdown[key]) {
-        monthlyBreakdown[key] = { hours: 0, minutes: 0, days: 0 };
-      }
-      const duration = calculateDuration(wt.start_time, wt.end_time);
-      monthlyBreakdown[key].minutes += duration.totalMinutes;
-      monthlyBreakdown[key].days += 1;
-    });
-
-    Object.keys(monthlyBreakdown).forEach(key => {
-      const totalMins = monthlyBreakdown[key].minutes;
-      monthlyBreakdown[key].hours = Math.floor(totalMins / 60);
-      monthlyBreakdown[key].minutes = totalMins % 60;
-    });
-
-    return {
-      driver,
-      totalHours,
-      remainingMinutes,
-      daysWorked,
-      avgHoursPerDay,
-      monthlyBreakdown
-    };
-  };
-
-  const compareDrivers = () => {
-    if (!compareDriver1 || !compareDriver2 || !compareMonth) return null;
-
-    const driver1 = drivers.find(d => d.id === compareDriver1);
-    const driver2 = drivers.find(d => d.id === compareDriver2);
-
-    if (!driver1 || !driver2) return null;
-
-    const [year, month] = compareMonth.split('-').map(Number);
-    const monthStart = new Date(year, month - 1, 1);
-    const monthEnd = new Date(year, month, 0);
-
-    const filterByMonth = (workTimes: WorkTime[]) => {
-      return workTimes.filter(wt => {
-        const wtDate = new Date(wt.work_date);
-        return wtDate >= monthStart && wtDate <= monthEnd;
-      });
-    };
-
-    const wt1 = filterByMonth(driver1.work_times || []);
-    const wt2 = filterByMonth(driver2.work_times || []);
-
-    let total1 = 0;
-    wt1.forEach(wt => {
-      total1 += calculateDuration(wt.start_time, wt.end_time).totalMinutes;
-    });
-
-    let total2 = 0;
-    wt2.forEach(wt => {
-      total2 += calculateDuration(wt.start_time, wt.end_time).totalMinutes;
-    });
-
-    return {
-      driver1: {
-        name: driver1.driver_name || driver1.driver_code,
-        code: driver1.driver_code,
-        hours: Math.floor(total1 / 60),
-        minutes: total1 % 60,
-        days: wt1.length,
-        avgPerDay: wt1.length > 0 ? (total1 / 60 / wt1.length).toFixed(1) : '0.0'
-      },
-      driver2: {
-        name: driver2.driver_name || driver2.driver_code,
-        code: driver2.driver_code,
-        hours: Math.floor(total2 / 60),
-        minutes: total2 % 60,
-        days: wt2.length,
-        avgPerDay: wt2.length > 0 ? (total2 / 60 / wt2.length).toFixed(1) : '0.0'
-      }
-    };
-  };
-
-  const exportAllToExcel = () => {
-    const wsData = [
-      ['Fahrer Code', 'Fahrer Name', 'Datum', 'Von', 'Bis', 'Arbeitsstunden', 'Fahrzeug', 'Notizen']
-    ];
-
-    drivers.forEach(driver => {
-      driver.work_times?.forEach(wt => {
-        const duration = calculateDuration(wt.start_time, wt.end_time);
-        wsData.push([
-          driver.driver_code,
-          driver.driver_name,
-          new Date(wt.work_date).toLocaleDateString('de-DE'),
-          wt.start_time,
-          wt.end_time,
-          formatDuration(duration.hours, duration.minutes),
-          wt.vehicle,
-          wt.notes || ''
-        ]);
-      });
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Alle Daten');
-
-    XLSX.writeFile(wb, `trans_oflex_alle_daten_${new Date().toISOString().split('T')[0]}.xlsx`);
-    setMessage({ type: 'success', text: 'Excel-Datei erfolgreich exportiert' });
-  };
-
-  const exportDriverMonthlyExcel = (driver: DriverWithWorkTimes, year: number, month: number) => {
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const monthName = new Date(year, month - 1).toLocaleString('de-DE', { month: 'long' });
-
-    const workTimesByDate: Record<string, WorkTime> = {};
-    (driver.work_times || []).forEach(wt => {
-      const wtDate = new Date(wt.work_date);
-      if (wtDate.getFullYear() === year && wtDate.getMonth() === month - 1) {
-        workTimesByDate[wt.work_date] = wt;
-      }
-    });
-
-    const wsData = [
-      [`Fahrer: ${driver.driver_name || driver.driver_code} (${driver.driver_code})`],
-      [`Monat: ${monthName} ${year}`],
-      [],
-      ['Tag', 'Datum', 'Von', 'Bis', 'Arbeitsstunden', 'Fahrzeug', 'Notizen']
-    ];
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-      const wt = workTimesByDate[dateStr];
-
-      if (wt) {
-        const duration = calculateDuration(wt.start_time, wt.end_time);
-        wsData.push([
-          day,
-          new Date(dateStr).toLocaleDateString('de-DE'),
-          wt.start_time,
-          wt.end_time,
-          formatDuration(duration.hours, duration.minutes),
-          wt.vehicle,
-          wt.notes || ''
-        ]);
-      } else {
-        wsData.push([
-          day,
-          new Date(dateStr).toLocaleDateString('de-DE'),
-          '—',
-          '—',
-          '—',
-          '—',
-          ''
-        ]);
-      }
-    }
-
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `${monthName}`);
-
-    XLSX.writeFile(wb, `${driver.driver_code}_${monthName}_${year}.xlsx`);
-    setMessage({ type: 'success', text: `Excel-Datei für ${driver.driver_name || driver.driver_code} erfolgreich exportiert` });
-  };
-
-  const exportAllToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text('Trans Oflex - Arbeitszeiten', 14, 20);
-
-    doc.setFontSize(10);
-    doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, 14, 30);
-
-    let yPos = 45;
-    drivers.forEach(driver => {
-      if (yPos > 270) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      doc.setFontSize(12);
-      doc.text(`Fahrer: ${driver.driver_name || driver.driver_code} (${driver.driver_code})`, 14, yPos);
-      yPos += 7;
-
-      doc.setFontSize(9);
-      (driver.work_times || []).slice(0, 5).forEach(wt => {
-        const duration = calculateDuration(wt.start_time, wt.end_time);
-        const text = `${new Date(wt.work_date).toLocaleDateString('de-DE')} | ${wt.start_time}-${wt.end_time} | ${formatDuration(duration.hours, duration.minutes)} | ${wt.vehicle}`;
-        doc.text(text, 14, yPos);
-        yPos += 5;
-      });
-
-      yPos += 5;
-    });
-
-    doc.save(`trans_oflex_${new Date().toISOString().split('T')[0]}.pdf`);
-    setMessage({ type: 'success', text: 'PDF-Datei erfolgreich exportiert' });
-  };
-
-  const changePassword = async () => {
-    if (!supabase) return;
-
-    if (newPassword.length < 4) {
-      setMessage({ type: 'error', text: 'Passwort muss mindestens 4 Zeichen lang sein' });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setMessage({ type: 'error', text: 'Passwörter stimmen nicht überein' });
-      return;
-    }
-
-    try {
-      const fixedId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-
-      const { data: existing } = await supabase
-        .from('admin_settings')
-        .select('id')
-        .eq('id', fixedId)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from('admin_settings')
-          .update({ password: newPassword })
-          .eq('id', fixedId);
-
-        if (error) {
-          setMessage({ type: 'error', text: `Fehler: ${error.message}` });
-          return;
-        }
-      } else {
-        const { error } = await supabase
-          .from('admin_settings')
-          .insert({ id: fixedId, password: newPassword });
-
-        if (error) {
-          setMessage({ type: 'error', text: `Fehler: ${error.message}` });
-          return;
-        }
-      }
-
-      setMessage({ type: 'success', text: 'Passwort erfolgreich geändert' });
-      setShowPasswordChange(false);
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (error: any) {
-      setMessage({ type: 'error', text: `Fehler: ${error.message}` });
-    }
-  };
-
   if (!hasSupabaseConfig) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-        <div className="bg-red-900/20 border border-red-500 rounded-lg p-6 max-w-md">
-          <h2 className="text-red-400 font-bold text-xl mb-2">Konfigurationsfehler</h2>
-          <p className="text-red-300">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+          <h2 className="text-red-600 font-bold text-xl mb-2">Konfigurationsfehler</h2>
+          <p className="text-red-500">
             Fehlende Supabase-Umgebungsvariablen.
           </p>
         </div>
@@ -706,787 +332,520 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     );
   }
 
-  const stats = calculateDriverStats();
-  const comparison = compareDrivers();
+  const monthlyReport = calculateMonthlyReport();
+  const driverComparison = compareDrivers();
+  const todayEntries = getTodayEntries();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 pb-16">
-      <header className="bg-slate-800 border-b border-slate-700 sticky top-0 z-20">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-white">Trans Oflex Admin</h1>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowPasswordChange(!showPasswordChange)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
-              >
-                <Key className="w-4 h-4" />
-                Passwort ändern
-              </button>
-              <button
-                onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-              >
-                <LogOut className="w-4 h-4" />
-                Abmelden
-              </button>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-3xl font-bold text-gray-900">Admin-Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+              <Moon className="w-5 h-5 text-gray-600" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+              <Settings className="w-5 h-5 text-gray-600" />
+            </button>
+            <button
+              onClick={onLogout}
+              className="p-2 hover:bg-gray-100 rounded-lg transition"
+            >
+              <LogOut className="w-5 h-5 text-gray-600" />
+            </button>
           </div>
         </div>
-      </header>
+        <p className="text-gray-600">Fahrer-Arbeitszeitverwaltung</p>
+      </div>
 
-      {showPasswordChange && (
-        <div className="container mx-auto px-4 py-4">
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 max-w-md mx-auto">
-            <h2 className="text-white font-bold text-lg mb-4">Passwort ändern</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="text-gray-300 text-sm block mb-2">Neues Passwort</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600"
-                />
-              </div>
-              <div>
-                <label className="text-gray-300 text-sm block mb-2">Passwort bestätigen</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={changePassword}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                >
-                  Speichern
-                </button>
-                <button
-                  onClick={() => {
-                    setShowPasswordChange(false);
-                    setNewPassword('');
-                    setConfirmPassword('');
-                  }}
-                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-                >
-                  Abbrechen
-                </button>
-              </div>
-            </div>
-          </div>
+      {/* Error Message */}
+      {message && (
+        <div className={`mx-6 mt-6 p-4 rounded-lg ${
+          message.type === 'error'
+            ? 'bg-red-50 border border-red-200 text-red-800'
+            : 'bg-green-50 border border-green-200 text-green-800'
+        }`}>
+          {message.text}
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-8">
-        {message && (
-          <div
-            className={`mb-4 p-4 rounded-lg ${
-              message.type === 'success'
-                ? 'bg-green-900/50 text-green-200 border border-green-700'
-                : 'bg-red-900/50 text-red-200 border border-red-700'
+      {/* Tabs */}
+      <div className="bg-white border-b border-gray-200 mx-6 mt-6 rounded-t-lg overflow-hidden">
+        <div className="flex">
+          <button
+            onClick={() => setActiveTab('berichte')}
+            className={`flex items-center gap-2 px-6 py-4 font-medium transition ${
+              activeTab === 'berichte'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            {message.text}
-          </div>
-        )}
-
-        <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden mb-8">
-          <div className="border-b border-slate-700 bg-slate-900">
-            <nav className="flex">
-              <button
-                onClick={() => setActiveTab('berichte')}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition ${
-                  activeTab === 'berichte'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <FileText className="w-5 h-5" />
-                Berichte
-              </button>
-              <button
-                onClick={() => setActiveTab('entries')}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition ${
-                  activeTab === 'entries'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <Clock className="w-5 h-5" />
-                Einträge
-              </button>
-              <button
-                onClick={() => setActiveTab('drivers')}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition ${
-                  activeTab === 'drivers'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <Users className="w-5 h-5" />
-                Fahrer
-              </button>
-            </nav>
-          </div>
-
-          <div className="p-6">
-            {activeTab === 'berichte' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-white">Heutige Berichte</h2>
-                  <label className="flex items-center gap-2 text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={autoRefresh}
-                      onChange={(e) => setAutoRefresh(e.target.checked)}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm">Auto-Aktualisierung (30s)</span>
-                  </label>
-                </div>
-
-                <div className="text-gray-400 text-sm">
-                  {new Date().toLocaleDateString('de-DE', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </div>
-
-                <div className="space-y-4">
-                  {getTodayEntries().length === 0 ? (
-                    <p className="text-gray-400 text-center py-8">Keine Einträge für heute</p>
-                  ) : (
-                    getTodayEntries().map(({ driver, workTime }) => {
-                      const duration = calculateDuration(workTime.start_time, workTime.end_time);
-                      return (
-                        <div
-                          key={workTime.id}
-                          className="bg-slate-700 rounded-lg p-4 border border-slate-600"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h3 className="text-white font-semibold text-lg">
-                                {driver.driver_name || driver.driver_code}
-                              </h3>
-                              <p className="text-gray-400 text-sm">Code: {driver.driver_code}</p>
-                              <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                <div>
-                                  <span className="text-gray-400">Von:</span>
-                                  <span className="text-white ml-2 font-mono">{workTime.start_time}</span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Bis:</span>
-                                  <span className="text-white ml-2 font-mono">{workTime.end_time}</span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Dauer:</span>
-                                  <span className="text-blue-400 ml-2 font-semibold">
-                                    {formatDuration(duration.hours, duration.minutes)}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Fahrzeug:</span>
-                                  <span className="text-white ml-2 font-semibold">{workTime.vehicle}</span>
-                                </div>
-                              </div>
-                              {workTime.notes && (
-                                <div className="mt-2">
-                                  <span className="text-gray-400 text-sm">Notiz:</span>
-                                  <span className="text-gray-300 ml-2 text-sm">{workTime.notes}</span>
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => deleteWorkTime(workTime.id)}
-                              className="ml-4 p-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-                              title="Eintrag löschen"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'entries' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold text-white">Einträge Suchen</h2>
-
-                <div className="bg-slate-700 rounded-lg p-4 space-y-4">
-                  <div>
-                    <label className="text-gray-300 text-sm block mb-2">Suchtyp</label>
-                    <select
-                      value={searchType}
-                      onChange={(e) => setSearchType(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-slate-600 text-white rounded border border-slate-500"
-                    >
-                      <option value="driver">Nur Fahrer</option>
-                      <option value="vehicle">Nur Fahrzeug</option>
-                      <option value="both">Fahrer + Fahrzeug</option>
-                    </select>
-                  </div>
-
-                  {(searchType === 'driver' || searchType === 'both') && (
-                    <div>
-                      <label className="text-gray-300 text-sm block mb-2">Fahrer-Code</label>
-                      <input
-                        type="text"
-                        value={searchDriverCode}
-                        onChange={(e) => setSearchDriverCode(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-600 text-white rounded border border-slate-500"
-                        placeholder="z.B. D001"
-                      />
-                    </div>
-                  )}
-
-                  {(searchType === 'vehicle' || searchType === 'both') && (
-                    <div>
-                      <label className="text-gray-300 text-sm block mb-2">Fahrzeug</label>
-                      <input
-                        type="text"
-                        value={searchVehicle}
-                        onChange={(e) => setSearchVehicle(e.target.value.toUpperCase())}
-                        className="w-full px-3 py-2 bg-slate-600 text-white rounded border border-slate-500"
-                        placeholder="z.B. MI299"
-                      />
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-gray-300 text-sm block mb-2">Von Datum</label>
-                      <input
-                        type="date"
-                        value={searchStartDate}
-                        onChange={(e) => setSearchStartDate(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-600 text-white rounded border border-slate-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-gray-300 text-sm block mb-2">Bis Datum</label>
-                      <input
-                        type="date"
-                        value={searchEndDate}
-                        onChange={(e) => setSearchEndDate(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-600 text-white rounded border border-slate-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => applyDateFilter('week')}
-                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition text-sm"
-                    >
-                      Letzte Woche
-                    </button>
-                    <button
-                      onClick={() => applyDateFilter('month')}
-                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition text-sm"
-                    >
-                      Letzter Monat
-                    </button>
-                    <button
-                      onClick={() => applyDateFilter('year')}
-                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition text-sm"
-                    >
-                      Letztes Jahr
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={performSearch}
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                  >
-                    <Search className="w-5 h-5" />
-                    Suchen
-                  </button>
-                </div>
-
-                {searchResults.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-white font-semibold text-lg">
-                      Suchergebnisse ({searchResults.length})
-                    </h3>
-                    {searchResults.map(wt => {
-                      const driver = drivers.find(d => d.id === wt.driver_id);
-                      const duration = calculateDuration(wt.start_time, wt.end_time);
-                      return (
-                        <div
-                          key={wt.id}
-                          className="bg-slate-700 rounded-lg p-4 border border-slate-600 flex items-center justify-between"
-                        >
-                          <div className="flex-1">
-                            <h4 className="text-white font-medium">
-                              {driver?.driver_name || driver?.driver_code}
-                            </h4>
-                            <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                              <div>
-                                <span className="text-gray-400">Datum:</span>
-                                <span className="text-white ml-2">
-                                  {new Date(wt.work_date).toLocaleDateString('de-DE')}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-gray-400">Zeit:</span>
-                                <span className="text-white ml-2 font-mono">
-                                  {wt.start_time} - {wt.end_time}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-gray-400">Dauer:</span>
-                                <span className="text-blue-400 ml-2 font-semibold">
-                                  {formatDuration(duration.hours, duration.minutes)}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-gray-400">Fahrzeug:</span>
-                                <span className="text-white ml-2 font-semibold">{wt.vehicle}</span>
-                              </div>
-                            </div>
-                            {wt.notes && (
-                              <div className="mt-2">
-                                <span className="text-gray-400 text-sm">Notiz:</span>
-                                <span className="text-gray-300 ml-2 text-sm">{wt.notes}</span>
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => deleteWorkTime(wt.id)}
-                            className="ml-4 p-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-                            title="Eintrag löschen"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeTab === 'drivers' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold text-white">Fahrerverwaltung</h2>
-
-                <div className="bg-slate-700 rounded-lg p-4">
-                  <h3 className="text-white font-semibold mb-4">Neuen Fahrer hinzufügen</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-gray-300 text-sm block mb-2">Fahrer-Code *</label>
-                      <input
-                        type="text"
-                        value={newDriverCode}
-                        onChange={(e) => setNewDriverCode(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-600 text-white rounded border border-slate-500"
-                        placeholder="z.B. D001"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-gray-300 text-sm block mb-2">Name *</label>
-                      <input
-                        type="text"
-                        value={newDriverName}
-                        onChange={(e) => setNewDriverName(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-600 text-white rounded border border-slate-500"
-                        placeholder="z.B. Max Mustermann"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    onClick={addDriver}
-                    className="mt-4 flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Fahrer hinzufügen
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {drivers.length === 0 ? (
-                    <p className="text-gray-400 text-center py-8">Keine Fahrer vorhanden</p>
-                  ) : (
-                    drivers.map((driver) => (
-                      <div
-                        key={driver.id}
-                        className={`bg-slate-700 rounded-lg p-4 border ${
-                          driver.is_active ? 'border-slate-600' : 'border-orange-700 bg-slate-700/50'
-                        }`}
-                      >
-                        {editingDriverId === driver.id ? (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="text-gray-300 text-sm block mb-1">Fahrer-Code</label>
-                              <input
-                                type="text"
-                                value={editDriverCode}
-                                onChange={(e) => setEditDriverCode(e.target.value)}
-                                className="w-full px-3 py-2 bg-slate-600 text-white rounded border border-slate-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-gray-300 text-sm block mb-1">Name</label>
-                              <input
-                                type="text"
-                                value={editDriverName}
-                                onChange={(e) => setEditDriverName(e.target.value)}
-                                className="w-full px-3 py-2 bg-slate-600 text-white rounded border border-slate-500"
-                              />
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => saveDriverEdit(driver.id)}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                              >
-                                <Save className="w-4 h-4" />
-                                Speichern
-                              </button>
-                              <button
-                                onClick={cancelEditDriver}
-                                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-                              >
-                                <X className="w-4 h-4" />
-                                Abbrechen
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="flex items-center gap-3">
-                                <h3 className="text-white font-semibold text-lg">
-                                  {driver.driver_name || driver.driver_code}
-                                </h3>
-                                {!driver.is_active && (
-                                  <span className="px-2 py-1 bg-orange-600 text-white text-xs rounded">
-                                    Deaktiviert
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-gray-400 text-sm">Code: {driver.driver_code}</p>
-                              <p className="text-gray-400 text-xs mt-1">
-                                Erstellt: {new Date(driver.created_at).toLocaleDateString('de-DE')}
-                              </p>
-                              <p className="text-blue-400 text-sm mt-1">
-                                {driver.work_times?.length || 0} Einträge
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => startEditDriver(driver)}
-                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                                Bearbeiten
-                              </button>
-                              <button
-                                onClick={() => toggleDriverActive(driver.id, driver.is_active)}
-                                className={`flex items-center gap-2 px-3 py-2 ${
-                                  driver.is_active
-                                    ? 'bg-orange-600 hover:bg-orange-700'
-                                    : 'bg-green-600 hover:bg-green-700'
-                                } text-white rounded transition`}
-                              >
-                                {driver.is_active ? (
-                                  <>
-                                    <Ban className="w-4 h-4" />
-                                    Deaktivieren
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle className="w-4 h-4" />
-                                    Aktivieren
-                                  </>
-                                )}
-                              </button>
-                              {(!driver.work_times || driver.work_times.length === 0) && (
-                                <button
-                                  onClick={() => deleteDriver(driver.id)}
-                                  className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  Löschen
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <BarChart3 className="w-6 h-6 text-blue-400" />
-              <h2 className="text-xl font-bold text-white">Statistiken</h2>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-gray-300 text-sm block mb-2">Fahrer auswählen</label>
-                <select
-                  value={statsDriverId}
-                  onChange={(e) => setStatsDriverId(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600"
-                >
-                  <option value="">Bitte wählen...</option>
-                  {drivers.map(driver => (
-                    <option key={driver.id} value={driver.id}>
-                      {driver.driver_name || driver.driver_code} ({driver.driver_code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {statsDriverId && (
-                <>
-                  <div>
-                    <label className="text-gray-300 text-sm block mb-2">Zeitraum</label>
-                    <select
-                      value={statsFilter}
-                      onChange={(e) => setStatsFilter(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600"
-                    >
-                      <option value="current">Aktueller Monat</option>
-                      <option value="week">Letzte Woche</option>
-                      <option value="month">Letzter Monat</option>
-                      <option value="year">Letztes Jahr</option>
-                      <option value="custom">Benutzerdefiniert</option>
-                    </select>
-                  </div>
-
-                  {statsFilter === 'custom' && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-gray-300 text-sm block mb-2">Von</label>
-                        <input
-                          type="date"
-                          value={statsStartDate}
-                          onChange={(e) => setStatsStartDate(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-gray-300 text-sm block mb-2">Bis</label>
-                        <input
-                          type="date"
-                          value={statsEndDate}
-                          onChange={(e) => setStatsEndDate(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {stats && (
-                    <div className="mt-6 space-y-4">
-                      <div className="bg-slate-700 rounded-lg p-4">
-                        <h3 className="text-white font-semibold text-lg mb-3">
-                          {stats.driver.driver_name || stats.driver.driver_code}
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-gray-400 text-sm">Gesamtstunden</p>
-                            <p className="text-blue-400 font-bold text-2xl">
-                              {stats.totalHours}h {stats.remainingMinutes}m
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400 text-sm">Arbeitstage</p>
-                            <p className="text-blue-400 font-bold text-2xl">{stats.daysWorked}</p>
-                          </div>
-                          <div className="col-span-2">
-                            <p className="text-gray-400 text-sm">Durchschnitt pro Tag</p>
-                            <p className="text-blue-400 font-bold text-2xl">
-                              {stats.avgHoursPerDay.toFixed(1)}h
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {Object.keys(stats.monthlyBreakdown).length > 0 && (
-                        <div>
-                          <h4 className="text-white font-semibold mb-2">Monatsübersicht</h4>
-                          <div className="space-y-2">
-                            {Object.entries(stats.monthlyBreakdown)
-                              .sort(([a], [b]) => b.localeCompare(a))
-                              .map(([month, data]) => (
-                                <div key={month} className="bg-slate-700 rounded p-3 flex items-center justify-between">
-                                  <span className="text-gray-300">{month}</span>
-                                  <div className="text-right">
-                                    <p className="text-white font-semibold">
-                                      {formatDuration(data.hours, data.minutes)}
-                                    </p>
-                                    <p className="text-gray-400 text-xs">{data.days} Tage</p>
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      const [year, monthNum] = month.split('-').map(Number);
-                                      exportDriverMonthlyExcel(stats.driver, year, monthNum);
-                                    }}
-                                    className="ml-4 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm"
-                                  >
-                                    Excel
-                                  </button>
-                                </div>
-                              ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-8">
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <GitCompare className="w-6 h-6 text-green-400" />
-                <h2 className="text-xl font-bold text-white">Fahrer Vergleich</h2>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-gray-300 text-sm block mb-2">Fahrer 1</label>
-                    <select
-                      value={compareDriver1}
-                      onChange={(e) => setCompareDriver1(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 text-sm"
-                    >
-                      <option value="">Wählen...</option>
-                      {drivers.map(driver => (
-                        <option key={driver.id} value={driver.id}>
-                          {driver.driver_name || driver.driver_code}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-gray-300 text-sm block mb-2">Fahrer 2</label>
-                    <select
-                      value={compareDriver2}
-                      onChange={(e) => setCompareDriver2(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 text-sm"
-                    >
-                      <option value="">Wählen...</option>
-                      {drivers.map(driver => (
-                        <option key={driver.id} value={driver.id}>
-                          {driver.driver_name || driver.driver_code}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-gray-300 text-sm block mb-2">Monat</label>
-                  <input
-                    type="month"
-                    value={compareMonth}
-                    onChange={(e) => setCompareMonth(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-700 text-white rounded border border-slate-600"
-                  />
-                </div>
-
-                {comparison && (
-                  <div className="mt-6 grid grid-cols-2 gap-4">
-                    <div className="bg-blue-900/30 border-2 border-blue-500 rounded-lg p-4">
-                      <h3 className="text-white font-semibold mb-3">{comparison.driver1.name}</h3>
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <p className="text-gray-400">Gesamtstunden</p>
-                          <p className="text-blue-400 font-bold text-xl">
-                            {comparison.driver1.hours}h {comparison.driver1.minutes}m
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400">Arbeitstage</p>
-                          <p className="text-white font-semibold">{comparison.driver1.days}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400">Ø pro Tag</p>
-                          <p className="text-white font-semibold">{comparison.driver1.avgPerDay}h</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-green-900/30 border-2 border-green-500 rounded-lg p-4">
-                      <h3 className="text-white font-semibold mb-3">{comparison.driver2.name}</h3>
-                      <div className="space-y-2 text-sm">
-                        <div>
-                          <p className="text-gray-400">Gesamtstunden</p>
-                          <p className="text-green-400 font-bold text-xl">
-                            {comparison.driver2.hours}h {comparison.driver2.minutes}m
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400">Arbeitstage</p>
-                          <p className="text-white font-semibold">{comparison.driver2.days}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400">Ø pro Tag</p>
-                          <p className="text-white font-semibold">{comparison.driver2.avgPerDay}h</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <FileDown className="w-6 h-6 text-purple-400" />
-                <h2 className="text-xl font-bold text-white">Export</h2>
-              </div>
-
-              <div className="space-y-3">
-                <button
-                  onClick={exportAllToExcel}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                >
-                  <FileDown className="w-5 h-5" />
-                  Alle Daten als Excel exportieren
-                </button>
-
-                <button
-                  onClick={exportAllToPDF}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                >
-                  <FileDown className="w-5 h-5" />
-                  Alle Daten als PDF exportieren
-                </button>
-              </div>
-            </div>
-          </div>
+            <BarChart2 className="w-5 h-5" />
+            Berichte
+          </button>
+          <button
+            onClick={() => setActiveTab('eintraege')}
+            className={`flex items-center gap-2 px-6 py-4 font-medium transition ${
+              activeTab === 'eintraege'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <FileText className="w-5 h-5" />
+            Einträge
+          </button>
+          <button
+            onClick={() => setActiveTab('fahrer')}
+            className={`flex items-center gap-2 px-6 py-4 font-medium transition ${
+              activeTab === 'fahrer'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            Fahrer
+          </button>
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 py-2">
-        <p className="text-center text-xs text-gray-500">
-          created by - mahmoud shehab
-        </p>
+      {/* Tab Content */}
+      <div className="px-6 pb-20">
+        {/* Berichte Tab */}
+        {activeTab === 'berichte' && (
+          <div className="space-y-6">
+            {/* Heutige Einträge */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mt-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Heutige Einträge</h2>
+              {todayEntries.length === 0 ? (
+                <p className="text-gray-500 text-center py-12">Keine Einträge für heute vorhanden.</p>
+              ) : (
+                <div className="space-y-3">
+                  {todayEntries.map(({ driver, workTime }) => {
+                    const duration = calculateDuration(workTime.start_time, workTime.end_time);
+                    return (
+                      <div key={workTime.id} className="border border-gray-200 rounded-lg p-4">
+                        <p className="font-semibold text-gray-900">{driver.driver_name || driver.driver_code}</p>
+                        <p className="text-sm text-gray-600">
+                          {workTime.start_time} - {workTime.end_time} | {formatTimeHHMM(duration.hours, duration.minutes)} | {workTime.vehicle}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Monatsbericht */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Monatsbericht</h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Fahrer auswählen (Code oder Name) *
+                  </label>
+                  <input
+                    type="text"
+                    value={reportDriverInput}
+                    onChange={(e) => setReportDriverInput(e.target.value)}
+                    placeholder="Code oder Name eingeben..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Jahr</label>
+                  <input
+                    type="number"
+                    value={reportYear}
+                    onChange={(e) => setReportYear(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Monat</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="12"
+                    value={reportMonth}
+                    onChange={(e) => setReportMonth(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {!reportDriverInput ? (
+                <p className="text-gray-500 text-center py-8 mt-6">Bitte Fahrer auswählen</p>
+              ) : !monthlyReport ? (
+                <p className="text-gray-500 text-center py-8 mt-6">Fahrer nicht gefunden</p>
+              ) : (
+                <div className="mt-6 space-y-6">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Arbeitstage</p>
+                    <p className="text-4xl font-bold text-gray-900">{monthlyReport.workDays}</p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Gesamtarbeitszeit</p>
+                    <p className="text-4xl font-bold text-gray-900">
+                      {formatTimeHHMM(monthlyReport.totalHours, monthlyReport.totalMins)}
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">Überstunden</p>
+                    <p className="text-4xl font-bold text-gray-900">
+                      {formatTimeHHMM(monthlyReport.overtimeHours, monthlyReport.overtimeMins)}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Fahrerabrechnung erstellen */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Fahrerabrechnung erstellen</h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Fahrer auswählen *
+                  </label>
+                  <input
+                    type="text"
+                    value={invoiceDriverInput}
+                    onChange={(e) => setInvoiceDriverInput(e.target.value)}
+                    placeholder="Code oder Name eingeben..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Zeitraum *</label>
+                  <select
+                    value={invoicePeriod}
+                    onChange={(e) => setInvoicePeriod(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="last-month">Letzter Monat</option>
+                    <option value="current-month">Aktueller Monat</option>
+                    <option value="last-3-months">Letzte 3 Monate</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={generatePDF}
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                >
+                  <Download className="w-5 h-5" />
+                  PDF erstellen
+                </button>
+              </div>
+            </div>
+
+            {/* Fahrer vergleichen */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Fahrer vergleichen</h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Fahrer 1 *</label>
+                  <input
+                    type="text"
+                    value={compareDriver1Input}
+                    onChange={(e) => setCompareDriver1Input(e.target.value)}
+                    placeholder="Code oder Name eingeben..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Fahrer 2 *</label>
+                  <input
+                    type="text"
+                    value={compareDriver2Input}
+                    onChange={(e) => setCompareDriver2Input(e.target.value)}
+                    placeholder="Code oder Name eingeben..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Jahr</label>
+                  <input
+                    type="number"
+                    value={compareYear}
+                    onChange={(e) => setCompareYear(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Monat</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="12"
+                    value={compareMonth}
+                    onChange={(e) => setCompareMonth(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <button
+                  onClick={() => setMessage(null)}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium w-full"
+                >
+                  Vergleichen
+                </button>
+              </div>
+
+              {driverComparison && (
+                <div className="mt-6 grid grid-cols-2 gap-4">
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <p className="font-semibold text-gray-900 mb-3">{driverComparison.driver1.name}</p>
+                    <p className="text-sm text-gray-600">Arbeitstage: {driverComparison.driver1.workDays}</p>
+                    <p className="text-sm text-gray-600">
+                      Gesamtzeit: {formatTimeHHMM(driverComparison.driver1.totalHours, driverComparison.driver1.totalMins)}
+                    </p>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <p className="font-semibold text-gray-900 mb-3">{driverComparison.driver2.name}</p>
+                    <p className="text-sm text-gray-600">Arbeitstage: {driverComparison.driver2.workDays}</p>
+                    <p className="text-sm text-gray-600">
+                      Gesamtzeit: {formatTimeHHMM(driverComparison.driver2.totalHours, driverComparison.driver2.totalMins)}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Einträge Tab */}
+        {activeTab === 'eintraege' && (
+          <div className="space-y-6">
+            {/* Eintrag manuell hinzufügen */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mt-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Eintrag manuell hinzufügen</h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Fahrer (Code oder Name) *
+                  </label>
+                  <input
+                    type="text"
+                    value={manualDriverInput}
+                    onChange={(e) => setManualDriverInput(e.target.value)}
+                    placeholder="Code oder Name eingeben..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Fahrzeug *</label>
+                  <input
+                    type="text"
+                    value={manualVehicle}
+                    onChange={(e) => setManualVehicle(e.target.value)}
+                    placeholder="z.B. LKW 01"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Datum *</label>
+                  <input
+                    type="date"
+                    value={manualDate}
+                    onChange={(e) => setManualDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Pause (Minuten)</label>
+                  <input
+                    type="number"
+                    value={manualPause}
+                    onChange={(e) => setManualPause(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">von (Startzeit) *</label>
+                  <input
+                    type="time"
+                    value={manualStartTime}
+                    onChange={(e) => setManualStartTime(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">bis (Endzeit) *</label>
+                  <input
+                    type="time"
+                    value={manualEndTime}
+                    onChange={(e) => setManualEndTime(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Notiz</label>
+                  <input
+                    type="text"
+                    value={manualNote}
+                    onChange={(e) => setManualNote(e.target.value)}
+                    placeholder="Optional..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="allowMultiple"
+                    checked={manualAllowMultiple}
+                    onChange={(e) => setManualAllowMultiple(e.target.checked)}
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <label htmlFor="allowMultiple" className="text-gray-700">
+                    Trotzdem speichern (Admin) - Mehrere Einträge pro Tag erlauben
+                  </label>
+                </div>
+
+                <button
+                  onClick={saveManualEntry}
+                  disabled={loading}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium w-full disabled:opacity-50"
+                >
+                  + Eintrag speichern
+                </button>
+              </div>
+            </div>
+
+            {/* Filter */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Filter</h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Von *</label>
+                  <input
+                    type="date"
+                    value={filterStartDate}
+                    onChange={(e) => setFilterStartDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Bis *</label>
+                  <input
+                    type="date"
+                    value={filterEndDate}
+                    onChange={(e) => setFilterEndDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Suche nach *</label>
+                  <select
+                    value={filterSearchType}
+                    onChange={(e) => setFilterSearchType(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
+                  >
+                    <option value="vehicle">Fahrzeug</option>
+                    <option value="driver">Fahrer</option>
+                    <option value="all">Alle</option>
+                  </select>
+                </div>
+
+                {filterSearchType === 'vehicle' && (
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-2">Fahrzeug *</label>
+                    <input
+                      type="text"
+                      value={filterVehicle}
+                      onChange={(e) => setFilterVehicle(e.target.value)}
+                      placeholder="Fahrzeug eingeben..."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                )}
+
+                <button
+                  onClick={performFilter}
+                  disabled={loading}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium w-full disabled:opacity-50"
+                >
+                  Suchen
+                </button>
+              </div>
+
+              {filteredEntries.length === 0 && (
+                <p className="text-gray-500 text-center py-12 mt-6">
+                  Keine Einträge gefunden. Fahrer können über die Startseite Einträge erstellen.
+                </p>
+              )}
+
+              {filteredEntries.length > 0 && (
+                <div className="mt-6 space-y-3">
+                  {filteredEntries.map((entry) => {
+                    const duration = calculateDuration(entry.start_time, entry.end_time);
+                    return (
+                      <div key={entry.id} className="border border-gray-200 rounded-lg p-4">
+                        <p className="font-semibold text-gray-900">
+                          {entry.driver?.driver_name || entry.driver?.driver_code}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {new Date(entry.work_date).toLocaleDateString('de-DE')} | {entry.start_time} - {entry.end_time} |
+                          {formatTimeHHMM(duration.hours, duration.minutes)} | {entry.vehicle}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Fahrer Tab */}
+        {activeTab === 'fahrer' && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mt-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Fahrerverwaltung</h2>
+            <p className="text-gray-600">Liste aller registrierten Fahrer</p>
+
+            {drivers.length === 0 ? (
+              <p className="text-gray-500 text-center py-12 mt-6">Keine Fahrer vorhanden</p>
+            ) : (
+              <div className="mt-6 space-y-3">
+                {drivers.map((driver) => (
+                  <div key={driver.id} className="border border-gray-200 rounded-lg p-4">
+                    <p className="font-semibold text-gray-900">{driver.driver_name || driver.driver_code}</p>
+                    <p className="text-sm text-gray-600">Code: {driver.driver_code}</p>
+                    <p className="text-sm text-gray-600">Einträge: {driver.work_times?.length || 0}</p>
+                    {!driver.is_active && (
+                      <span className="inline-block mt-2 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded">
+                        Deaktiviert
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
