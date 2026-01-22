@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LogOut, Users, FileText, BarChart3, Plus, Edit, Trash2, Download, Key, X } from 'lucide-react';
+import { LogOut, Users, FileText, BarChart3, Plus, Edit, Trash2, Download, Key, X, Moon, Sun } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
 interface AdminDashboardProps {
@@ -123,6 +123,24 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
   });
   const [manualEntryDriverSuggestions, setManualEntryDriverSuggestions] = useState<Driver[]>([]);
   const [manualEntryTimeout, setManualEntryTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
 
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     const response = await fetch(
@@ -929,25 +947,32 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Admin-Dashboard</h1>
-              <p className="text-xs sm:text-sm text-gray-600">Fahrer-Arbeitszeitverwaltung</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Admin-Dashboard</h1>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Fahrer-Arbeitszeitverwaltung</p>
             </div>
             <div className="flex items-center gap-2">
               <button
+                onClick={toggleDarkMode}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-sm sm:text-base"
+                title={darkMode ? 'Hellmodus' : 'Dunkelmodus'}
+              >
+                {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+              <button
                 onClick={() => setShowPasswordChange(true)}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition text-sm sm:text-base"
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-sm sm:text-base"
               >
                 <Key className="w-4 h-4" />
                 <span className="hidden sm:inline">Passwort ändern</span>
               </button>
               <button
                 onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition text-sm sm:text-base"
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-sm sm:text-base"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">Abmelden</span>
@@ -962,15 +987,15 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
           <div
             className={`mb-4 p-4 rounded-lg ${
               message.type === 'success'
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
+                ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-700'
+                : 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-700'
             }`}
           >
             {message.text}
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-sm border mb-6 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 mb-6 overflow-hidden">
           <div className="flex overflow-x-auto">
             {tabs.map((tab) => (
               <button
@@ -978,8 +1003,8 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm whitespace-nowrap transition ${
                   activeTab === tab.id
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
@@ -991,15 +1016,15 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
         {activeTab === 'drivers' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
-              <h2 className="text-lg font-semibold mb-4">Neuen Fahrer hinzufügen</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-4 sm:p-6">
+              <h2 className="text-lg font-semibold mb-4 dark:text-white">Neuen Fahrer hinzufügen</h2>
               <form onSubmit={handleAddDriver} className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <input
                   type="number"
                   placeholder="Code (z.B. 1)"
                   value={driverForm.code}
                   onChange={(e) => setDriverForm({ ...driverForm, code: e.target.value })}
-                  className="w-full sm:w-auto px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full sm:w-auto px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   required
                   min="1"
                 />
@@ -1008,13 +1033,13 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                   placeholder="Name"
                   value={driverForm.name}
                   onChange={(e) => setDriverForm({ ...driverForm, name: e.target.value })}
-                  className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   required
                 />
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
                 >
                   <Plus className="w-4 h-4" />
                   Hinzufügen
@@ -1022,72 +1047,72 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               </form>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 overflow-hidden">
               {dataLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
                 </div>
               ) : drivers.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 px-4">
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400 px-4">
                   Keine Fahrer vorhanden. Fügen Sie den ersten Fahrer hinzu.
                 </div>
               ) : (
                 <>
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-50 border-b">
+                      <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aktionen</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Code</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Aktionen</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y">
+                      <tbody className="divide-y dark:divide-gray-700">
                         {drivers.map((driver) => (
                           <tr key={driver.code}>
                             {editingDriver === driver.code ? (
                               <>
-                                <td className="px-6 py-4 text-sm font-mono">
+                                <td className="px-6 py-4 text-sm font-mono dark:text-gray-300">
                                   <input
                                     type="number"
                                     value={editDriverForm.code}
                                     onChange={(e) => setEditDriverForm({ ...editDriverForm, code: e.target.value })}
-                                    className="px-2 py-1 border rounded w-full"
+                                    className="px-2 py-1 border dark:border-gray-600 rounded w-full dark:bg-gray-700 dark:text-white"
                                     disabled={loading}
                                     min="1"
                                   />
                                 </td>
-                                <td className="px-6 py-4 text-sm">
+                                <td className="px-6 py-4 text-sm dark:text-gray-300">
                                   <input
                                     type="text"
                                     value={editDriverForm.name}
                                     onChange={(e) => setEditDriverForm({ ...editDriverForm, name: e.target.value })}
-                                    className="px-2 py-1 border rounded w-full"
+                                    className="px-2 py-1 border dark:border-gray-600 rounded w-full dark:bg-gray-700 dark:text-white"
                                     disabled={loading}
                                   />
                                 </td>
-                                <td className="px-6 py-4 text-sm">
+                                <td className="px-6 py-4 text-sm dark:text-gray-300">
                                   <span
                                     className={`px-2 py-1 rounded-full text-xs ${
-                                      driver.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                      driver.active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                                     }`}
                                   >
                                     {driver.active ? 'Aktiv' : 'Inaktiv'}
                                   </span>
                                 </td>
-                                <td className="px-6 py-4 text-sm text-right space-x-2">
+                                <td className="px-6 py-4 text-sm text-right space-x-2 dark:text-gray-300">
                                   <button
                                     onClick={() => saveEditDriver(driver.code)}
                                     disabled={loading}
-                                    className="text-green-600 hover:text-green-700 disabled:opacity-50 text-xs sm:text-sm"
+                                    className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 disabled:opacity-50 text-xs sm:text-sm"
                                   >
                                     Speichern
                                   </button>
                                   <button
                                     onClick={cancelEditDriver}
                                     disabled={loading}
-                                    className="text-gray-600 hover:text-gray-700 disabled:opacity-50 text-xs sm:text-sm"
+                                    className="text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-50 text-xs sm:text-sm"
                                   >
                                     Abbrechen
                                   </button>
@@ -1095,22 +1120,22 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                               </>
                             ) : (
                               <>
-                                <td className="px-6 py-4 text-sm font-mono">{driver.code}</td>
-                                <td className="px-6 py-4 text-sm">{driver.name}</td>
-                                <td className="px-6 py-4 text-sm">
+                                <td className="px-6 py-4 text-sm font-mono dark:text-gray-300">{driver.code}</td>
+                                <td className="px-6 py-4 text-sm dark:text-gray-300">{driver.name}</td>
+                                <td className="px-6 py-4 text-sm dark:text-gray-300">
                                   <span
                                     className={`px-2 py-1 rounded-full text-xs ${
-                                      driver.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                      driver.active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                                     }`}
                                   >
                                     {driver.active ? 'Aktiv' : 'Inaktiv'}
                                   </span>
                                 </td>
-                                <td className="px-6 py-4 text-sm text-right space-x-2">
+                                <td className="px-6 py-4 text-sm text-right space-x-2 dark:text-gray-300">
                                   <button
                                     onClick={() => startEditDriver(driver)}
                                     disabled={loading}
-                                    className="text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50"
                                   >
                                     <Edit className="w-4 h-4 inline" />
                                   </button>
@@ -1119,14 +1144,14 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                                       handleUpdateDriver(driver.code, { active: !driver.active })
                                     }
                                     disabled={loading}
-                                    className="text-blue-600 hover:text-blue-700 disabled:opacity-50 text-xs sm:text-sm"
+                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 text-xs sm:text-sm"
                                   >
                                     {driver.active ? 'Deaktivieren' : 'Aktivieren'}
                                   </button>
                                   <button
                                     onClick={() => handleDeleteDriver(driver)}
                                     disabled={loading}
-                                    className="text-red-600 hover:text-red-700 disabled:opacity-50"
+                                    className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
                                   >
                                     <Trash2 className="w-4 h-4 inline" />
                                   </button>
@@ -1139,33 +1164,33 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                     </table>
                   </div>
 
-                  <div className="md:hidden divide-y">
+                  <div className="md:hidden divide-y dark:divide-gray-700">
                     {drivers.map((driver) => (
-                      <div key={driver.code} className="p-4 space-y-3">
+                      <div key={driver.code} className="p-4 space-y-3 dark:border-gray-700">
                         {editingDriver === driver.code ? (
                           <>
                             <div className="space-y-2">
-                              <label className="block text-sm font-medium text-gray-700">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Fahrercode
                               </label>
                               <input
                                 type="number"
                                 value={editDriverForm.code}
                                 onChange={(e) => setEditDriverForm({ ...editDriverForm, code: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
                                 disabled={loading}
                                 min="1"
                               />
                             </div>
                             <div className="space-y-2">
-                              <label className="block text-sm font-medium text-gray-700">
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Name
                               </label>
                               <input
                                 type="text"
                                 value={editDriverForm.name}
                                 onChange={(e) => setEditDriverForm({ ...editDriverForm, name: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
                                 disabled={loading}
                               />
                             </div>
@@ -1173,14 +1198,14 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                               <button
                                 onClick={() => saveEditDriver(driver.code)}
                                 disabled={loading}
-                                className="flex-1 px-3 py-2 text-sm bg-green-50 text-green-600 rounded-lg hover:bg-green-100 disabled:opacity-50"
+                                className="flex-1 px-3 py-2 text-sm bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50"
                               >
                                 Speichern
                               </button>
                               <button
                                 onClick={cancelEditDriver}
                                 disabled={loading}
-                                className="flex-1 px-3 py-2 text-sm bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                                className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50"
                               >
                                 Abbrechen
                               </button>
@@ -1190,12 +1215,12 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                           <>
                             <div className="flex justify-between items-start">
                               <div>
-                                <p className="font-semibold">{driver.name}</p>
-                                <p className="text-sm text-gray-600 font-mono">Code: {driver.code}</p>
+                                <p className="font-semibold dark:text-white">{driver.name}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">Code: {driver.code}</p>
                               </div>
                               <span
                                 className={`px-2 py-1 rounded-full text-xs ${
-                                  driver.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                  driver.active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                                 }`}
                               >
                                 {driver.active ? 'Aktiv' : 'Inaktiv'}
@@ -1205,7 +1230,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                               <button
                                 onClick={() => startEditDriver(driver)}
                                 disabled={loading}
-                                className="px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 disabled:opacity-50"
+                                className="px-3 py-2 text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50"
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
@@ -1214,14 +1239,14 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                                   handleUpdateDriver(driver.code, { active: !driver.active })
                                 }
                                 disabled={loading}
-                                className="flex-1 px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 disabled:opacity-50"
+                                className="flex-1 px-3 py-2 text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50"
                               >
                                 {driver.active ? 'Deaktivieren' : 'Aktivieren'}
                               </button>
                               <button
                                 onClick={() => handleDeleteDriver(driver)}
                                 disabled={loading}
-                                className="px-3 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 disabled:opacity-50"
+                                className="px-3 py-2 text-sm bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 disabled:opacity-50"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -1239,12 +1264,12 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
         {activeTab === 'logs' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-xl font-bold mb-6">Eintrag manuell hinzufügen</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-6">
+              <h2 className="text-xl font-bold mb-6 dark:text-white">Eintrag manuell hinzufügen</h2>
               <form onSubmit={handleManualEntrySubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="relative">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Fahrer (Code oder Name) *
                     </label>
                     <input
@@ -1252,11 +1277,11 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                       placeholder="Code oder Name eingeben..."
                       value={manualEntryForm.driver}
                       onChange={(e) => handleManualEntryDriverSearch(e.target.value)}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       required
                     />
                     {manualEntryDriverSuggestions.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg dark:shadow-gray-900 max-h-48 overflow-y-auto">
                         {manualEntryDriverSuggestions.map((driver) => (
                           <button
                             key={driver.code}
@@ -1265,10 +1290,10 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                               setManualEntryForm({ ...manualEntryForm, driver: driver.code.toString() });
                               setManualEntryDriverSuggestions([]);
                             }}
-                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex justify-between items-center"
+                            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center dark:text-white"
                           >
                             <span>{driver.name}</span>
-                            <span className="text-sm text-gray-500">Code: {driver.code}</span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Code: {driver.code}</span>
                           </button>
                         ))}
                       </div>
@@ -1276,7 +1301,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Fahrzeug *
                     </label>
                     <input
@@ -1284,26 +1309,26 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                       placeholder="z.B. LKW 01"
                       value={manualEntryForm.vehicle}
                       onChange={(e) => setManualEntryForm({ ...manualEntryForm, vehicle: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Datum *
                     </label>
                     <input
                       type="date"
                       value={manualEntryForm.date}
                       onChange={(e) => setManualEntryForm({ ...manualEntryForm, date: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Pause (Minuten)
                     </label>
                     <input
@@ -1311,47 +1336,47 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                       placeholder="0"
                       value={manualEntryForm.pauseMinutes}
                       onChange={(e) => setManualEntryForm({ ...manualEntryForm, pauseMinutes: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       min="0"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       von (Startzeit) *
                     </label>
                     <input
                       type="time"
                       value={manualEntryForm.startTime}
                       onChange={(e) => setManualEntryForm({ ...manualEntryForm, startTime: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       bis (Endzeit) *
                     </label>
                     <input
                       type="time"
                       value={manualEntryForm.endTime}
                       onChange={(e) => setManualEntryForm({ ...manualEntryForm, endTime: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Notiz
                   </label>
                   <textarea
                     placeholder="Optional..."
                     value={manualEntryForm.note}
                     onChange={(e) => setManualEntryForm({ ...manualEntryForm, note: e.target.value })}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                     rows={2}
                   />
                 </div>
@@ -1362,9 +1387,9 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                     id="forceCreate"
                     checked={manualEntryForm.forceCreate}
                     onChange={(e) => setManualEntryForm({ ...manualEntryForm, forceCreate: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded focus:ring-blue-500"
                   />
-                  <label htmlFor="forceCreate" className="text-sm text-gray-700">
+                  <label htmlFor="forceCreate" className="text-sm text-gray-700 dark:text-gray-300">
                     Trotzdem speichern (Admin) - Mehrere Einträge pro Tag erlauben
                   </label>
                 </div>
@@ -1380,32 +1405,32 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               </form>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
-              <h2 className="text-lg font-semibold mb-4">Filter</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-4 sm:p-6">
+              <h2 className="text-lg font-semibold mb-4 dark:text-white">Filter</h2>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Von *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Von *</label>
                     <input
                       type="date"
                       value={logFilters.from}
                       onChange={(e) => setLogFilters({ ...logFilters, from: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bis *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bis *</label>
                     <input
                       type="date"
                       value={logFilters.to}
                       onChange={(e) => setLogFilters({ ...logFilters, to: e.target.value })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Suche nach *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Suche nach *</label>
                     <select
                       value={logFilters.searchMode}
                       onChange={(e) => setLogFilters({
@@ -1414,7 +1439,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                         vehicle: '',
                         driverSearch: ''
                       })}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                     >
                       <option value="vehicle">Fahrzeug</option>
                       <option value="driver">Fahrer</option>
@@ -1426,7 +1451,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {(logFilters.searchMode === 'vehicle' || logFilters.searchMode === 'both') && (
                     <div className="relative vehicle-autocomplete">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Fahrzeug *</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fahrzeug *</label>
                       <input
                         type="text"
                         placeholder="Fahrzeug eingeben..."
@@ -1438,25 +1463,25 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                             setShowVehicleDropdown(true);
                           }
                         }}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       />
                       {showVehicleDropdown && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg dark:shadow-gray-900 max-h-48 overflow-y-auto">
                           {vehicleSuggestions.length > 0 ? (
                             vehicleSuggestions.map((vehicle, index) => (
                               <button
                                 key={vehicle}
                                 type="button"
                                 onClick={() => handleVehicleSelect(vehicle)}
-                                className={`w-full px-4 py-2 text-left hover:bg-gray-100 transition ${
-                                  index === selectedVehicleIndex ? 'bg-blue-50' : ''
+                                className={`w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition ${
+                                  index === selectedVehicleIndex ? 'bg-blue-50 dark:bg-blue-900/30' : ''
                                 }`}
                               >
                                 {vehicle}
                               </button>
                             ))
                           ) : (
-                            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                            <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
                               Kein Fahrzeug gefunden
                             </div>
                           )}
@@ -1467,13 +1492,13 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
                   {(logFilters.searchMode === 'driver' || logFilters.searchMode === 'both') && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Fahrer (Code oder Name) *</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fahrer (Code oder Name) *</label>
                       <input
                         type="text"
                         placeholder="Code oder Name eingeben"
                         value={logFilters.driverSearch}
                         onChange={(e) => setLogFilters({ ...logFilters, driverSearch: e.target.value })}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                       />
                     </div>
                   )}
@@ -1489,56 +1514,56 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 overflow-hidden">
               {dataLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
                 </div>
               ) : logs.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 px-4">
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400 px-4">
                   Keine Einträge gefunden. Fahrer können über die Startseite Einträge erstellen.
                 </div>
               ) : (
                 <>
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
+                  <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Datum</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fahrer</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fahrzeug</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Von</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bis</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dauer</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Überstunden</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aktionen</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Datum</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fahrer</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fahrzeug</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Von</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Bis</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Dauer</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Überstunden</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Aktionen</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
+                  <tbody className="divide-y dark:divide-gray-700">
                     {logs.map((log) => (
                       <tr key={log.id}>
-                        <td className="px-6 py-4 text-sm">{log.work_date}</td>
-                        <td className="px-6 py-4 text-sm">
+                        <td className="px-6 py-4 text-sm dark:text-gray-300">{log.work_date}</td>
+                        <td className="px-6 py-4 text-sm dark:text-gray-300">
                           {log.driver?.name || `Code ${log.driver_code}`}
                         </td>
-                        <td className="px-6 py-4 text-sm">{normalizeVehicleNumber(log.car_number)}</td>
-                        <td className="px-6 py-4 text-sm font-mono">
+                        <td className="px-6 py-4 text-sm dark:text-gray-300">{normalizeVehicleNumber(log.car_number)}</td>
+                        <td className="px-6 py-4 text-sm font-mono dark:text-gray-300">
                           {log.start_time.substring(0, 5)}
                         </td>
-                        <td className="px-6 py-4 text-sm font-mono">
+                        <td className="px-6 py-4 text-sm font-mono dark:text-gray-300">
                           {log.end_time.substring(0, 5)}
                         </td>
-                        <td className="px-6 py-4 text-sm font-mono">
+                        <td className="px-6 py-4 text-sm font-mono dark:text-gray-300">
                           {formatMinutesToHHMM(log.duration_minutes)}
                         </td>
-                        <td className="px-6 py-4 text-sm font-mono">
+                        <td className="px-6 py-4 text-sm font-mono dark:text-gray-300">
                           {formatMinutesToHHMM(log.overtime_minutes)}
                         </td>
                         <td className="px-6 py-4 text-sm text-right">
                           <button
                             onClick={() => handleDeleteLog(log.id)}
                             disabled={loading}
-                            className="text-red-600 hover:text-red-700 disabled:opacity-50"
+                            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
                           >
                             <Trash2 className="w-4 h-4 inline" />
                           </button>
@@ -1549,38 +1574,38 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                     </table>
                   </div>
 
-                  <div className="md:hidden divide-y">
+                  <div className="md:hidden divide-y dark:divide-gray-700">
                     {logs.map((log) => (
-                      <div key={log.id} className="p-4 space-y-3">
+                      <div key={log.id} className="p-4 space-y-3 dark:border-gray-700">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-semibold">{log.driver?.name || `Code ${log.driver_code}`}</p>
-                            <p className="text-sm text-gray-600">{log.work_date}</p>
+                            <p className="font-semibold dark:text-white">{log.driver?.name || `Code ${log.driver_code}`}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{log.work_date}</p>
                           </div>
-                          <span className="text-sm bg-gray-100 px-2 py-1 rounded">{normalizeVehicleNumber(log.car_number)}</span>
+                          <span className="text-sm bg-gray-100 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded">{normalizeVehicleNumber(log.car_number)}</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-2 gap-3 text-sm dark:text-gray-300">
                           <div>
-                            <p className="text-gray-600">Von</p>
-                            <p className="font-mono font-semibold">{log.start_time.substring(0, 5)}</p>
+                            <p className="text-gray-600 dark:text-gray-400">Von</p>
+                            <p className="font-mono font-semibold dark:text-white">{log.start_time.substring(0, 5)}</p>
                           </div>
                           <div>
-                            <p className="text-gray-600">Bis</p>
-                            <p className="font-mono font-semibold">{log.end_time.substring(0, 5)}</p>
+                            <p className="text-gray-600 dark:text-gray-400">Bis</p>
+                            <p className="font-mono font-semibold dark:text-white">{log.end_time.substring(0, 5)}</p>
                           </div>
                           <div>
-                            <p className="text-gray-600">Dauer</p>
-                            <p className="font-mono font-semibold">{formatMinutesToHHMM(log.duration_minutes)}</p>
+                            <p className="text-gray-600 dark:text-gray-400">Dauer</p>
+                            <p className="font-mono font-semibold dark:text-white">{formatMinutesToHHMM(log.duration_minutes)}</p>
                           </div>
                           <div>
-                            <p className="text-gray-600">Überstunden</p>
-                            <p className="font-mono font-semibold">{formatMinutesToHHMM(log.overtime_minutes)}</p>
+                            <p className="text-gray-600 dark:text-gray-400">Überstunden</p>
+                            <p className="font-mono font-semibold dark:text-white">{formatMinutesToHHMM(log.overtime_minutes)}</p>
                           </div>
                         </div>
                         <button
                           onClick={() => handleDeleteLog(log.id)}
                           disabled={loading}
-                          className="w-full px-3 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 disabled:opacity-50 flex items-center justify-center gap-2"
+                          className="w-full px-3 py-2 text-sm bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                           <Trash2 className="w-4 h-4" />
                           Löschen
@@ -1596,12 +1621,106 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
         {activeTab === 'reports' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-xl font-bold mb-6">Monatsbericht</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-6">
+              <h2 className="text-xl font-bold mb-6 dark:text-white">Heutige Einträge</h2>
+              {todayEntries.length === 0 ? (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                  Keine Einträge für heute vorhanden.
+                </div>
+              ) : (
+                <>
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fahrer</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fahrzeug</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Von</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Bis</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Arbeitszeit</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Überstunden</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Aktionen</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y dark:divide-gray-700">
+                        {todayEntries.map((entry) => (
+                          <tr key={entry.id}>
+                            <td className="px-4 py-3 text-sm dark:text-gray-300">
+                              <div>
+                                <div className="font-medium dark:text-white">{entry.driver?.name || 'Unbekannt'}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">Code: {entry.driver_code}</div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm dark:text-gray-300">{normalizeVehicleNumber(entry.car_number)}</td>
+                            <td className="px-4 py-3 text-sm font-mono dark:text-gray-300">{entry.start_time.substring(0, 5)}</td>
+                            <td className="px-4 py-3 text-sm font-mono dark:text-gray-300">{entry.end_time.substring(0, 5)}</td>
+                            <td className="px-4 py-3 text-sm font-mono dark:text-gray-300">{formatMinutesToHHMM(entry.duration_minutes)}</td>
+                            <td className="px-4 py-3 text-sm font-mono dark:text-gray-300">{formatMinutesToHHMM(entry.overtime_minutes)}</td>
+                            <td className="px-4 py-3 text-sm text-right dark:text-gray-300">
+                              <button
+                                onClick={() => handleDeleteLog(entry.id)}
+                                disabled={loading}
+                                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
+                                title="Eintrag löschen"
+                              >
+                                <Trash2 className="w-4 h-4 inline" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="md:hidden space-y-4">
+                    {todayEntries.map((entry) => (
+                      <div key={entry.id} className="border dark:border-gray-700 rounded-lg p-4 space-y-2 dark:bg-gray-800">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-semibold dark:text-white">{entry.driver?.name || 'Unbekannt'}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Code: {entry.driver_code}</p>
+                          </div>
+                          <span className="text-sm bg-gray-100 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded">{normalizeVehicleNumber(entry.car_number)}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm dark:text-gray-300">
+                          <div>
+                            <p className="text-gray-600 dark:text-gray-400">Von</p>
+                            <p className="font-mono font-semibold dark:text-white">{entry.start_time.substring(0, 5)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600 dark:text-gray-400">Bis</p>
+                            <p className="font-mono font-semibold dark:text-white">{entry.end_time.substring(0, 5)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600 dark:text-gray-400">Arbeitszeit</p>
+                            <p className="font-mono font-semibold dark:text-white">{formatMinutesToHHMM(entry.duration_minutes)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600 dark:text-gray-400">Überstunden</p>
+                            <p className="font-mono font-semibold dark:text-white">{formatMinutesToHHMM(entry.overtime_minutes)}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteLog(entry.id)}
+                          disabled={loading}
+                          className="w-full px-3 py-2 text-sm bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Eintrag löschen
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-6">
+              <h2 className="text-xl font-bold mb-6 dark:text-white">Monatsbericht</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Fahrer auswählen (Code oder Name) *
                   </label>
                   <input
@@ -1609,10 +1728,10 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                     placeholder="Code oder Name eingeben..."
                     value={selectedDriverForReport}
                     onChange={(e) => handleDriverSearchChange(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   />
                   {driverSuggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg dark:shadow-gray-900 max-h-48 overflow-y-auto">
                       {driverSuggestions.map((driver) => (
                         <button
                           key={driver.code}
@@ -1623,10 +1742,10 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                             const timeout = setTimeout(() => loadReports(), 350);
                             setDriverSearchTimeout(timeout);
                           }}
-                          className="w-full px-4 py-2 text-left hover:bg-gray-100 flex justify-between items-center"
+                          className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center dark:text-white"
                         >
                           <span>{driver.name}</span>
-                          <span className="text-sm text-gray-500">Code: {driver.code}</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Code: {driver.code}</span>
                         </button>
                       ))}
                     </div>
@@ -1634,26 +1753,26 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Jahr</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Jahr</label>
                   <input
                     type="number"
                     placeholder="Jahr"
                     value={monthlyYear}
                     onChange={(e) => setMonthlyYear(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                     min="2020"
                     max="2099"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Monat</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Monat</label>
                   <input
                     type="number"
                     placeholder="Monat"
                     value={monthlyMonth}
                     onChange={(e) => setMonthlyMonth(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                     min="1"
                     max="12"
                   />
@@ -1661,7 +1780,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               </div>
 
               {!selectedDriverForReport && (
-                <div className="text-center py-8 text-gray-500 mb-6">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400 mb-6">
                   Bitte Fahrer auswählen
                 </div>
               )}
@@ -1669,32 +1788,32 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               {dataLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="p-6 bg-gray-50 rounded-lg animate-pulse">
-                      <div className="h-4 bg-gray-300 rounded w-24 mb-3"></div>
-                      <div className="h-8 bg-gray-300 rounded w-32"></div>
+                    <div key={i} className="p-6 bg-gray-50 dark:bg-gray-700 rounded-lg animate-pulse">
+                      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-24 mb-3"></div>
+                      <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded w-32"></div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                    <div className="p-6 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-600 mb-2">Arbeitstage</p>
-                      <p className="text-3xl font-bold">
+                    <div className="p-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Arbeitstage</p>
+                      <p className="text-3xl font-bold dark:text-white">
                         {reportData?.driver?.days_worked ?? 0}
                       </p>
                     </div>
-                    <div className="p-6 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-600 mb-2">Gesamtarbeitszeit</p>
-                      <p className="text-3xl font-bold">
+                    <div className="p-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Gesamtarbeitszeit</p>
+                      <p className="text-3xl font-bold dark:text-white">
                         {reportData?.driver
                           ? formatMinutesToHHMM(reportData.driver.total_duration_minutes)
                           : '00:00'}
                       </p>
                     </div>
-                    <div className="p-6 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-600 mb-2">Überstunden</p>
-                      <p className="text-3xl font-bold">
+                    <div className="p-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Überstunden</p>
+                      <p className="text-3xl font-bold dark:text-white">
                         {reportData?.driver
                           ? formatMinutesToHHMM(reportData.driver.total_overtime_minutes)
                           : '00:00'}
@@ -1705,12 +1824,12 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                   {reportData && reportData.driver && (
                     <div className="space-y-4">
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                        <h3 className="text-lg font-semibold">
+                        <h3 className="text-lg font-semibold dark:text-white">
                           {reportData.driver.name} (Code: {reportData.driver.code})
                         </h3>
                         <button
                           onClick={exportMonthlyCSV}
-                          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          className="flex items-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600"
                         >
                           <Download className="w-4 h-4" />
                           CSV Export
@@ -1720,21 +1839,21 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                       {reportData.driver.logs && reportData.driver.logs.length > 0 && (
                         <div className="overflow-x-auto">
                           <table className="w-full">
-                            <thead className="bg-gray-50 border-b">
+                            <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                               <tr>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Datum</th>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Arbeitszeit</th>
-                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Überstunden</th>
+                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Datum</th>
+                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Arbeitszeit</th>
+                                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Überstunden</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y dark:divide-gray-700">
                               {reportData.driver.logs.map((log: any, idx: number) => (
                                 <tr key={idx}>
-                                  <td className="px-4 sm:px-6 py-4 text-sm">{log.date}</td>
-                                  <td className="px-4 sm:px-6 py-4 text-sm font-mono">
+                                  <td className="px-4 sm:px-6 py-4 text-sm dark:text-gray-300">{log.date}</td>
+                                  <td className="px-4 sm:px-6 py-4 text-sm font-mono dark:text-gray-300">
                                     {formatMinutesToHHMM(log.duration_minutes)}
                                   </td>
-                                  <td className="px-4 sm:px-6 py-4 text-sm font-mono">
+                                  <td className="px-4 sm:px-6 py-4 text-sm font-mono dark:text-gray-300">
                                     {formatMinutesToHHMM(log.overtime_minutes)}
                                   </td>
                                 </tr>
@@ -1749,106 +1868,12 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-xl font-bold mb-6">Heutige Einträge</h2>
-              {todayEntries.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  Keine Einträge für heute vorhanden.
-                </div>
-              ) : (
-                <>
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 border-b">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fahrer</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fahrzeug</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Von</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bis</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Arbeitszeit</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Überstunden</th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aktionen</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {todayEntries.map((entry) => (
-                          <tr key={entry.id}>
-                            <td className="px-4 py-3 text-sm">
-                              <div>
-                                <div className="font-medium">{entry.driver?.name || 'Unbekannt'}</div>
-                                <div className="text-xs text-gray-500">Code: {entry.driver_code}</div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm">{normalizeVehicleNumber(entry.car_number)}</td>
-                            <td className="px-4 py-3 text-sm font-mono">{entry.start_time.substring(0, 5)}</td>
-                            <td className="px-4 py-3 text-sm font-mono">{entry.end_time.substring(0, 5)}</td>
-                            <td className="px-4 py-3 text-sm font-mono">{formatMinutesToHHMM(entry.duration_minutes)}</td>
-                            <td className="px-4 py-3 text-sm font-mono">{formatMinutesToHHMM(entry.overtime_minutes)}</td>
-                            <td className="px-4 py-3 text-sm text-right">
-                              <button
-                                onClick={() => handleDeleteLog(entry.id)}
-                                disabled={loading}
-                                className="text-red-600 hover:text-red-700 disabled:opacity-50"
-                                title="Eintrag löschen"
-                              >
-                                <Trash2 className="w-4 h-4 inline" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="md:hidden space-y-4">
-                    {todayEntries.map((entry) => (
-                      <div key={entry.id} className="border rounded-lg p-4 space-y-2">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-semibold">{entry.driver?.name || 'Unbekannt'}</p>
-                            <p className="text-sm text-gray-600">Code: {entry.driver_code}</p>
-                          </div>
-                          <span className="text-sm bg-gray-100 px-2 py-1 rounded">{normalizeVehicleNumber(entry.car_number)}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <p className="text-gray-600">Von</p>
-                            <p className="font-mono font-semibold">{entry.start_time.substring(0, 5)}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Bis</p>
-                            <p className="font-mono font-semibold">{entry.end_time.substring(0, 5)}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Arbeitszeit</p>
-                            <p className="font-mono font-semibold">{formatMinutesToHHMM(entry.duration_minutes)}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600">Überstunden</p>
-                            <p className="font-mono font-semibold">{formatMinutesToHHMM(entry.overtime_minutes)}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteLog(entry.id)}
-                          disabled={loading}
-                          className="w-full px-3 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Eintrag löschen
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-xl font-bold mb-6">Fahrerabrechnung erstellen</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-6">
+              <h2 className="text-xl font-bold mb-6 dark:text-white">Fahrerabrechnung erstellen</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Fahrer auswählen *
                   </label>
                   <input
@@ -1856,10 +1881,10 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                     placeholder="Code oder Name eingeben..."
                     value={pdfDriver}
                     onChange={(e) => handlePdfDriverSearch(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   />
                   {pdfDriverSuggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg dark:shadow-gray-900 max-h-48 overflow-y-auto">
                       {pdfDriverSuggestions.map((driver) => (
                         <button
                           key={driver.code}
@@ -1867,10 +1892,10 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                             setPdfDriver(driver.code.toString());
                             setPdfDriverSuggestions([]);
                           }}
-                          className="w-full px-4 py-2 text-left hover:bg-gray-100 flex justify-between items-center"
+                          className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center dark:text-white"
                         >
                           <span>{driver.name}</span>
-                          <span className="text-sm text-gray-500">Code: {driver.code}</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Code: {driver.code}</span>
                         </button>
                       ))}
                     </div>
@@ -1878,13 +1903,13 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Zeitraum *
                   </label>
                   <select
                     value={pdfDateRange}
                     onChange={(e) => setPdfDateRange(e.target.value as any)}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   >
                     <option value="lastWeek">Letzte Woche</option>
                     <option value="lastMonth">Letzter Monat</option>
@@ -1897,25 +1922,25 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               {pdfDateRange === 'custom' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Von *
                     </label>
                     <input
                       type="date"
                       value={pdfFromDate}
                       onChange={(e) => setPdfFromDate(e.target.value)}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Bis *
                     </label>
                     <input
                       type="date"
                       value={pdfToDate}
                       onChange={(e) => setPdfToDate(e.target.value)}
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
                 </div>
@@ -1940,12 +1965,12 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               </button>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-xl font-bold mb-6">Fahrer vergleichen</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 p-6">
+              <h2 className="text-xl font-bold mb-6 dark:text-white">Fahrer vergleichen</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Fahrer 1 *
                   </label>
                   <input
@@ -1953,10 +1978,10 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                     placeholder="Code oder Name eingeben..."
                     value={compareDriver1}
                     onChange={(e) => handleCompareDriver1Search(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   />
                   {compareDriver1Suggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg dark:shadow-gray-900 max-h-48 overflow-y-auto">
                       {compareDriver1Suggestions.map((driver) => (
                         <button
                           key={driver.code}
@@ -1964,10 +1989,10 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                             setCompareDriver1(driver.code.toString());
                             setCompareDriver1Suggestions([]);
                           }}
-                          className="w-full px-4 py-2 text-left hover:bg-gray-100 flex justify-between items-center"
+                          className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center dark:text-white"
                         >
                           <span>{driver.name}</span>
-                          <span className="text-sm text-gray-500">Code: {driver.code}</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Code: {driver.code}</span>
                         </button>
                       ))}
                     </div>
@@ -1975,7 +2000,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                 </div>
 
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Fahrer 2 *
                   </label>
                   <input
@@ -1983,10 +2008,10 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                     placeholder="Code oder Name eingeben..."
                     value={compareDriver2}
                     onChange={(e) => handleCompareDriver2Search(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   />
                   {compareDriver2Suggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg shadow-lg dark:shadow-gray-900 max-h-48 overflow-y-auto">
                       {compareDriver2Suggestions.map((driver) => (
                         <button
                           key={driver.code}
@@ -1994,10 +2019,10 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                             setCompareDriver2(driver.code.toString());
                             setCompareDriver2Suggestions([]);
                           }}
-                          className="w-full px-4 py-2 text-left hover:bg-gray-100 flex justify-between items-center"
+                          className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center dark:text-white"
                         >
                           <span>{driver.name}</span>
-                          <span className="text-sm text-gray-500">Code: {driver.code}</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Code: {driver.code}</span>
                         </button>
                       ))}
                     </div>
@@ -2005,24 +2030,24 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Jahr</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Jahr</label>
                   <input
                     type="number"
                     value={compareYear}
                     onChange={(e) => setCompareYear(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                     min="2020"
                     max="2099"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Monat</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Monat</label>
                   <input
                     type="number"
                     value={compareMonth}
                     onChange={(e) => setCompareMonth(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                     min="1"
                     max="12"
                   />
@@ -2040,45 +2065,45 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               {comparisonData && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="border rounded-lg p-6">
-                      <h3 className="text-lg font-semibold mb-4">{comparisonData.driver1.name}</h3>
+                    <div className="border dark:border-gray-700 rounded-lg p-6 dark:bg-gray-800">
+                      <h3 className="text-lg font-semibold mb-4 dark:text-white">{comparisonData.driver1.name}</h3>
                       <div className="space-y-3">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Arbeitstage:</span>
-                          <span className="font-semibold">{comparisonData.driver1.days_worked}</span>
+                          <span className="text-gray-600 dark:text-gray-400">Arbeitstage:</span>
+                          <span className="font-semibold dark:text-white">{comparisonData.driver1.days_worked}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Gesamtarbeitszeit:</span>
-                          <span className="font-semibold">{formatMinutesToHHMM(comparisonData.driver1.total_duration_minutes)}</span>
+                          <span className="text-gray-600 dark:text-gray-400">Gesamtarbeitszeit:</span>
+                          <span className="font-semibold dark:text-white">{formatMinutesToHHMM(comparisonData.driver1.total_duration_minutes)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Überstunden:</span>
-                          <span className="font-semibold">{formatMinutesToHHMM(comparisonData.driver1.total_overtime_minutes)}</span>
+                          <span className="text-gray-600 dark:text-gray-400">Überstunden:</span>
+                          <span className="font-semibold dark:text-white">{formatMinutesToHHMM(comparisonData.driver1.total_overtime_minutes)}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="border rounded-lg p-6">
-                      <h3 className="text-lg font-semibold mb-4">{comparisonData.driver2.name}</h3>
+                    <div className="border dark:border-gray-700 rounded-lg p-6 dark:bg-gray-800">
+                      <h3 className="text-lg font-semibold mb-4 dark:text-white">{comparisonData.driver2.name}</h3>
                       <div className="space-y-3">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Arbeitstage:</span>
-                          <span className="font-semibold">{comparisonData.driver2.days_worked}</span>
+                          <span className="text-gray-600 dark:text-gray-400">Arbeitstage:</span>
+                          <span className="font-semibold dark:text-white">{comparisonData.driver2.days_worked}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Gesamtarbeitszeit:</span>
-                          <span className="font-semibold">{formatMinutesToHHMM(comparisonData.driver2.total_duration_minutes)}</span>
+                          <span className="text-gray-600 dark:text-gray-400">Gesamtarbeitszeit:</span>
+                          <span className="font-semibold dark:text-white">{formatMinutesToHHMM(comparisonData.driver2.total_duration_minutes)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Überstunden:</span>
-                          <span className="font-semibold">{formatMinutesToHHMM(comparisonData.driver2.total_overtime_minutes)}</span>
+                          <span className="text-gray-600 dark:text-gray-400">Überstunden:</span>
+                          <span className="font-semibold dark:text-white">{formatMinutesToHHMM(comparisonData.driver2.total_overtime_minutes)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-center text-gray-800">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <p className="text-center text-gray-800 dark:text-gray-200">
                       {comparisonData.workTimePercent > 0
                         ? `${comparisonData.driver1.name} hat ${Math.abs(comparisonData.workTimePercent)}% mehr Arbeitszeit als ${comparisonData.driver2.name} im ${getMonthName(parseInt(compareMonth))} ${compareYear}.`
                         : comparisonData.workTimePercent < 0
@@ -2095,15 +2120,15 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
       {showPasswordChange && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Passwort ändern</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-900 max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-6 dark:text-white">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Passwort ändern</h2>
               <button
                 onClick={() => {
                   setShowPasswordChange(false);
                   setPasswordForm({ current: '', newPassword: '', confirmPassword: '' });
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2111,42 +2136,42 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
             <form onSubmit={handlePasswordChange} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Aktuelles Passwort
                 </label>
                 <input
                   type="password"
                   value={passwordForm.current}
                   onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Neues Passwort
                 </label>
                 <input
                   type="password"
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   required
                   minLength={8}
                 />
-                <p className="text-xs text-gray-500 mt-1">Mindestens 8 Zeichen</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Mindestens 8 Zeichen</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Neues Passwort bestätigen
                 </label>
                 <input
                   type="password"
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   required
                 />
               </div>
@@ -2158,7 +2183,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
                     setShowPasswordChange(false);
                     setPasswordForm({ current: '', newPassword: '', confirmPassword: '' });
                   }}
-                  className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white"
                 >
                   Abbrechen
                 </button>
@@ -2176,12 +2201,12 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
       {confirmDeleteDriver.show && confirmDeleteDriver.driver && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-900 max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Fahrer wirklich löschen?</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Fahrer wirklich löschen?</h2>
               <button
                 onClick={() => setConfirmDeleteDriver({ show: false, driver: null })}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 disabled={loading}
               >
                 <X className="w-5 h-5" />
@@ -2189,12 +2214,12 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
             </div>
 
             <div className="mb-6">
-              <p className="text-gray-700 mb-4">
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
                 Dieser Fahrer hat bestehende Einträge. Beim Löschen werden alle zugehörigen Einträge ebenfalls gelöscht. Möchten Sie fortfahren?
               </p>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-semibold">{confirmDeleteDriver.driver.name}</p>
-                <p className="text-sm text-gray-600">Code: {confirmDeleteDriver.driver.code}</p>
+              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                <p className="font-semibold dark:text-white">{confirmDeleteDriver.driver.name}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Code: {confirmDeleteDriver.driver.code}</p>
               </div>
             </div>
 
@@ -2202,7 +2227,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteDriver({ show: false, driver: null })}
-                className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white"
                 disabled={loading}
               >
                 Abbrechen
@@ -2221,12 +2246,12 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
       {confirmDeleteEntry.show && confirmDeleteEntry.entryId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-900 max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Eintrag löschen?</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Eintrag löschen?</h2>
               <button
                 onClick={() => setConfirmDeleteEntry({ show: false, entryId: null })}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 disabled={loading}
               >
                 <X className="w-5 h-5" />
@@ -2234,7 +2259,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
             </div>
 
             <div className="mb-6">
-              <p className="text-gray-700">
+              <p className="text-gray-700 dark:text-gray-300">
                 Nach dem Löschen kann der Fahrer für diesen Tag erneut eintragen.
               </p>
             </div>
@@ -2243,7 +2268,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteEntry({ show: false, entryId: null })}
-                className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white"
                 disabled={loading}
               >
                 Abbrechen
@@ -2262,12 +2287,12 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
 
       {confirmCodeChange && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-900 max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Fahrercode ändern?</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Fahrercode ändern?</h2>
               <button
                 onClick={() => setConfirmCodeChange(null)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 disabled={loading}
               >
                 <X className="w-5 h-5" />
@@ -2275,15 +2300,15 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
             </div>
 
             <div className="mb-6">
-              <p className="text-gray-700 mb-4">
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
                 Alle bisherigen Einträge werden auf den neuen Fahrercode aktualisiert.
               </p>
-              <div className="bg-gray-50 p-3 rounded-lg space-y-1">
+              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg space-y-1">
                 <p className="text-sm">
-                  <span className="font-semibold">Alter Code:</span> {confirmCodeChange.oldCode}
+                  <span className="font-semibold dark:text-white">Alter Code:</span> {confirmCodeChange.oldCode}
                 </p>
                 <p className="text-sm">
-                  <span className="font-semibold">Neuer Code:</span> {confirmCodeChange.newCode}
+                  <span className="font-semibold dark:text-white">Neuer Code:</span> {confirmCodeChange.newCode}
                 </p>
               </div>
             </div>
@@ -2292,7 +2317,7 @@ export function AdminDashboard({ onLogout, authToken }: AdminDashboardProps) {
               <button
                 type="button"
                 onClick={() => setConfirmCodeChange(null)}
-                className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white"
                 disabled={loading}
               >
                 Abbrechen
