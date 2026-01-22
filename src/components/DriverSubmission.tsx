@@ -106,24 +106,24 @@ export function DriverSubmission() {
   const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 flex items-center justify-center p-4">
+      <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-700">
         <div className="flex items-center justify-center mb-6">
-          <div className="bg-blue-600 p-3 rounded-full">
+          <div className="bg-blue-600 p-3 rounded-full shadow-lg">
             <Truck className="w-8 h-8 text-white" />
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-center text-gray-800 mb-2">
+        <h1 className="text-2xl font-bold text-center text-white mb-2">
           Arbeitszeit erfassen
         </h1>
-        <p className="text-center text-gray-600 mb-8">
+        <p className="text-center text-gray-300 mb-8">
           Geben Sie Ihre tägliche Arbeitszeit ein
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="code" className="block text-sm font-medium text-gray-200 mb-2">
               Fahrer-Code
             </label>
             <input
@@ -131,7 +131,7 @@ export function DriverSubmission() {
               id="code"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400"
               placeholder="z.B. 1, 2, 3..."
               required
               min="1"
@@ -139,7 +139,7 @@ export function DriverSubmission() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-200 mb-2">
               Kennzeichen
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -149,15 +149,15 @@ export function DriverSubmission() {
                   id="vehicleLetters"
                   value={vehicleLetters}
                   onChange={(e) => handleVehicleLettersChange(e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-center font-semibold text-lg uppercase ${
-                    vehicleError ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full px-4 py-3 bg-gray-700 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg uppercase text-white placeholder-gray-400 ${
+                    vehicleError ? 'border-red-500' : 'border-gray-600'
                   }`}
                   placeholder="MI"
                   maxLength={2}
                   required
                   autoComplete="off"
                 />
-                <p className="text-xs text-gray-500 mt-1 text-center">Buchstaben</p>
+                <p className="text-xs text-gray-400 mt-1 text-center">Buchstaben</p>
               </div>
               <div>
                 <input
@@ -166,8 +166,8 @@ export function DriverSubmission() {
                   value={vehicleNumbers}
                   onChange={(e) => handleVehicleNumbersChange(e.target.value)}
                   onKeyDown={handleVehicleNumbersKeyDown}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-center font-semibold text-lg ${
-                    vehicleError ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full px-4 py-3 bg-gray-700 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg text-white placeholder-gray-400 ${
+                    vehicleError ? 'border-red-500' : 'border-gray-600'
                   }`}
                   placeholder="299"
                   maxLength={4}
@@ -176,17 +176,17 @@ export function DriverSubmission() {
                   pattern="[0-9]*"
                   autoComplete="off"
                 />
-                <p className="text-xs text-gray-500 mt-1 text-center">Nummer</p>
+                <p className="text-xs text-gray-400 mt-1 text-center">Nummer</p>
               </div>
             </div>
             {vehicleError && (
-              <p className="text-sm text-red-600 mt-2">{vehicleError}</p>
+              <p className="text-sm text-red-400 mt-2">{vehicleError}</p>
             )}
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-200 mb-2">
                 <Clock className="w-4 h-4 inline mr-1" />
                 Start
               </label>
@@ -195,33 +195,33 @@ export function DriverSubmission() {
                   <select
                     value={startHour}
                     onChange={(e) => setStartHour(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-center font-mono text-lg"
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
                     required
                   >
                     {hours.map(h => (
                       <option key={h} value={h}>{h}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1 text-center">Stunde</p>
+                  <p className="text-xs text-gray-400 mt-1 text-center">Stunde</p>
                 </div>
                 <div>
                   <select
                     value={startMinute}
                     onChange={(e) => setStartMinute(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-center font-mono text-lg"
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
                     required
                   >
                     {minutes.map(m => (
                       <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1 text-center">Minute</p>
+                  <p className="text-xs text-gray-400 mt-1 text-center">Minute</p>
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-200 mb-2">
                 <Clock className="w-4 h-4 inline mr-1" />
                 Ende
               </label>
@@ -230,7 +230,7 @@ export function DriverSubmission() {
                   <select
                     value={endHour}
                     onChange={(e) => setEndHour(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-center font-mono text-lg"
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
                     required
                   >
                     <option value="">--</option>
@@ -238,13 +238,13 @@ export function DriverSubmission() {
                       <option key={h} value={h}>{h}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1 text-center">Stunde</p>
+                  <p className="text-xs text-gray-400 mt-1 text-center">Stunde</p>
                 </div>
                 <div>
                   <select
                     value={endMinute}
                     onChange={(e) => setEndMinute(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-center font-mono text-lg"
+                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
                     required
                   >
                     <option value="">--</option>
@@ -252,7 +252,7 @@ export function DriverSubmission() {
                       <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1 text-center">Minute</p>
+                  <p className="text-xs text-gray-400 mt-1 text-center">Minute</p>
                 </div>
               </div>
             </div>
@@ -262,8 +262,8 @@ export function DriverSubmission() {
             <div
               className={`p-4 rounded-lg ${
                 message.type === 'success'
-                  ? 'bg-green-50 text-green-800 border border-green-200'
-                  : 'bg-red-50 text-red-800 border border-red-200'
+                  ? 'bg-green-900/50 text-green-200 border border-green-700'
+                  : 'bg-red-900/50 text-red-200 border border-red-700'
               }`}
             >
               {message.text}
@@ -273,7 +273,7 @@ export function DriverSubmission() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
             {loading ? 'Wird gespeichert...' : 'Arbeitszeit speichern'}
           </button>
@@ -284,7 +284,7 @@ export function DriverSubmission() {
         <div className="mt-6 text-center">
           <a
             href="/admin"
-            className="text-xs text-gray-500 hover:text-gray-700 transition"
+            className="text-xs text-gray-400 hover:text-gray-200 transition"
           >
             created by - mahmoud shehab
           </a>
