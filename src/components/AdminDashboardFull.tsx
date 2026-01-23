@@ -3,7 +3,7 @@ import { supabase, Driver, WorkEntry } from '../lib/supabase';
 import {
   Users, FileText, BarChart3, Plus, Pencil, Trash2,
   Check, X, Search, Download, LogOut,
-  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet, Settings
+  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet, Settings, Clock
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -14,7 +14,7 @@ interface Message {
   text: string;
 }
 
-type TabType = 'reports' | 'entries' | 'drivers' | 'settings';
+type TabType = 'dashboard' | 'reports' | 'entries' | 'drivers' | 'settings';
 
 interface EditingDriver {
   id: string;
@@ -44,9 +44,18 @@ type PeriodType = 'diese_woche' | 'letzte_woche' | 'dieser_monat' | 'letzter_mon
 
 const STANDARD_HOURS = 9;
 
+interface DashboardStats {
+  driversSubmittedToday: number;
+  driversNotSubmittedToday: Driver[];
+  totalHoursToday: number;
+  overtimeToday: number;
+}
+
 export default function AdminDashboardFull({ onLogout }: { onLogout: () => void }) {
-  const [activeTab, setActiveTab] = useState<TabType>('reports');
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [message, setMessage] = useState<Message | null>(null);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -67,6 +76,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [filterDriverId, setFilterDriverId] = useState('');
+  const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [newEntry, setNewEntry] = useState({
     driver_id: '',
@@ -77,6 +87,8 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
     notes: ''
   });
   const [editingEntry, setEditingEntry] = useState<EditingEntry | null>(null);
+  const [vehicleConflict, setVehicleConflict] = useState<{ driver: Driver, entry: WorkEntry } | null>(null);
+  const [showConflictDetails, setShowConflictDetails] = useState(false);
 
   const [todayEntries, setTodayEntries] = useState<WorkEntry[]>([]);
   const [loadingToday, setLoadingToday] = useState(false);
@@ -108,6 +120,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
   }, [message]);
 
   useEffect(() => {
+    if (activeTab === 'dashboard') loadDashboardStats();
     if (activeTab === 'reports') loadTodayEntries();
     if (activeTab === 'entries') loadEntries();
     if (activeTab === 'drivers') loadDrivers();
@@ -198,6 +211,45 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       from: from.toISOString().split('T')[0],
       to: to.toISOString().split('T')[0]
     };
+  };
+
+  const loadDashboardStats = async () => {
+    setLoadingDashboard(true);
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: allDrivers } = await supabase
+      .from('drivers')
+      .select('*')
+      .eq('is_active', true);
+
+    const { data: todayEntriesData } = await supabase
+      .from('work_entries')
+      .select('*, drivers(*)')
+      .eq('date', today);
+
+    if (allDrivers && todayEntriesData) {
+      const submittedDriverIds = new Set(todayEntriesData.map(e => e.driver_id));
+      const driversNotSubmitted = allDrivers.filter(d => !submittedDriverIds.has(d.id));
+
+      let totalHours = 0;
+      let totalOvertime = 0;
+
+      todayEntriesData.forEach(entry => {
+        const hours = calculateDuration(entry.start_time, entry.end_time);
+        totalHours += hours;
+        const overtime = Math.max(0, hours - STANDARD_HOURS);
+        totalOvertime += overtime;
+      });
+
+      setDashboardStats({
+        driversSubmittedToday: submittedDriverIds.size,
+        driversNotSubmittedToday: driversNotSubmitted,
+        totalHoursToday: totalHours,
+        overtimeToday: totalOvertime
+      });
+    }
+
+    setLoadingDashboard(false);
   };
 
   const loadDrivers = async () => {
@@ -335,11 +387,51 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
     }
   };
 
+  const checkVehicleConflict = async (vehicle: string, date: string, currentDriverId?: string) => {
+    if (!vehicle) return null;
+
+    const normalizedVehicle = normalizeVehicle(vehicle);
+
+    const { data: existingEntries } = await supabase
+      .from('work_entries')
+      .select('*, drivers(*)')
+      .eq('date', date);
+
+    if (existingEntries) {
+      const conflict = existingEntries.find(entry => {
+        if (currentDriverId && entry.driver_id === currentDriverId) return false;
+        if (!entry.vehicle) return false;
+        const entryVehicle = normalizeVehicle(entry.vehicle);
+        return entryVehicle === normalizedVehicle;
+      });
+
+      if (conflict && (conflict as any).drivers) {
+        return {
+          driver: (conflict as any).drivers,
+          entry: conflict
+        };
+      }
+    }
+
+    return null;
+  };
+
   const handleAddEntry = async () => {
     if (!newEntry.driver_id || !newEntry.start_time || !newEntry.end_time) {
       setMessage({ type: 'error', text: 'Bitte alle Pflichtfelder ausfüllen' });
       return;
     }
+
+    if (!vehicleConflict) {
+      const conflict = await checkVehicleConflict(newEntry.vehicle, newEntry.date, newEntry.driver_id);
+      if (conflict) {
+        setVehicleConflict(conflict);
+        return;
+      }
+    }
+
+    setVehicleConflict(null);
+    setShowConflictDetails(false);
 
     const { data: existing } = await supabase
       .from('work_entries')
@@ -423,6 +515,125 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       loadEntries();
       if (activeTab === 'reports') loadTodayEntries();
     }
+  };
+
+  const toggleSelectEntry = (id: string) => {
+    const newSelected = new Set(selectedEntries);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedEntries(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedEntries.size === entries.length) {
+      setSelectedEntries(new Set());
+    } else {
+      setSelectedEntries(new Set(entries.map(e => e.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedEntries.size === 0) {
+      setMessage({ type: 'error', text: 'Keine Einträge ausgewählt' });
+      return;
+    }
+
+    if (!confirm(`${selectedEntries.size} Einträge wirklich löschen?`)) return;
+
+    const deletePromises = Array.from(selectedEntries).map(id =>
+      supabase.from('work_entries').delete().eq('id', id)
+    );
+
+    const results = await Promise.all(deletePromises);
+    const errors = results.filter(r => r.error);
+
+    if (errors.length > 0) {
+      setMessage({ type: 'error', text: `Fehler beim Löschen von ${errors.length} Einträgen` });
+    } else {
+      setMessage({ type: 'success', text: `${selectedEntries.size} Einträge gelöscht` });
+      setSelectedEntries(new Set());
+      loadEntries();
+      if (activeTab === 'reports') loadTodayEntries();
+    }
+  };
+
+  const handleBulkExportPDF = () => {
+    if (selectedEntries.size === 0) {
+      setMessage({ type: 'error', text: 'Keine Einträge ausgewählt' });
+      return;
+    }
+
+    const selectedEntriesData = entries.filter(e => selectedEntries.has(e.id));
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text('Ausgewählte Einträge', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Exportiert am: ${new Date().toLocaleDateString('de-DE')}`, 14, 22);
+
+    const tableData = selectedEntriesData.map(entry => {
+      const driver = (entry as any).drivers;
+      const hours = calculateDuration(entry.start_time, entry.end_time);
+      const overtime = Math.max(0, hours - STANDARD_HOURS);
+
+      return [
+        entry.date,
+        driver?.driver_name || '-',
+        driver?.driver_code || '-',
+        entry.vehicle || '-',
+        entry.start_time,
+        entry.end_time,
+        formatHours(hours),
+        formatHours(overtime),
+        entry.notes || '-'
+      ];
+    });
+
+    autoTable(doc, {
+      head: [['Datum', 'Fahrer', 'Code', 'Fahrzeug', 'Von', 'Bis', 'Stunden', 'Überstunden', 'Notiz']],
+      body: tableData,
+      startY: 28,
+      styles: { fontSize: 8 }
+    });
+
+    doc.save(`Eintraege_${new Date().toISOString().split('T')[0]}.pdf`);
+    setMessage({ type: 'success', text: 'PDF exportiert' });
+  };
+
+  const handleBulkExportExcel = () => {
+    if (selectedEntries.size === 0) {
+      setMessage({ type: 'error', text: 'Keine Einträge ausgewählt' });
+      return;
+    }
+
+    const selectedEntriesData = entries.filter(e => selectedEntries.has(e.id));
+
+    const excelData = selectedEntriesData.map(entry => {
+      const driver = (entry as any).drivers;
+      const hours = calculateDuration(entry.start_time, entry.end_time);
+      const overtime = Math.max(0, hours - STANDARD_HOURS);
+
+      return {
+        'Datum': entry.date,
+        'Fahrer': driver?.driver_name || '-',
+        'Code': driver?.driver_code || '-',
+        'Fahrzeug': entry.vehicle || '-',
+        'Von': entry.start_time,
+        'Bis': entry.end_time,
+        'Arbeitszeit': formatHours(hours),
+        'Überstunden': formatHours(overtime),
+        'Notiz': entry.notes || '-'
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Einträge');
+    XLSX.writeFile(wb, `Eintraege_${new Date().toISOString().split('T')[0]}.xlsx`);
+    setMessage({ type: 'success', text: 'Excel exportiert' });
   };
 
   const loadTodayEntries = async () => {
@@ -783,6 +994,17 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       <div className="max-w-7xl mx-auto px-4 mt-6">
         <div className="flex space-x-2 border-b border-gray-200">
           <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
+              activeTab === 'dashboard'
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <BarChart3 className="w-5 h-5" />
+            <span>Dashboard</span>
+          </button>
+          <button
             onClick={() => setActiveTab('reports')}
             className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
               activeTab === 'reports'
@@ -790,7 +1012,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <BarChart3 className="w-5 h-5" />
+            <FileText className="w-5 h-5" />
             <span>Berichte</span>
           </button>
           <button
@@ -830,6 +1052,87 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            {loadingDashboard ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              </div>
+            ) : dashboardStats ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium text-gray-600">Heute: Eingetragen</h3>
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <Check className="w-5 h-5 text-green-600" />
+                      </div>
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">{dashboardStats.driversSubmittedToday}</p>
+                    <p className="text-xs text-gray-500 mt-1">Fahrer</p>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium text-gray-600">Heute: Nicht eingetragen</h3>
+                      <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                        <X className="w-5 h-5 text-amber-600" />
+                      </div>
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">{dashboardStats.driversNotSubmittedToday.length}</p>
+                    <p className="text-xs text-gray-500 mt-1">Fahrer</p>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium text-gray-600">Gesamtstunden heute</h3>
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-blue-600" />
+                      </div>
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">{formatHours(dashboardStats.totalHoursToday)}</p>
+                    <p className="text-xs text-gray-500 mt-1">Stunden</p>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-medium text-gray-600">Überstunden heute</h3>
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Plus className="w-5 h-5 text-purple-600" />
+                      </div>
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">{formatHours(dashboardStats.overtimeToday)}</p>
+                    <p className="text-xs text-gray-500 mt-1">Stunden</p>
+                  </div>
+                </div>
+
+                {dashboardStats.driversNotSubmittedToday.length > 0 && (
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Fahrer ohne Eintrag heute</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {dashboardStats.driversNotSubmittedToday.map(driver => (
+                        <div key={driver.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                            <Users className="w-4 h-4 text-gray-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{driver.driver_name || 'Unbekannt'}</p>
+                            <p className="text-xs text-gray-500">{driver.driver_code}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="bg-white rounded-lg shadow p-12 text-center">
+                <p className="text-gray-500">Keine Daten verfügbar</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'drivers' && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
@@ -1181,11 +1484,49 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                     />
                   </div>
                 </div>
+
+                {vehicleConflict && (
+                  <div className="mt-4 p-4 bg-amber-50 border border-amber-300 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                          <span className="text-lg">⚠️</span>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-amber-900 mb-1">Warnung: Fahrzeugkonflikt</h4>
+                        <p className="text-sm text-amber-800 mb-2">
+                          Dieses Fahrzeug wurde heute bereits von einem anderen Fahrer eingetragen.
+                        </p>
+                        {showConflictDetails && (
+                          <div className="mt-3 p-3 bg-white rounded border border-amber-200">
+                            <p className="text-sm text-gray-900 mb-1">
+                              <strong>Fahrer:</strong> {vehicleConflict.driver.driver_name} ({vehicleConflict.driver.driver_code})
+                            </p>
+                            <p className="text-sm text-gray-900 mb-1">
+                              <strong>Fahrzeug:</strong> {vehicleConflict.entry.vehicle}
+                            </p>
+                            <p className="text-sm text-gray-900">
+                              <strong>Arbeitszeit:</strong> {vehicleConflict.entry.start_time} - {vehicleConflict.entry.end_time}
+                            </p>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setShowConflictDetails(!showConflictDetails)}
+                          className="mt-2 text-sm text-amber-700 hover:text-amber-900 underline"
+                        >
+                          {showConflictDetails ? 'Details ausblenden' : 'Details anzeigen'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-3 mt-4">
                   <button
                     onClick={handleAddEntry}
                     className="p-2 text-2xl bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    title="Speichern"
+                    title={vehicleConflict ? 'Trotzdem speichern' : 'Speichern'}
                     aria-label="Eintrag speichern"
                   >
                     💾
@@ -1193,6 +1534,8 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                   <button
                     onClick={() => {
                       setShowAddEntry(false);
+                      setVehicleConflict(null);
+                      setShowConflictDetails(false);
                       setNewEntry({
                         driver_id: '',
                         vehicle: '',

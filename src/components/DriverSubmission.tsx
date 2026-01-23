@@ -17,6 +17,8 @@ export function DriverSubmission() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [vehicleSuggestions, setVehicleSuggestions] = useState<string[]>([]);
   const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
+  const [vehicleConflict, setVehicleConflict] = useState<any>(null);
+  const [showConflictDetails, setShowConflictDetails] = useState(false);
 
   useEffect(() => {
     if (licenseLetters.length > 0 || licenseNumbers.length > 0) {
@@ -74,6 +76,39 @@ export function DriverSubmission() {
     if (e.key === 'Backspace' && licenseNumbers === '' && document.getElementById('licenseLetters')) {
       (document.getElementById('licenseLetters') as HTMLInputElement)?.focus();
     }
+  };
+
+  const normalizeVehicle = (vehicle: string): string => {
+    return vehicle.replace(/[\s-]/g, '').toUpperCase();
+  };
+
+  const checkVehicleConflict = async (vehicle: string, date: string, currentDriverId?: string) => {
+    if (!vehicle || !supabase) return null;
+
+    const normalizedVehicle = normalizeVehicle(vehicle);
+
+    const { data: existingEntries } = await supabase
+      .from('work_entries')
+      .select('*, drivers(*)')
+      .eq('date', date);
+
+    if (existingEntries) {
+      const conflict = existingEntries.find((entry: any) => {
+        if (currentDriverId && entry.driver_id === currentDriverId) return false;
+        if (!entry.vehicle) return false;
+        const entryVehicle = normalizeVehicle(entry.vehicle);
+        return entryVehicle === normalizedVehicle;
+      });
+
+      if (conflict && (conflict as any).drivers) {
+        return {
+          driver: (conflict as any).drivers,
+          entry: conflict
+        };
+      }
+    }
+
+    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -152,6 +187,18 @@ export function DriverSubmission() {
       }
 
       const driverId = existingDriver.id;
+
+      if (!vehicleConflict) {
+        const conflict = await checkVehicleConflict(vehicle, workDate, driverId);
+        if (conflict) {
+          setVehicleConflict(conflict);
+          setLoading(false);
+          return;
+        }
+      }
+
+      setVehicleConflict(null);
+      setShowConflictDetails(false);
 
       const { error: workEntryError } = await supabase
         .from('work_entries')
@@ -416,6 +463,44 @@ export function DriverSubmission() {
             />
           </div>
 
+          {vehicleConflict && (
+            <div className="p-4 bg-amber-900/50 border border-amber-600 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-amber-800 rounded-full flex items-center justify-center">
+                    <span className="text-lg">⚠️</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-amber-100 mb-1">Warnung: Fahrzeugkonflikt</h4>
+                  <p className="text-sm text-amber-200 mb-2">
+                    Dieses Fahrzeug wurde heute bereits von einem anderen Fahrer eingetragen.
+                  </p>
+                  {showConflictDetails && (
+                    <div className="mt-3 p-3 bg-gray-800 rounded border border-amber-700">
+                      <p className="text-sm text-gray-200 mb-1">
+                        <strong>Fahrer:</strong> {vehicleConflict.driver.driver_name} ({vehicleConflict.driver.driver_code})
+                      </p>
+                      <p className="text-sm text-gray-200 mb-1">
+                        <strong>Fahrzeug:</strong> {vehicleConflict.entry.vehicle}
+                      </p>
+                      <p className="text-sm text-gray-200">
+                        <strong>Arbeitszeit:</strong> {vehicleConflict.entry.start_time} - {vehicleConflict.entry.end_time}
+                      </p>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowConflictDetails(!showConflictDetails)}
+                    className="mt-2 text-sm text-amber-300 hover:text-amber-100 underline"
+                  >
+                    {showConflictDetails ? 'Details ausblenden' : 'Details anzeigen'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {message && (
             <div
               className={`p-4 rounded-lg ${
@@ -433,7 +518,7 @@ export function DriverSubmission() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
-            {loading ? 'Wird gespeichert...' : 'Arbeitszeit speichern'}
+            {loading ? 'Wird gespeichert...' : vehicleConflict ? 'Trotzdem speichern' : 'Arbeitszeit speichern'}
           </button>
         </form>
 
