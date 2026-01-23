@@ -3,7 +3,7 @@ import { supabase, Driver, WorkEntry } from '../lib/supabase';
 import {
   Users, FileText, BarChart3, Plus, Pencil, Trash2,
   Check, X, Search, Download, LogOut,
-  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet
+  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet, Settings
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -14,7 +14,7 @@ interface Message {
   text: string;
 }
 
-type TabType = 'drivers' | 'entries' | 'reports';
+type TabType = 'reports' | 'entries' | 'drivers' | 'settings';
 
 interface EditingDriver {
   id: string;
@@ -45,8 +45,12 @@ type PeriodType = 'diese_woche' | 'letzte_woche' | 'dieser_monat' | 'letzter_mon
 const STANDARD_HOURS = 9;
 
 export default function AdminDashboardFull({ onLogout }: { onLogout: () => void }) {
-  const [activeTab, setActiveTab] = useState<TabType>('drivers');
+  const [activeTab, setActiveTab] = useState<TabType>('reports');
   const [message, setMessage] = useState<Message | null>(null);
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,9 +103,9 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
   }, [message]);
 
   useEffect(() => {
-    if (activeTab === 'drivers') loadDrivers();
-    if (activeTab === 'entries') loadEntries();
     if (activeTab === 'reports') loadTodayEntries();
+    if (activeTab === 'entries') loadEntries();
+    if (activeTab === 'drivers') loadDrivers();
   }, [activeTab]);
 
   const calculateDuration = (from: string, to: string): number => {
@@ -589,7 +593,13 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
     doc.setFontSize(9);
     doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, 14, finalY + 10);
 
-    doc.save(`Fahrerabrechnung_${driver.driver_code}_${dateFrom}_${dateTo}.pdf`);
+    const fromDate = new Date(dateFrom);
+    const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+    const monthName = monthNames[fromDate.getMonth()];
+    const year = fromDate.getFullYear();
+    const cleanName = driver.driver_name.replace(/[^a-zA-Z0-9äöüÄÖÜß\s]/g, '').replace(/\s+/g, '_');
+
+    doc.save(`${cleanName}_${monthName}_${year}.pdf`);
   };
 
   const exportExcel = (driver: Driver, entries: WorkEntry[], summary: ReportSummary, dateFrom: string, dateTo: string) => {
@@ -622,7 +632,14 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Bericht');
-    XLSX.writeFile(wb, `Fahrerabrechnung_${driver.driver_code}_${dateFrom}_${dateTo}.xlsx`);
+
+    const fromDate = new Date(dateFrom);
+    const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+    const monthName = monthNames[fromDate.getMonth()];
+    const year = fromDate.getFullYear();
+    const cleanName = driver.driver_name.replace(/[^a-zA-Z0-9äöüÄÖÜß\s]/g, '').replace(/\s+/g, '_');
+
+    XLSX.writeFile(wb, `${cleanName}_${monthName}_${year}.xlsx`);
   };
 
   const getDriverSuggestions = (searchTerm: string) => {
@@ -631,6 +648,64 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       d.driver_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.driver_name.toLowerCase().includes(searchTerm.toLowerCase())
     ).slice(0, 5);
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword.trim()) {
+      setMessage({ type: 'error', text: 'Bitte neues Passwort eingeben' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setMessage({ type: 'error', text: 'Passwörter stimmen nicht überein' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setMessage({ type: 'error', text: 'Passwort muss mindestens 6 Zeichen lang sein' });
+      return;
+    }
+
+    setChangingPassword(true);
+
+    const adminId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+
+    const { data: existing } = await supabase
+      .from('admin_settings')
+      .select('id')
+      .eq('id', adminId)
+      .single();
+
+    if (existing) {
+      const { error } = await supabase
+        .from('admin_settings')
+        .update({ password: newPassword, updated_at: new Date().toISOString() })
+        .eq('id', adminId);
+
+      if (error) {
+        console.error('Error updating password:', error);
+        setMessage({ type: 'error', text: 'Fehler beim Aktualisieren des Passworts' });
+      } else {
+        setMessage({ type: 'success', text: 'Passwort erfolgreich geändert' });
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } else {
+      const { error } = await supabase
+        .from('admin_settings')
+        .insert({ id: adminId, password: newPassword });
+
+      if (error) {
+        console.error('Error creating password:', error);
+        setMessage({ type: 'error', text: 'Fehler beim Erstellen des Passworts' });
+      } else {
+        setMessage({ type: 'success', text: 'Passwort erfolgreich erstellt' });
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    }
+
+    setChangingPassword(false);
   };
 
   return (
@@ -660,15 +735,15 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       <div className="max-w-7xl mx-auto px-4 mt-6">
         <div className="flex space-x-2 border-b border-gray-200">
           <button
-            onClick={() => setActiveTab('drivers')}
+            onClick={() => setActiveTab('reports')}
             className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
-              activeTab === 'drivers'
+              activeTab === 'reports'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <Users className="w-5 h-5" />
-            <span>Fahrer</span>
+            <BarChart3 className="w-5 h-5" />
+            <span>Berichte</span>
           </button>
           <button
             onClick={() => setActiveTab('entries')}
@@ -682,15 +757,26 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
             <span>Einträge</span>
           </button>
           <button
-            onClick={() => setActiveTab('reports')}
+            onClick={() => setActiveTab('drivers')}
             className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
-              activeTab === 'reports'
+              activeTab === 'drivers'
                 ? 'border-b-2 border-blue-500 text-blue-600'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <BarChart3 className="w-5 h-5" />
-            <span>Berichte</span>
+            <Users className="w-5 h-5" />
+            <span>Fahrer</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
+              activeTab === 'settings'
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+            <span>Einstellungen</span>
           </button>
         </div>
       </div>
@@ -1634,6 +1720,43 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-6">Admin-Passwort ändern</h2>
+              <div className="max-w-md space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Neues Passwort</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Mindestens 6 Zeichen"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Passwort bestätigen</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Passwort wiederholen"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <button
+                  onClick={handleChangePassword}
+                  disabled={changingPassword}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {changingPassword ? 'Wird geändert...' : 'Passwort ändern'}
+                </button>
+              </div>
             </div>
           </div>
         )}
