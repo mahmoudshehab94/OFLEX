@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DriverSubmission } from './components/DriverSubmission';
 import { AdminLogin } from './components/AdminLogin';
-import { AdminDashboard } from './components/AdminDashboardNew';
+import AdminDashboardFull from './components/AdminDashboardFull';
 import Diagnostics from './components/Diagnostics';
 
 function App() {
@@ -56,7 +56,7 @@ function App() {
   if (page === 'admin-dashboard') {
     return (
       <>
-        <AdminDashboard onLogout={handleAdminLogout} />
+        <AdminDashboardFull onLogout={handleAdminLogout} />
         <Diagnostics />
       </>
     );
