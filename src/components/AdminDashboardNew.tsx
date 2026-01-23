@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { LogOut, Users, Edit2, Trash2, Save, X, Search, Power } from 'lucide-react';
+import { LogOut, Users, Edit2, Trash2, Save, X, Search, Power, FileText } from 'lucide-react';
 import { supabase, Driver, hasSupabaseConfig } from '../lib/supabase';
+import { ReportsTab } from './ReportsTab';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -10,7 +11,10 @@ interface DriverWithEntries extends Driver {
   entry_count?: number;
 }
 
+type TabType = 'drivers' | 'reports';
+
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
+  const [activeTab, setActiveTab] = useState<TabType>('drivers');
   const [drivers, setDrivers] = useState<DriverWithEntries[]>([]);
   const [filteredDrivers, setFilteredDrivers] = useState<DriverWithEntries[]>([]);
   const [loading, setLoading] = useState(false);
@@ -238,7 +242,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Admin-Dashboard</h1>
-            <p className="text-gray-600">Fahrerverwaltung</p>
+            <p className="text-gray-600">Verwaltung & Berichte</p>
           </div>
           <button
             onClick={onLogout}
@@ -246,6 +250,34 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           >
             <LogOut className="w-5 h-5" />
             Abmelden
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs Navigation */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-6 flex gap-2">
+          <button
+            onClick={() => setActiveTab('drivers')}
+            className={`flex items-center gap-2 px-6 py-4 font-medium border-b-2 transition ${
+              activeTab === 'drivers'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            Fahrerverwaltung
+          </button>
+          <button
+            onClick={() => setActiveTab('reports')}
+            className={`flex items-center gap-2 px-6 py-4 font-medium border-b-2 transition ${
+              activeTab === 'reports'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <FileText className="w-5 h-5" />
+            Berichte
           </button>
         </div>
       </div>
@@ -263,6 +295,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
       {/* Main Content */}
       <div className="px-6 py-6 space-y-6">
+        {activeTab === 'drivers' ? (
+          <>
         {/* Add Driver Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center gap-2 mb-4">
@@ -427,6 +461,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             </div>
           )}
         </div>
+          </>
+        ) : (
+          <ReportsTab />
+        )}
       </div>
     </div>
   );
