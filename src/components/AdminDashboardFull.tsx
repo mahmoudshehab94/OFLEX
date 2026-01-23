@@ -58,6 +58,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
   const [newDriverName, setNewDriverName] = useState('');
   const [editingDriver, setEditingDriver] = useState<EditingDriver | null>(null);
 
+  const [vehicleLookup, setVehicleLookup] = useState('');
+  const [vehicleDate, setVehicleDate] = useState('');
+  const [vehicleResult, setVehicleResult] = useState<{ driver: Driver, entry: WorkEntry } | null>(null);
+  const [lookingUpVehicle, setLookingUpVehicle] = useState(false);
+
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
@@ -708,6 +713,49 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
     setChangingPassword(false);
   };
 
+  const normalizeVehicle = (vehicle: string): string => {
+    return vehicle.replace(/[\s-]/g, '').toUpperCase();
+  };
+
+  const handleVehicleLookup = async () => {
+    if (!vehicleLookup.trim() || !vehicleDate) {
+      setMessage({ type: 'error', text: 'Bitte Fahrzeug und Datum eingeben' });
+      return;
+    }
+
+    setLookingUpVehicle(true);
+    setVehicleResult(null);
+
+    const normalizedSearch = normalizeVehicle(vehicleLookup);
+
+    const { data: allEntries } = await supabase
+      .from('work_entries')
+      .select(`
+        *,
+        drivers (*)
+      `)
+      .eq('date', vehicleDate);
+
+    if (allEntries) {
+      const match = allEntries.find(entry => {
+        if (!entry.vehicle) return false;
+        const normalizedVehicle = normalizeVehicle(entry.vehicle);
+        return normalizedVehicle === normalizedSearch;
+      });
+
+      if (match && (match as any).drivers) {
+        setVehicleResult({
+          driver: (match as any).drivers,
+          entry: match
+        });
+      } else {
+        setMessage({ type: 'error', text: 'Kein Fahrer für dieses Fahrzeug an diesem Datum gefunden' });
+      }
+    }
+
+    setLookingUpVehicle(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b border-gray-200">
@@ -785,6 +833,73 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
         {activeTab === 'drivers' && (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Fahrzeug-Suche (Verkehrsstrafen)</h2>
+              <p className="text-sm text-gray-600 mb-4">Finden Sie schnell heraus, welcher Fahrer ein bestimmtes Fahrzeug an einem Tag genutzt hat.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fahrzeug</label>
+                  <input
+                    type="text"
+                    value={vehicleLookup}
+                    onChange={(e) => setVehicleLookup(e.target.value)}
+                    placeholder="z.B. MI299, MI 299, mi-299"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Datum</label>
+                  <input
+                    type="date"
+                    value={vehicleDate}
+                    onChange={(e) => setVehicleDate(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={handleVehicleLookup}
+                    disabled={lookingUpVehicle}
+                    className="w-full p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    title="Suchen"
+                    aria-label="Fahrzeug suchen"
+                  >
+                    <Search className="w-5 h-5 mx-auto" />
+                  </button>
+                </div>
+              </div>
+
+              {vehicleResult && (
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h3 className="font-semibold text-green-900 mb-3">Gefunden:</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-600">Fahrer:</span>
+                      <span className="ml-2 font-medium text-gray-900">{vehicleResult.driver.driver_name} ({vehicleResult.driver.driver_code})</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Fahrzeug:</span>
+                      <span className="ml-2 font-medium text-gray-900">{vehicleResult.entry.vehicle}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Datum:</span>
+                      <span className="ml-2 font-medium text-gray-900">{vehicleResult.entry.date}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Arbeitszeit:</span>
+                      <span className="ml-2 font-medium text-gray-900">{vehicleResult.entry.start_time} - {vehicleResult.entry.end_time}</span>
+                    </div>
+                    {vehicleResult.entry.notes && (
+                      <div className="col-span-2">
+                        <span className="text-gray-600">Notiz:</span>
+                        <span className="ml-2 font-medium text-gray-900">{vehicleResult.entry.notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Neuer Fahrer</h2>
               <div className="flex gap-3">
                 <input
@@ -803,11 +918,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                 />
                 <button
                   onClick={handleAddDriver}
-                  className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  title="Hinzufügen"
+                  className="p-2 text-2xl bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  title="Fahrer hinzufügen"
                   aria-label="Fahrer hinzufügen"
                 >
-                  <Plus className="w-5 h-5" />
+                  ➕
                 </button>
               </div>
             </div>
@@ -868,19 +983,19 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                               <div className="flex justify-end gap-2">
                                 <button
                                   onClick={handleUpdateDriver}
-                                  className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                                  className="p-2 text-xl hover:bg-green-50 rounded-lg"
                                   title="Speichern"
                                   aria-label="Speichern"
                                 >
-                                  <Check className="w-4 h-4" />
+                                  💾
                                 </button>
                                 <button
                                   onClick={() => setEditingDriver(null)}
-                                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                  className="p-2 text-xl hover:bg-gray-100 rounded-lg"
                                   title="Abbrechen"
                                   aria-label="Abbrechen"
                                 >
-                                  <X className="w-4 h-4" />
+                                  ❌
                                 </button>
                               </div>
                             </td>
@@ -904,27 +1019,27 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                     driver_code: driver.driver_code,
                                     driver_name: driver.driver_name
                                   })}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                  className="p-2 text-xl hover:bg-blue-50 rounded-lg"
                                   title="Bearbeiten"
                                   aria-label="Bearbeiten"
                                 >
-                                  <Pencil className="w-4 h-4" />
+                                  ✏️
                                 </button>
                                 <button
                                   onClick={() => handleToggleActive(driver)}
-                                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                  className="p-2 text-xl hover:bg-gray-100 rounded-lg"
                                   title={driver.is_active ? 'Deaktivieren' : 'Aktivieren'}
                                   aria-label={driver.is_active ? 'Deaktivieren' : 'Aktivieren'}
                                 >
-                                  {driver.is_active ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                                  {driver.is_active ? '🔴' : '🟢'}
                                 </button>
                                 <button
                                   onClick={() => handleDeleteDriver(driver.id)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                  className="p-2 text-xl hover:bg-red-50 rounded-lg"
                                   title="Löschen"
                                   aria-label="Löschen"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  🗑️
                                 </button>
                               </div>
                             </td>
@@ -981,9 +1096,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                 <div className="flex items-end">
                   <button
                     onClick={loadEntries}
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="w-full p-2 text-2xl bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    title="Filter anwenden"
+                    aria-label="Filter anwenden"
                   >
-                    Anwenden
+                    🔍
                   </button>
                 </div>
               </div>
@@ -992,10 +1109,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
             <div className="flex justify-end">
               <button
                 onClick={() => setShowAddEntry(!showAddEntry)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="p-2 text-2xl bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                title="Neuer Eintrag"
+                aria-label="Neuer Eintrag"
               >
-                <Plus className="w-5 h-5" />
-                Neuer Eintrag
+                ➕
               </button>
             </div>
 
@@ -1066,9 +1184,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                 <div className="flex gap-3 mt-4">
                   <button
                     onClick={handleAddEntry}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="p-2 text-2xl bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    title="Speichern"
+                    aria-label="Eintrag speichern"
                   >
-                    Speichern
+                    💾
                   </button>
                   <button
                     onClick={() => {
@@ -1082,9 +1202,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                         notes: ''
                       });
                     }}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    className="p-2 text-2xl bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    title="Abbrechen"
+                    aria-label="Abbrechen"
                   >
-                    Abbrechen
+                    ❌
                   </button>
                 </div>
               </div>
@@ -1169,19 +1291,19 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                               <div className="flex justify-end gap-2">
                                 <button
                                   onClick={handleUpdateEntry}
-                                  className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                                  className="p-2 text-xl hover:bg-green-50 rounded-lg"
                                   title="Speichern"
                                   aria-label="Speichern"
                                 >
-                                  <Check className="w-4 h-4" />
+                                  💾
                                 </button>
                                 <button
                                   onClick={() => setEditingEntry(null)}
-                                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                  className="p-2 text-xl hover:bg-gray-100 rounded-lg"
                                   title="Abbrechen"
                                   aria-label="Abbrechen"
                                 >
-                                  <X className="w-4 h-4" />
+                                  ❌
                                 </button>
                               </div>
                             </td>
@@ -1211,19 +1333,19 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                     end_time: entry.end_time,
                                     notes: entry.notes || ''
                                   })}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                  className="p-2 text-xl hover:bg-blue-50 rounded-lg"
                                   title="Bearbeiten"
                                   aria-label="Bearbeiten"
                                 >
-                                  <Pencil className="w-4 h-4" />
+                                  ✏️
                                 </button>
                                 <button
                                   onClick={() => handleDeleteEntry(entry.id)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                  className="p-2 text-xl hover:bg-red-50 rounded-lg"
                                   title="Löschen"
                                   aria-label="Löschen"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  🗑️
                                 </button>
                               </div>
                             </td>
@@ -1246,11 +1368,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                 <button
                   onClick={loadTodayEntries}
                   disabled={loadingToday}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                  className="p-2 text-xl hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
                   title="Aktualisieren"
                   aria-label="Aktualisieren"
                 >
-                  <RefreshCw className={`w-5 h-5 ${loadingToday ? 'animate-spin' : ''}`} />
+                  🔄
                 </button>
               </div>
               {todayEntries.length === 0 ? (
@@ -1299,19 +1421,19 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                     notes: entry.notes || ''
                                   });
                                 }}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                className="p-2 text-xl hover:bg-blue-50 rounded-lg"
                                 title="Bearbeiten"
                                 aria-label="Bearbeiten"
                               >
-                                <Pencil className="w-4 h-4" />
+                                ✏️
                               </button>
                               <button
                                 onClick={() => handleDeleteEntry(entry.id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                className="p-2 text-xl hover:bg-red-50 rounded-lg"
                                 title="Löschen"
                                 aria-label="Löschen"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                🗑️
                               </button>
                             </div>
                           </td>
@@ -1373,9 +1495,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
               <div className="flex gap-2">
                 <button
                   onClick={handleGenerateMonthlyReport}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="p-2 text-2xl bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  title="Bericht erstellen"
+                  aria-label="Monatsbericht erstellen"
                 >
-                  Bericht erstellen
+                  📋
                 </button>
                 {monthlyReport && (
                   <>
@@ -1386,11 +1510,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                         const endDate = `${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
                         exportPDF(monthlyReport.driver, monthlyReport.entries, monthlyReport.summary, startDate, endDate);
                       }}
-                      className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      className="p-2 text-2xl bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                       title="PDF exportieren"
                       aria-label="PDF exportieren"
                     >
-                      <Download className="w-5 h-5" />
+                      📄
                     </button>
                     <button
                       onClick={() => {
@@ -1399,11 +1523,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                         const endDate = `${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
                         exportExcel(monthlyReport.driver, monthlyReport.entries, monthlyReport.summary, startDate, endDate);
                       }}
-                      className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      className="p-2 text-2xl bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                       title="Excel exportieren"
                       aria-label="Excel exportieren"
                     >
-                      <FileSpreadsheet className="w-5 h-5" />
+                      📊
                     </button>
                   </>
                 )}
@@ -1508,27 +1632,29 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
               <div className="flex gap-2">
                 <button
                   onClick={handleGenerateCustomReport}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="p-2 text-2xl bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  title="Bericht erstellen"
+                  aria-label="Zeitraum-Bericht erstellen"
                 >
-                  Bericht erstellen
+                  📋
                 </button>
                 {customReport && (
                   <>
                     <button
                       onClick={() => exportPDF(customReport.driver, customReport.entries, customReport.summary, customDateFrom, customDateTo)}
-                      className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      className="p-2 text-2xl bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                       title="PDF exportieren"
                       aria-label="PDF exportieren"
                     >
-                      <Download className="w-5 h-5" />
+                      📄
                     </button>
                     <button
                       onClick={() => exportExcel(customReport.driver, customReport.entries, customReport.summary, customDateFrom, customDateTo)}
-                      className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      className="p-2 text-2xl bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                       title="Excel exportieren"
                       aria-label="Excel exportieren"
                     >
-                      <FileSpreadsheet className="w-5 h-5" />
+                      📊
                     </button>
                   </>
                 )}
@@ -1652,9 +1778,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
               </div>
               <button
                 onClick={handleCompareDrivers}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="p-2 text-2xl bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                title="Fahrer vergleichen"
+                aria-label="Fahrer vergleichen"
               >
-                Vergleichen
+                ⚖️
               </button>
 
               {comparison && (
@@ -1752,9 +1880,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                 <button
                   onClick={handleChangePassword}
                   disabled={changingPassword}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 text-2xl bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={changingPassword ? 'Wird geändert...' : 'Passwort ändern'}
+                  aria-label="Passwort ändern"
                 >
-                  {changingPassword ? 'Wird geändert...' : 'Passwort ändern'}
+                  💾
                 </button>
               </div>
             </div>

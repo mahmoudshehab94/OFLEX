@@ -119,7 +119,7 @@ export function DriverSubmission() {
     try {
       const { data: existingDriver, error: driverError } = await supabase
         .from('drivers')
-        .select('id')
+        .select('id, is_active')
         .eq('driver_code', driverCode)
         .maybeSingle();
 
@@ -133,33 +133,25 @@ export function DriverSubmission() {
         return;
       }
 
-      let driverId: string;
-
       if (!existingDriver) {
-        const { data: newDriver, error: createError } = await supabase
-          .from('drivers')
-          .insert({
-            driver_code: driverCode,
-            driver_name: '',
-            is_active: true
-          })
-          .select('id')
-          .single();
-
-        if (createError || !newDriver) {
-          console.error('Driver creation error:', createError);
-          setMessage({
-            type: 'error',
-            text: `Fehler beim Erstellen des Fahrers: ${createError?.message}`
-          });
-          setLoading(false);
-          return;
-        }
-
-        driverId = newDriver.id;
-      } else {
-        driverId = existingDriver.id;
+        setMessage({
+          type: 'error',
+          text: 'Ungültiger Fahrer-Code. Bitte wenden Sie sich an den Administrator.'
+        });
+        setLoading(false);
+        return;
       }
+
+      if (!existingDriver.is_active) {
+        setMessage({
+          type: 'error',
+          text: 'Dieser Fahrer-Code ist nicht registriert oder deaktiviert.'
+        });
+        setLoading(false);
+        return;
+      }
+
+      const driverId = existingDriver.id;
 
       const { error: workEntryError } = await supabase
         .from('work_entries')
