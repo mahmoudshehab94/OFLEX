@@ -25,12 +25,11 @@ interface EditingDriver {
 interface EditingEntry {
   id: string;
   driver_id: string;
-  vehicle_letters: string;
-  vehicle_numbers: string;
-  work_date: string;
-  from_time: string;
-  to_time: string;
-  notiz: string;
+  vehicle: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  notes: string;
 }
 
 interface ReportSummary {
@@ -62,12 +61,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [newEntry, setNewEntry] = useState({
     driver_id: '',
-    vehicle_letters: '',
-    vehicle_numbers: '',
-    work_date: new Date().toISOString().split('T')[0],
-    from_time: '',
-    to_time: '',
-    notiz: ''
+    vehicle: '',
+    date: new Date().toISOString().split('T')[0],
+    start_time: '',
+    end_time: '',
+    notes: ''
   });
   const [editingEntry, setEditingEntry] = useState<EditingEntry | null>(null);
 
@@ -126,10 +124,10 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
   };
 
   const calculateSummary = (entries: WorkEntry[]): ReportSummary => {
-    const arbeitstage = new Set(entries.map(e => e.work_date)).size;
-    const totalHours = entries.reduce((sum, e) => sum + calculateDuration(e.from_time, e.to_time), 0);
+    const arbeitstage = new Set(entries.map(e => e.date)).size;
+    const totalHours = entries.reduce((sum, e) => sum + calculateDuration(e.start_time, e.end_time), 0);
     const overtimeHours = entries.reduce((sum, e) => {
-      const daily = calculateDuration(e.from_time, e.to_time);
+      const daily = calculateDuration(e.start_time, e.end_time);
       return sum + Math.max(0, daily - STANDARD_HOURS);
     }, 0);
 
@@ -200,6 +198,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error('Error loading drivers:', error);
       setMessage({ type: 'error', text: 'Fehler beim Laden der Fahrer' });
     } else {
       setDrivers(data || []);
@@ -223,6 +222,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       });
 
     if (error) {
+      console.error('Error adding driver:', error);
       if (error.code === '23505') {
         setMessage({ type: 'error', text: 'Dieser Code ist bereits vergeben' });
       } else {
@@ -253,6 +253,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       .eq('id', editingDriver.id);
 
     if (error) {
+      console.error('Error updating driver:', error);
       if (error.code === '23505') {
         setMessage({ type: 'error', text: 'Dieser Code ist bereits vergeben' });
       } else {
@@ -272,6 +273,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       .eq('id', driver.id);
 
     if (error) {
+      console.error('Error toggling active:', error);
       setMessage({ type: 'error', text: 'Fehler beim Aktualisieren' });
     } else {
       setMessage({ type: 'success', text: driver.is_active ? 'Fahrer deaktiviert' : 'Fahrer aktiviert' });
@@ -288,6 +290,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       .eq('id', id);
 
     if (error) {
+      console.error('Error deleting driver:', error);
       setMessage({ type: 'error', text: 'Fehler beim Löschen' });
     } else {
       setMessage({ type: 'success', text: 'Fahrer gelöscht' });
@@ -307,15 +310,16 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
         *,
         drivers (driver_code, driver_name)
       `)
-      .order('work_date', { ascending: false });
+      .order('date', { ascending: false });
 
-    if (filterDateFrom) query = query.gte('work_date', filterDateFrom);
-    if (filterDateTo) query = query.lte('work_date', filterDateTo);
+    if (filterDateFrom) query = query.gte('date', filterDateFrom);
+    if (filterDateTo) query = query.lte('date', filterDateTo);
     if (filterDriverId) query = query.eq('driver_id', filterDriverId);
 
     const { data, error } = await query;
 
     if (error) {
+      console.error('Error loading entries:', error);
       setMessage({ type: 'error', text: 'Fehler beim Laden der Einträge' });
     } else {
       setEntries(data || []);
@@ -323,7 +327,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
   };
 
   const handleAddEntry = async () => {
-    if (!newEntry.driver_id || !newEntry.from_time || !newEntry.to_time) {
+    if (!newEntry.driver_id || !newEntry.start_time || !newEntry.end_time) {
       setMessage({ type: 'error', text: 'Bitte alle Pflichtfelder ausfüllen' });
       return;
     }
@@ -332,7 +336,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       .from('work_entries')
       .select('id')
       .eq('driver_id', newEntry.driver_id)
-      .eq('work_date', newEntry.work_date);
+      .eq('date', newEntry.date);
 
     if (existing && existing.length > 0) {
       setMessage({ type: 'error', text: 'Für diesen Tag existiert bereits ein Eintrag' });
@@ -343,27 +347,27 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       .from('work_entries')
       .insert({
         driver_id: newEntry.driver_id,
-        vehicle_letters: newEntry.vehicle_letters || null,
-        vehicle_numbers: newEntry.vehicle_numbers || null,
-        work_date: newEntry.work_date,
-        from_time: newEntry.from_time,
-        to_time: newEntry.to_time,
-        notiz: newEntry.notiz || null
+        vehicle: newEntry.vehicle || null,
+        date: newEntry.date,
+        start_time: newEntry.start_time,
+        end_time: newEntry.end_time,
+        break_minutes: 0,
+        notes: newEntry.notes || null
       });
 
     if (error) {
+      console.error('Error adding entry:', error);
       setMessage({ type: 'error', text: 'Fehler beim Hinzufügen' });
     } else {
       setMessage({ type: 'success', text: 'Eintrag hinzugefügt' });
       setShowAddEntry(false);
       setNewEntry({
         driver_id: '',
-        vehicle_letters: '',
-        vehicle_numbers: '',
-        work_date: new Date().toISOString().split('T')[0],
-        from_time: '',
-        to_time: '',
-        notiz: ''
+        vehicle: '',
+        date: new Date().toISOString().split('T')[0],
+        start_time: '',
+        end_time: '',
+        notes: ''
       });
       loadEntries();
     }
@@ -376,16 +380,16 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       .from('work_entries')
       .update({
         driver_id: editingEntry.driver_id,
-        vehicle_letters: editingEntry.vehicle_letters || null,
-        vehicle_numbers: editingEntry.vehicle_numbers || null,
-        work_date: editingEntry.work_date,
-        from_time: editingEntry.from_time,
-        to_time: editingEntry.to_time,
-        notiz: editingEntry.notiz || null
+        vehicle: editingEntry.vehicle || null,
+        date: editingEntry.date,
+        start_time: editingEntry.start_time,
+        end_time: editingEntry.end_time,
+        notes: editingEntry.notes || null
       })
       .eq('id', editingEntry.id);
 
     if (error) {
+      console.error('Error updating entry:', error);
       setMessage({ type: 'error', text: 'Fehler beim Aktualisieren' });
     } else {
       setMessage({ type: 'success', text: 'Eintrag aktualisiert' });
@@ -403,6 +407,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       .eq('id', id);
 
     if (error) {
+      console.error('Error deleting entry:', error);
       setMessage({ type: 'error', text: 'Fehler beim Löschen' });
     } else {
       setMessage({ type: 'success', text: 'Eintrag gelöscht' });
@@ -420,10 +425,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
         *,
         drivers (driver_code, driver_name)
       `)
-      .eq('work_date', today)
-      .order('from_time', { ascending: true });
+      .eq('date', today)
+      .order('start_time', { ascending: true });
 
     if (error) {
+      console.error('Error loading today entries:', error);
       setMessage({ type: 'error', text: 'Fehler beim Laden der heutigen Einträge' });
       setTodayEntries([]);
     } else {
@@ -452,9 +458,9 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       .from('work_entries')
       .select('*')
       .eq('driver_id', monthlyDriver)
-      .gte('work_date', startDate)
-      .lte('work_date', endDate)
-      .order('work_date', { ascending: true });
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true });
 
     if (!driver) {
       setMessage({ type: 'error', text: 'Fahrer nicht gefunden' });
@@ -486,9 +492,9 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       .from('work_entries')
       .select('*')
       .eq('driver_id', customDriver)
-      .gte('work_date', customDateFrom)
-      .lte('work_date', customDateTo)
-      .order('work_date', { ascending: true });
+      .gte('date', customDateFrom)
+      .lte('date', customDateTo)
+      .order('date', { ascending: true });
 
     if (!driver) {
       setMessage({ type: 'error', text: 'Fahrer nicht gefunden' });
@@ -523,8 +529,8 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
         .from('work_entries')
         .select('*')
         .eq('driver_id', driverId)
-        .gte('work_date', from)
-        .lte('work_date', to);
+        .gte('date', from)
+        .lte('date', to);
 
       if (!driver || !entries) return null;
 
@@ -558,13 +564,13 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
     doc.text(`Überstunden: ${summary.uberstunden}`, 14, 74);
 
     const tableData = entries.map(e => {
-      const duration = calculateDuration(e.from_time, e.to_time);
+      const duration = calculateDuration(e.start_time, e.end_time);
       const overtime = Math.max(0, duration - STANDARD_HOURS);
       return [
-        e.work_date,
-        `${e.vehicle_letters || ''} ${e.vehicle_numbers || ''}`.trim() || '-',
-        e.from_time,
-        e.to_time,
+        e.date,
+        e.vehicle || '-',
+        e.start_time,
+        e.end_time,
         formatHours(duration),
         formatHours(overtime)
       ];
@@ -600,13 +606,13 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
       [],
       ['Datum', 'Fahrzeug', 'Von', 'Bis', 'Arbeitszeit', 'Überstunden'],
       ...entries.map(e => {
-        const duration = calculateDuration(e.from_time, e.to_time);
+        const duration = calculateDuration(e.start_time, e.end_time);
         const overtime = Math.max(0, duration - STANDARD_HOURS);
         return [
-          e.work_date,
-          `${e.vehicle_letters || ''} ${e.vehicle_numbers || ''}`.trim() || '-',
-          e.from_time,
-          e.to_time,
+          e.date,
+          e.vehicle || '-',
+          e.start_time,
+          e.end_time,
           formatHours(duration),
           formatHours(overtime)
         ];
@@ -928,8 +934,8 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                     <label className="block text-sm font-medium text-gray-700 mb-1">Datum *</label>
                     <input
                       type="date"
-                      value={newEntry.work_date}
-                      onChange={(e) => setNewEntry({ ...newEntry, work_date: e.target.value })}
+                      value={newEntry.date}
+                      onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -937,8 +943,8 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                     <label className="block text-sm font-medium text-gray-700 mb-1">Von Zeit *</label>
                     <input
                       type="time"
-                      value={newEntry.from_time}
-                      onChange={(e) => setNewEntry({ ...newEntry, from_time: e.target.value })}
+                      value={newEntry.start_time}
+                      onChange={(e) => setNewEntry({ ...newEntry, start_time: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -946,35 +952,27 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                     <label className="block text-sm font-medium text-gray-700 mb-1">Bis Zeit *</label>
                     <input
                       type="time"
-                      value={newEntry.to_time}
-                      onChange={(e) => setNewEntry({ ...newEntry, to_time: e.target.value })}
+                      value={newEntry.end_time}
+                      onChange={(e) => setNewEntry({ ...newEntry, end_time: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kennzeichen Buchstaben</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fahrzeug Kennzeichen</label>
                     <input
                       type="text"
-                      value={newEntry.vehicle_letters}
-                      onChange={(e) => setNewEntry({ ...newEntry, vehicle_letters: e.target.value })}
+                      value={newEntry.vehicle}
+                      onChange={(e) => setNewEntry({ ...newEntry, vehicle: e.target.value })}
+                      placeholder="z.B. B AB 1234"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kennzeichen Zahlen</label>
-                    <input
-                      type="text"
-                      value={newEntry.vehicle_numbers}
-                      onChange={(e) => setNewEntry({ ...newEntry, vehicle_numbers: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Notiz</label>
                     <input
                       type="text"
-                      value={newEntry.notiz}
-                      onChange={(e) => setNewEntry({ ...newEntry, notiz: e.target.value })}
+                      value={newEntry.notes}
+                      onChange={(e) => setNewEntry({ ...newEntry, notes: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -991,12 +989,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                       setShowAddEntry(false);
                       setNewEntry({
                         driver_id: '',
-                        vehicle_letters: '',
-                        vehicle_numbers: '',
-                        work_date: new Date().toISOString().split('T')[0],
-                        from_time: '',
-                        to_time: '',
-                        notiz: ''
+                        vehicle: '',
+                        date: new Date().toISOString().split('T')[0],
+                        start_time: '',
+                        end_time: '',
+                        notes: ''
                       });
                     }}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
@@ -1030,8 +1027,8 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                             <td className="px-4 py-3">
                               <input
                                 type="date"
-                                value={editingEntry.work_date}
-                                onChange={(e) => setEditingEntry({ ...editingEntry, work_date: e.target.value })}
+                                value={editingEntry.date}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, date: e.target.value })}
                                 className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                               />
                             </td>
@@ -1047,47 +1044,38 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                               </select>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex gap-1">
-                                <input
-                                  type="text"
-                                  value={editingEntry.vehicle_letters}
-                                  onChange={(e) => setEditingEntry({ ...editingEntry, vehicle_letters: e.target.value })}
-                                  className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
-                                  placeholder="XX"
-                                />
-                                <input
-                                  type="text"
-                                  value={editingEntry.vehicle_numbers}
-                                  onChange={(e) => setEditingEntry({ ...editingEntry, vehicle_numbers: e.target.value })}
-                                  className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
-                                  placeholder="1234"
-                                />
-                              </div>
+                              <input
+                                type="text"
+                                value={editingEntry.vehicle}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, vehicle: e.target.value })}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                placeholder="z.B. B AB 1234"
+                              />
                             </td>
                             <td className="px-4 py-3">
                               <input
                                 type="time"
-                                value={editingEntry.from_time}
-                                onChange={(e) => setEditingEntry({ ...editingEntry, from_time: e.target.value })}
+                                value={editingEntry.start_time}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, start_time: e.target.value })}
                                 className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                               />
                             </td>
                             <td className="px-4 py-3">
                               <input
                                 type="time"
-                                value={editingEntry.to_time}
-                                onChange={(e) => setEditingEntry({ ...editingEntry, to_time: e.target.value })}
+                                value={editingEntry.end_time}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, end_time: e.target.value })}
                                 className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                               />
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-900">
-                              {formatHours(calculateDuration(editingEntry.from_time, editingEntry.to_time))}
+                              {formatHours(calculateDuration(editingEntry.start_time, editingEntry.end_time))}
                             </td>
                             <td className="px-4 py-3">
                               <input
                                 type="text"
-                                value={editingEntry.notiz}
-                                onChange={(e) => setEditingEntry({ ...editingEntry, notiz: e.target.value })}
+                                value={editingEntry.notes}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, notes: e.target.value })}
                                 className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                               />
                             </td>
@@ -1114,33 +1102,28 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                           </>
                         ) : (
                           <>
-                            <td className="px-4 py-3 text-sm text-gray-900">{entry.work_date}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{entry.date}</td>
                             <td className="px-4 py-3 text-sm text-gray-900">
                               {(entry as any).drivers?.driver_code} - {(entry as any).drivers?.driver_name}
                             </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{entry.vehicle || '-'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{entry.start_time}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{entry.end_time}</td>
                             <td className="px-4 py-3 text-sm text-gray-900">
-                              {entry.vehicle_letters && entry.vehicle_numbers
-                                ? `${entry.vehicle_letters} ${entry.vehicle_numbers}`
-                                : '-'}
+                              {formatHours(calculateDuration(entry.start_time, entry.end_time))}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">{entry.from_time}</td>
-                            <td className="px-4 py-3 text-sm text-gray-900">{entry.to_time}</td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              {formatHours(calculateDuration(entry.from_time, entry.to_time))}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">{entry.notiz || '-'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{entry.notes || '-'}</td>
                             <td className="px-4 py-3">
                               <div className="flex justify-end gap-2">
                                 <button
                                   onClick={() => setEditingEntry({
                                     id: entry.id,
                                     driver_id: entry.driver_id,
-                                    vehicle_letters: entry.vehicle_letters || '',
-                                    vehicle_numbers: entry.vehicle_numbers || '',
-                                    work_date: entry.work_date,
-                                    from_time: entry.from_time,
-                                    to_time: entry.to_time,
-                                    notiz: entry.notiz || ''
+                                    vehicle: entry.vehicle || '',
+                                    date: entry.date,
+                                    start_time: entry.start_time,
+                                    end_time: entry.end_time,
+                                    notes: entry.notes || ''
                                   })}
                                   className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
                                   title="Bearbeiten"
@@ -1204,21 +1187,17 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                     <tbody className="divide-y divide-gray-200">
                       {todayEntries.map(entry => (
                         <tr key={entry.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-900">{entry.work_date}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{entry.date}</td>
                           <td className="px-4 py-3 text-sm text-gray-900">
                             {(entry as any).drivers?.driver_code} - {(entry as any).drivers?.driver_name}
                           </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{entry.vehicle || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{entry.start_time}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{entry.end_time}</td>
                           <td className="px-4 py-3 text-sm text-gray-900">
-                            {entry.vehicle_letters && entry.vehicle_numbers
-                              ? `${entry.vehicle_letters} ${entry.vehicle_numbers}`
-                              : '-'}
+                            {formatHours(calculateDuration(entry.start_time, entry.end_time))}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{entry.from_time}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{entry.to_time}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {formatHours(calculateDuration(entry.from_time, entry.to_time))}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{entry.notiz || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{entry.notes || '-'}</td>
                           <td className="px-4 py-3">
                             <div className="flex justify-end gap-2">
                               <button
@@ -1227,12 +1206,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                   setEditingEntry({
                                     id: entry.id,
                                     driver_id: entry.driver_id,
-                                    vehicle_letters: entry.vehicle_letters || '',
-                                    vehicle_numbers: entry.vehicle_numbers || '',
-                                    work_date: entry.work_date,
-                                    from_time: entry.from_time,
-                                    to_time: entry.to_time,
-                                    notiz: entry.notiz || ''
+                                    vehicle: entry.vehicle || '',
+                                    date: entry.date,
+                                    start_time: entry.start_time,
+                                    end_time: entry.end_time,
+                                    notes: entry.notes || ''
                                   });
                                 }}
                                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -1376,18 +1354,14 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {monthlyReport.entries.map(entry => {
-                          const duration = calculateDuration(entry.from_time, entry.to_time);
+                          const duration = calculateDuration(entry.start_time, entry.end_time);
                           const overtime = Math.max(0, duration - STANDARD_HOURS);
                           return (
                             <tr key={entry.id}>
-                              <td className="px-4 py-2">{entry.work_date}</td>
-                              <td className="px-4 py-2">
-                                {entry.vehicle_letters && entry.vehicle_numbers
-                                  ? `${entry.vehicle_letters} ${entry.vehicle_numbers}`
-                                  : '-'}
-                              </td>
-                              <td className="px-4 py-2">{entry.from_time}</td>
-                              <td className="px-4 py-2">{entry.to_time}</td>
+                              <td className="px-4 py-2">{entry.date}</td>
+                              <td className="px-4 py-2">{entry.vehicle || '-'}</td>
+                              <td className="px-4 py-2">{entry.start_time}</td>
+                              <td className="px-4 py-2">{entry.end_time}</td>
                               <td className="px-4 py-2">{formatHours(duration)}</td>
                               <td className="px-4 py-2">{formatHours(overtime)}</td>
                             </tr>
@@ -1505,18 +1479,14 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {customReport.entries.map(entry => {
-                          const duration = calculateDuration(entry.from_time, entry.to_time);
+                          const duration = calculateDuration(entry.start_time, entry.end_time);
                           const overtime = Math.max(0, duration - STANDARD_HOURS);
                           return (
                             <tr key={entry.id}>
-                              <td className="px-4 py-2">{entry.work_date}</td>
-                              <td className="px-4 py-2">
-                                {entry.vehicle_letters && entry.vehicle_numbers
-                                  ? `${entry.vehicle_letters} ${entry.vehicle_numbers}`
-                                  : '-'}
-                              </td>
-                              <td className="px-4 py-2">{entry.from_time}</td>
-                              <td className="px-4 py-2">{entry.to_time}</td>
+                              <td className="px-4 py-2">{entry.date}</td>
+                              <td className="px-4 py-2">{entry.vehicle || '-'}</td>
+                              <td className="px-4 py-2">{entry.start_time}</td>
+                              <td className="px-4 py-2">{entry.end_time}</td>
                               <td className="px-4 py-2">{formatHours(duration)}</td>
                               <td className="px-4 py-2">{formatHours(overtime)}</td>
                             </tr>
