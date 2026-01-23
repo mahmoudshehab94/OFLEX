@@ -103,8 +103,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         .insert({
           driver_code: newDriverCode.trim(),
           driver_name: newDriverName.trim(),
-          license_letters: '',
-          license_numbers: '',
+          license_letters: null,
+          license_numbers: null,
           is_active: true
         });
 

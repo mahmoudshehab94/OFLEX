@@ -25,6 +25,8 @@ export interface Driver {
   id: string;
   driver_code: string;
   driver_name: string;
+  license_letters: string | null;
+  license_numbers: string | null;
   is_active: boolean;
   created_at: string;
 }
