@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Truck, Clock, Calendar } from 'lucide-react';
 import { supabase, hasSupabaseConfig } from '../lib/supabase';
-import { PWAInstallButton } from './PWAInstallButton';
+import { PWAInstallInstructions } from './PWAInstallInstructions';
 
 export function DriverSubmission() {
   const [driverCode, setDriverCode] = useState('');
@@ -10,8 +10,8 @@ export function DriverSubmission() {
   const [licenseNumbers, setLicenseNumbers] = useState('');
   const [startHour, setStartHour] = useState('05');
   const [startMinute, setStartMinute] = useState('00');
-  const [endHour, setEndHour] = useState('');
-  const [endMinute, setEndMinute] = useState('');
+  const [endHour, setEndHour] = useState('15');
+  const [endMinute, setEndMinute] = useState('00');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -201,8 +201,8 @@ export function DriverSubmission() {
       setLicenseNumbers('');
       setStartHour('05');
       setStartMinute('00');
-      setEndHour('');
-      setEndMinute('');
+      setEndHour('15');
+      setEndMinute('00');
       setNotes('');
       setWorkDate(new Date().toISOString().split('T')[0]);
     } catch (error: any) {
@@ -445,19 +445,15 @@ export function DriverSubmission() {
           </button>
         </form>
 
-        <PWAInstallButton />
+        <PWAInstallInstructions />
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center text-xs text-gray-500">
           <a
             href="/admin"
-            className="text-xs text-gray-400 hover:text-gray-200 transition"
+            className="hover:text-gray-300 transition underline decoration-dotted cursor-pointer"
           >
-            Admin-Bereich
+            created by - mahmoud shehab
           </a>
-        </div>
-
-        <div className="mt-2 text-center text-xs text-gray-500">
-          created by - mahmoud shehab
         </div>
       </div>
     </div>

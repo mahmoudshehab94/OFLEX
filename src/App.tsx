@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DriverSubmission } from './components/DriverSubmission';
 import { AdminLogin } from './components/AdminLogin';
-import { AdminDashboard } from './components/AdminDashboard';
+import { AdminDashboard } from './components/AdminDashboardNew';
 import Diagnostics from './components/Diagnostics';
 
 function App() {
