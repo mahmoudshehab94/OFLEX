@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { DriverSubmission } from './components/DriverSubmission';
 import { AdminLogin } from './components/AdminLogin';
 import AdminDashboardFull from './components/AdminDashboardFull';
+import { ThemeToggle } from './components/ThemeToggle';
 
 function App() {
   const [page, setPage] = useState<'driver' | 'admin-login' | 'admin-dashboard'>('driver');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
     const path = window.location.pathname;
@@ -37,6 +39,25 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (storedTheme === 'dark' || storedTheme === 'light') {
+      setTheme(storedTheme);
+    } else {
+      setTheme(prefersDark ? 'dark' : 'light');
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   const handleAdminLogin = () => {
     setPage('admin-dashboard');
     window.history.pushState({}, '', '/admin');
@@ -48,15 +69,22 @@ function App() {
     window.history.pushState({}, '', '/');
   };
 
+  let content: JSX.Element;
+
   if (page === 'admin-login') {
-    return <AdminLogin onLogin={handleAdminLogin} />;
+    content = <AdminLogin onLogin={handleAdminLogin} />;
+  } else if (page === 'admin-dashboard') {
+    content = <AdminDashboardFull onLogout={handleAdminLogout} />;
+  } else {
+    content = <DriverSubmission />;
   }
 
-  if (page === 'admin-dashboard') {
-    return <AdminDashboardFull onLogout={handleAdminLogout} />;
-  }
-
-  return <DriverSubmission />;
+  return (
+    <>
+      {content}
+      <ThemeToggle theme={theme} onToggle={toggleTheme} />
+    </>
+  );
 }
 
 export default App;
