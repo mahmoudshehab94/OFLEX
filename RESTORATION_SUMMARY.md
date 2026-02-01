@@ -230,7 +230,7 @@ CREATE TABLE work_entries (
 - Success/error feedback
 - PWA install button
 - Link to admin area
-- "Created by - mahmoud shehab" attribution
+- "Created by - YOUMIM" attribution
 
 ### Admin Dashboard (Password Protected)
 - **Login**: Username "admin" + VITE_ADMIN_PASSWORD
