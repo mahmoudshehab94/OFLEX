@@ -30,10 +30,10 @@ export function PWAInstallInstructions() {
   };
 
   return (
-    <div className="mt-6 bg-gray-700 rounded-lg border border-gray-600 overflow-hidden">
+    <div className="mt-6 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between text-white hover:bg-gray-600 transition"
+        className="w-full px-4 py-3 flex items-center justify-between text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition"
       >
         <div className="flex items-center gap-2">
           <Smartphone className="w-5 h-5 text-blue-400" />
@@ -43,19 +43,19 @@ export function PWAInstallInstructions() {
       </button>
 
       {isOpen && (
-        <div className="px-4 pb-4 space-y-4 text-gray-200">
-          <div className="text-sm text-gray-300 mt-2 space-y-1">
-            <p className="font-medium text-white">English:</p>
+        <div className="px-4 pb-4 space-y-4 text-gray-700 dark:text-gray-200">
+          <div className="text-sm text-gray-600 dark:text-gray-300 mt-2 space-y-1">
+            <p className="font-medium text-gray-900 dark:text-white">English:</p>
             <p>Install the app on your device for quick access and offline use.</p>
-            <p className="font-medium text-white mt-2">Deutsch:</p>
+            <p className="font-medium text-gray-900 dark:text-white mt-2">Deutsch:</p>
             <p>Installieren Sie die App auf Ihrem Gerät für schnellen Zugriff und Offline-Nutzung.</p>
           </div>
 
           {/* Android */}
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
             <div className="flex items-center gap-2 mb-3">
               <Smartphone className="w-5 h-5 text-green-400" />
-              <h3 className="font-semibold text-white">Android</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Android</h3>
             </div>
             {deferredPrompt ? (
               <button
@@ -67,7 +67,7 @@ export function PWAInstallInstructions() {
             ) : (
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs font-semibold text-gray-300 mb-1">English:</p>
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">English:</p>
                   <ol className="text-sm space-y-1 list-decimal list-inside">
                     <li>Tap the menu (⋮) in Chrome/Edge</li>
                     <li>Select "Add to Home screen"</li>
@@ -75,7 +75,7 @@ export function PWAInstallInstructions() {
                   </ol>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-300 mb-1">Deutsch:</p>
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Deutsch:</p>
                   <ol className="text-sm space-y-1 list-decimal list-inside">
                     <li>Tippen Sie auf das Menü (⋮) in Chrome/Edge</li>
                     <li>Wählen Sie "Zum Startbildschirm hinzufügen"</li>
@@ -87,14 +87,14 @@ export function PWAInstallInstructions() {
           </div>
 
           {/* Windows */}
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
             <div className="flex items-center gap-2 mb-3">
               <Monitor className="w-5 h-5 text-blue-400" />
-              <h3 className="font-semibold text-white">Windows</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Windows</h3>
             </div>
             <div className="space-y-3">
               <div>
-                <p className="text-xs font-semibold text-gray-300 mb-1">English:</p>
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">English:</p>
                 <ol className="text-sm space-y-1 list-decimal list-inside">
                   <li>Click the install icon in the address bar (Chrome/Edge)</li>
                   <li>Or: Menu (⋮) → "Install app"</li>
@@ -103,7 +103,7 @@ export function PWAInstallInstructions() {
                 </ol>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-300 mb-1">Deutsch:</p>
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Deutsch:</p>
                 <ol className="text-sm space-y-1 list-decimal list-inside">
                   <li>Klicken Sie auf das Installationssymbol in der Adressleiste (Chrome/Edge)</li>
                   <li>Oder: Menü (⋮) → "App installieren"</li>
@@ -115,14 +115,14 @@ export function PWAInstallInstructions() {
           </div>
 
           {/* iPhone/iOS Safari */}
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
             <div className="flex items-center gap-2 mb-3">
               <Apple className="w-5 h-5 text-gray-300" />
-              <h3 className="font-semibold text-white">iPhone (Safari)</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">iPhone (Safari)</h3>
             </div>
             <div className="space-y-3">
               <div>
-                <p className="text-xs font-semibold text-gray-300 mb-1">English:</p>
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">English:</p>
                 <ol className="text-sm space-y-1 list-decimal list-inside">
                   <li>Tap the Share icon <span className="inline-block bg-blue-500 text-white px-2 py-0.5 rounded text-xs">□↑</span> at the bottom</li>
                   <li>Scroll down</li>
@@ -131,7 +131,7 @@ export function PWAInstallInstructions() {
                 </ol>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-300 mb-1">Deutsch:</p>
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Deutsch:</p>
                 <ol className="text-sm space-y-1 list-decimal list-inside">
                   <li>Tippen Sie auf das Teilen-Symbol <span className="inline-block bg-blue-500 text-white px-2 py-0.5 rounded text-xs">□↑</span> unten</li>
                   <li>Scrollen Sie nach unten</li>
@@ -140,8 +140,8 @@ export function PWAInstallInstructions() {
                 </ol>
               </div>
             </div>
-            <div className="mt-3 p-3 bg-gray-900 rounded border border-gray-700">
-              <p className="text-xs text-gray-400 mb-2">
+            <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                 <span className="font-semibold">Visual Guide / Visueller Guide:</span>
               </p>
               <div className="flex gap-2 overflow-x-auto">

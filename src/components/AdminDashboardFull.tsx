@@ -968,13 +968,13 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100">
+      <header className="bg-white dark:bg-slate-900 shadow-sm border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h1>
           <button
             onClick={onLogout}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             title="Abmelden"
             aria-label="Abmelden"
           >
@@ -985,20 +985,26 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
 
       {message && (
         <div className="max-w-7xl mx-auto px-4 mt-4">
-          <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+          <div
+            className={`p-4 rounded-lg ${
+              message.type === 'success'
+                ? 'bg-green-50 text-green-800 dark:bg-green-900/40 dark:text-green-200'
+                : 'bg-red-50 text-red-800 dark:bg-red-900/40 dark:text-red-200'
+            }`}
+          >
             {message.text}
           </div>
         </div>
       )}
 
       <div className="max-w-7xl mx-auto px-4 mt-6">
-        <div className="flex space-x-2 border-b border-gray-200">
+        <div className="flex space-x-2 border-b border-gray-200 dark:border-slate-700">
           <button
             onClick={() => setActiveTab('dashboard')}
             className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
               activeTab === 'dashboard'
                 ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
             }`}
           >
             <BarChart3 className="w-5 h-5" />
@@ -1009,7 +1015,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
             className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
               activeTab === 'reports'
                 ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
             }`}
           >
             <FileText className="w-5 h-5" />
@@ -1020,7 +1026,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
             className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
               activeTab === 'entries'
                 ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
             }`}
           >
             <FileText className="w-5 h-5" />
@@ -1031,7 +1037,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
             className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
               activeTab === 'drivers'
                 ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
             }`}
           >
             <Users className="w-5 h-5" />
@@ -1042,7 +1048,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
             className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
               activeTab === 'settings'
                 ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
             }`}
           >
             <Settings className="w-5 h-5" />
@@ -1061,63 +1067,63 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
             ) : dashboardStats ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="bg-white rounded-lg shadow p-6">
+                  <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-gray-600">Heute: Eingetragen</h3>
+                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">Heute: Eingetragen</h3>
                       <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                         <Check className="w-5 h-5 text-green-600" />
                       </div>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">{dashboardStats.driversSubmittedToday}</p>
-                    <p className="text-xs text-gray-500 mt-1">Fahrer</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{dashboardStats.driversSubmittedToday}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Fahrer</p>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
+                  <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-gray-600">Heute: Nicht eingetragen</h3>
+                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">Heute: Nicht eingetragen</h3>
                       <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
                         <X className="w-5 h-5 text-amber-600" />
                       </div>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">{dashboardStats.driversNotSubmittedToday.length}</p>
-                    <p className="text-xs text-gray-500 mt-1">Fahrer</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{dashboardStats.driversNotSubmittedToday.length}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Fahrer</p>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
+                  <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-gray-600">Gesamtstunden heute</h3>
+                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">Gesamtstunden heute</h3>
                       <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                         <Clock className="w-5 h-5 text-blue-600" />
                       </div>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">{formatHours(dashboardStats.totalHoursToday)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Stunden</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatHours(dashboardStats.totalHoursToday)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Stunden</p>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
+                  <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-gray-600">Überstunden heute</h3>
+                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">Überstunden heute</h3>
                       <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                         <Plus className="w-5 h-5 text-purple-600" />
                       </div>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">{formatHours(dashboardStats.overtimeToday)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Stunden</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatHours(dashboardStats.overtimeToday)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Stunden</p>
                   </div>
                 </div>
 
                 {dashboardStats.driversNotSubmittedToday.length > 0 && (
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Fahrer ohne Eintrag heute</h3>
+                  <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Fahrer ohne Eintrag heute</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {dashboardStats.driversNotSubmittedToday.map(driver => (
-                        <div key={driver.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                            <Users className="w-4 h-4 text-gray-600" />
+                        <div key={driver.id} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                          <div className="w-8 h-8 bg-gray-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
+                            <Users className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{driver.driver_name || 'Unbekannt'}</p>
-                            <p className="text-xs text-gray-500">{driver.driver_code}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{driver.driver_name || 'Unbekannt'}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{driver.driver_code}</p>
                           </div>
                         </div>
                       ))}
@@ -1126,8 +1132,8 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                 )}
               </>
             ) : (
-              <div className="bg-white rounded-lg shadow p-12 text-center">
-                <p className="text-gray-500">Keine Daten verfügbar</p>
+              <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-12 text-center">
+                <p className="text-gray-500 dark:text-gray-400">Keine Daten verfügbar</p>
               </div>
             )}
           </div>
@@ -1135,27 +1141,27 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
 
         {activeTab === 'drivers' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Fahrzeug-Suche (Verkehrsstrafen)</h2>
-              <p className="text-sm text-gray-600 mb-4">Finden Sie schnell heraus, welcher Fahrer ein bestimmtes Fahrzeug an einem Tag genutzt hat.</p>
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Fahrzeug-Suche (Verkehrsstrafen)</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Finden Sie schnell heraus, welcher Fahrer ein bestimmtes Fahrzeug an einem Tag genutzt hat.</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fahrzeug</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Fahrzeug</label>
                   <input
                     type="text"
                     value={vehicleLookup}
                     onChange={(e) => setVehicleLookup(e.target.value)}
                     placeholder="z.B. MI299, MI 299, mi-299"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Datum</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Datum</label>
                   <input
                     type="date"
                     value={vehicleDate}
                     onChange={(e) => setVehicleDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div className="flex items-end">
@@ -1176,25 +1182,25 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                   <h3 className="font-semibold text-green-900 mb-3">Gefunden:</h3>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <span className="text-gray-600">Fahrer:</span>
-                      <span className="ml-2 font-medium text-gray-900">{vehicleResult.driver.driver_name} ({vehicleResult.driver.driver_code})</span>
+                      <span className="text-gray-600 dark:text-gray-300">Fahrer:</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{vehicleResult.driver.driver_name} ({vehicleResult.driver.driver_code})</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Fahrzeug:</span>
-                      <span className="ml-2 font-medium text-gray-900">{vehicleResult.entry.vehicle}</span>
+                      <span className="text-gray-600 dark:text-gray-300">Fahrzeug:</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{vehicleResult.entry.vehicle}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Datum:</span>
-                      <span className="ml-2 font-medium text-gray-900">{vehicleResult.entry.date}</span>
+                      <span className="text-gray-600 dark:text-gray-300">Datum:</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{vehicleResult.entry.date}</span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Arbeitszeit:</span>
-                      <span className="ml-2 font-medium text-gray-900">{vehicleResult.entry.start_time} - {vehicleResult.entry.end_time}</span>
+                      <span className="text-gray-600 dark:text-gray-300">Arbeitszeit:</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{vehicleResult.entry.start_time} - {vehicleResult.entry.end_time}</span>
                     </div>
                     {vehicleResult.entry.notes && (
                       <div className="col-span-2">
-                        <span className="text-gray-600">Notiz:</span>
-                        <span className="ml-2 font-medium text-gray-900">{vehicleResult.entry.notes}</span>
+                        <span className="text-gray-600 dark:text-gray-300">Notiz:</span>
+                        <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{vehicleResult.entry.notes}</span>
                       </div>
                     )}
                   </div>
@@ -1202,22 +1208,22 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Neuer Fahrer</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Neuer Fahrer</h2>
               <div className="flex gap-3">
                 <input
                   type="text"
                   placeholder="Code"
                   value={newDriverCode}
                   onChange={(e) => setNewDriverCode(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <input
                   type="text"
                   placeholder="Name"
                   value={newDriverName}
                   onChange={(e) => setNewDriverName(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <button
                   onClick={handleAddDriver}
@@ -1230,7 +1236,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
@@ -1238,25 +1244,25 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                   placeholder="Code oder Name suchen..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aktionen</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Code</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Aktionen</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                     {filteredDrivers.map(driver => (
-                      <tr key={driver.id} className="hover:bg-gray-50">
+                      <tr key={driver.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
                         {editingDriver?.id === driver.id ? (
                           <>
                             <td className="px-6 py-4">
@@ -1264,7 +1270,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                 type="text"
                                 value={editingDriver.driver_code}
                                 onChange={(e) => setEditingDriver({ ...editingDriver, driver_code: e.target.value })}
-                                className="w-full px-2 py-1 border border-gray-300 rounded"
+                                className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded"
                               />
                             </td>
                             <td className="px-6 py-4">
@@ -1272,12 +1278,14 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                 type="text"
                                 value={editingDriver.driver_name}
                                 onChange={(e) => setEditingDriver({ ...editingDriver, driver_name: e.target.value })}
-                                className="w-full px-2 py-1 border border-gray-300 rounded"
+                                className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded"
                               />
                             </td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                driver.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                driver.is_active
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'
+                                  : 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200'
                               }`}>
                                 {driver.is_active ? 'Aktiv' : 'Inaktiv'}
                               </span>
@@ -1294,7 +1302,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                 </button>
                                 <button
                                   onClick={() => setEditingDriver(null)}
-                                  className="p-2 text-xl hover:bg-gray-100 rounded-lg"
+                                  className="p-2 text-xl hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg"
                                   title="Abbrechen"
                                   aria-label="Abbrechen"
                                 >
@@ -1305,11 +1313,13 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                           </>
                         ) : (
                           <>
-                            <td className="px-6 py-4 text-sm font-medium text-gray-900">{driver.driver_code}</td>
-                            <td className="px-6 py-4 text-sm text-gray-900">{driver.driver_name}</td>
+                            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">{driver.driver_code}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">{driver.driver_name}</td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                driver.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                driver.is_active
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'
+                                  : 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-gray-200'
                               }`}>
                                 {driver.is_active ? 'Aktiv' : 'Inaktiv'}
                               </span>
@@ -1330,7 +1340,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                 </button>
                                 <button
                                   onClick={() => handleToggleActive(driver)}
-                                  className="p-2 text-xl hover:bg-gray-100 rounded-lg"
+                                  className="p-2 text-xl hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg"
                                   title={driver.is_active ? 'Deaktivieren' : 'Aktivieren'}
                                   aria-label={driver.is_active ? 'Deaktivieren' : 'Aktivieren'}
                                 >
@@ -1359,36 +1369,36 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
 
         {activeTab === 'entries' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <Filter className="w-5 h-5" />
                 Filter
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Von Datum</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Von Datum</label>
                   <input
                     type="date"
                     value={filterDateFrom}
                     onChange={(e) => setFilterDateFrom(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bis Datum</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Bis Datum</label>
                   <input
                     type="date"
                     value={filterDateTo}
                     onChange={(e) => setFilterDateTo(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fahrer</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Fahrer</label>
                   <select
                     value={filterDriverId}
                     onChange={(e) => setFilterDriverId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Alle</option>
                     {drivers.map(d => (
@@ -1421,15 +1431,15 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
             </div>
 
             {showAddEntry && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Neuer Eintrag</h2>
+              <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Neuer Eintrag</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Fahrer *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Fahrer *</label>
                     <select
                       value={newEntry.driver_id}
                       onChange={(e) => setNewEntry({ ...newEntry, driver_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Auswählen</option>
                       {drivers.filter(d => d.is_active).map(d => (
@@ -1438,49 +1448,49 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Datum *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Datum *</label>
                     <input
                       type="date"
                       value={newEntry.date}
                       onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Von Zeit *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Von Zeit *</label>
                     <input
                       type="time"
                       value={newEntry.start_time}
                       onChange={(e) => setNewEntry({ ...newEntry, start_time: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Bis Zeit *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Bis Zeit *</label>
                     <input
                       type="time"
                       value={newEntry.end_time}
                       onChange={(e) => setNewEntry({ ...newEntry, end_time: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Fahrzeug Kennzeichen</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Fahrzeug Kennzeichen</label>
                     <input
                       type="text"
                       value={newEntry.vehicle}
                       onChange={(e) => setNewEntry({ ...newEntry, vehicle: e.target.value })}
                       placeholder="z.B. B AB 1234"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div className="md:col-span-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Notiz</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Notiz</label>
                     <input
                       type="text"
                       value={newEntry.notes}
                       onChange={(e) => setNewEntry({ ...newEntry, notes: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -1499,14 +1509,14 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                           Dieses Fahrzeug wurde heute bereits von einem anderen Fahrer eingetragen.
                         </p>
                         {showConflictDetails && (
-                          <div className="mt-3 p-3 bg-white rounded border border-amber-200">
-                            <p className="text-sm text-gray-900 mb-1">
+                          <div className="mt-3 p-3 bg-white dark:bg-slate-900 rounded border border-amber-200">
+                            <p className="text-sm text-gray-900 dark:text-gray-100 mb-1">
                               <strong>Fahrer:</strong> {vehicleConflict.driver.driver_name} ({vehicleConflict.driver.driver_code})
                             </p>
-                            <p className="text-sm text-gray-900 mb-1">
+                            <p className="text-sm text-gray-900 dark:text-gray-100 mb-1">
                               <strong>Fahrzeug:</strong> {vehicleConflict.entry.vehicle}
                             </p>
-                            <p className="text-sm text-gray-900">
+                            <p className="text-sm text-gray-900 dark:text-gray-100">
                               <strong>Arbeitszeit:</strong> {vehicleConflict.entry.start_time} - {vehicleConflict.entry.end_time}
                             </p>
                           </div>
@@ -1545,7 +1555,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                         notes: ''
                       });
                     }}
-                    className="p-2 text-2xl bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    className="p-2 text-2xl bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
                     title="Abbrechen"
                     aria-label="Abbrechen"
                   >
@@ -1555,24 +1565,24 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
               </div>
             )}
 
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Datum</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fahrer</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fahrzeug</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Von</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bis</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dauer</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notiz</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aktionen</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Datum</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fahrer</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fahrzeug</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Von</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Bis</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Dauer</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Notiz</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Aktionen</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                     {entries.map(entry => (
-                      <tr key={entry.id} className="hover:bg-gray-50">
+                      <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
                         {editingEntry?.id === entry.id ? (
                           <>
                             <td className="px-4 py-3">
@@ -1580,14 +1590,14 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                 type="date"
                                 value={editingEntry.date}
                                 onChange={(e) => setEditingEntry({ ...editingEntry, date: e.target.value })}
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                               />
                             </td>
                             <td className="px-4 py-3">
                               <select
                                 value={editingEntry.driver_id}
                                 onChange={(e) => setEditingEntry({ ...editingEntry, driver_id: e.target.value })}
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                               >
                                 {drivers.map(d => (
                                   <option key={d.id} value={d.id}>{d.driver_code}</option>
@@ -1599,7 +1609,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                 type="text"
                                 value={editingEntry.vehicle}
                                 onChange={(e) => setEditingEntry({ ...editingEntry, vehicle: e.target.value })}
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                                 placeholder="z.B. B AB 1234"
                               />
                             </td>
@@ -1608,7 +1618,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                 type="time"
                                 value={editingEntry.start_time}
                                 onChange={(e) => setEditingEntry({ ...editingEntry, start_time: e.target.value })}
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -1616,10 +1626,10 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                 type="time"
                                 value={editingEntry.end_time}
                                 onChange={(e) => setEditingEntry({ ...editingEntry, end_time: e.target.value })}
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                               />
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
                               {formatHours(calculateDuration(editingEntry.start_time, editingEntry.end_time))}
                             </td>
                             <td className="px-4 py-3">
@@ -1627,7 +1637,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                 type="text"
                                 value={editingEntry.notes}
                                 onChange={(e) => setEditingEntry({ ...editingEntry, notes: e.target.value })}
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -1642,7 +1652,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                                 </button>
                                 <button
                                   onClick={() => setEditingEntry(null)}
-                                  className="p-2 text-xl hover:bg-gray-100 rounded-lg"
+                                  className="p-2 text-xl hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg"
                                   title="Abbrechen"
                                   aria-label="Abbrechen"
                                 >
@@ -1653,17 +1663,17 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                           </>
                         ) : (
                           <>
-                            <td className="px-4 py-3 text-sm text-gray-900">{entry.date}</td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{entry.date}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
                               {(entry as any).drivers?.driver_code} - {(entry as any).drivers?.driver_name}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">{entry.vehicle || '-'}</td>
-                            <td className="px-4 py-3 text-sm text-gray-900">{entry.start_time}</td>
-                            <td className="px-4 py-3 text-sm text-gray-900">{entry.end_time}</td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{entry.vehicle || '-'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{entry.start_time}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{entry.end_time}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
                               {formatHours(calculateDuration(entry.start_time, entry.end_time))}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">{entry.notes || '-'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{entry.notes || '-'}</td>
                             <td className="px-4 py-3">
                               <div className="flex justify-end gap-2">
                                 <button
@@ -1705,9 +1715,9 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
 
         {activeTab === 'reports' && (
           <div className="space-y-8">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Heutige Einträge</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Heutige Einträge</h2>
                 <button
                   onClick={loadTodayEntries}
                   disabled={loadingToday}
@@ -1719,36 +1729,36 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                 </button>
               </div>
               {todayEntries.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Keine Einträge für heute</p>
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">Keine Einträge für heute</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Datum</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fahrer</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fahrzeug</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Von</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bis</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dauer</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notiz</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aktionen</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Datum</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fahrer</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fahrzeug</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Von</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Bis</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Dauer</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Notiz</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Aktionen</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                       {todayEntries.map(entry => (
-                        <tr key={entry.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-900">{entry.date}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
+                        <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{entry.date}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
                             {(entry as any).drivers?.driver_code} - {(entry as any).drivers?.driver_name}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{entry.vehicle || '-'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{entry.start_time}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{entry.end_time}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{entry.vehicle || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{entry.start_time}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{entry.end_time}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
                             {formatHours(calculateDuration(entry.start_time, entry.end_time))}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{entry.notes || '-'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{entry.notes || '-'}</td>
                           <td className="px-4 py-3">
                             <div className="flex justify-end gap-2">
                               <button
@@ -1788,11 +1798,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Monatsbericht</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Monatsbericht</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fahrer (Code oder Name)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Fahrer (Code oder Name)</label>
                   <input
                     type="text"
                     value={monthlyDriverSearch}
@@ -1811,27 +1821,27 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                       }
                     }}
                     placeholder="Code oder Name eingeben"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Jahr</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Jahr</label>
                   <input
                     type="number"
                     value={monthlyYear}
                     onChange={(e) => setMonthlyYear(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Monat</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Monat</label>
                   <input
                     type="number"
                     min="1"
                     max="12"
                     value={monthlyMonth}
                     onChange={(e) => setMonthlyMonth(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -1895,17 +1905,17 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
 
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-200">
+                      <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
                         <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Datum</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fahrzeug</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Von</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Bis</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Arbeitszeit</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Überstunden</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Datum</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fahrzeug</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Von</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Bis</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Arbeitszeit</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Überstunden</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                         {monthlyReport.entries.map(entry => {
                           const duration = calculateDuration(entry.start_time, entry.end_time);
                           const overtime = Math.max(0, duration - STANDARD_HOURS);
@@ -1927,11 +1937,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Zeitraum-Bericht</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Zeitraum-Bericht</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fahrer (Code oder Name)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Fahrer (Code oder Name)</label>
                   <input
                     type="text"
                     value={customDriverSearch}
@@ -1950,25 +1960,25 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                       }
                     }}
                     placeholder="Code oder Name eingeben"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Von Datum</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Von Datum</label>
                   <input
                     type="date"
                     value={customDateFrom}
                     onChange={(e) => setCustomDateFrom(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bis Datum</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Bis Datum</label>
                   <input
                     type="date"
                     value={customDateTo}
                     onChange={(e) => setCustomDateTo(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -2022,17 +2032,17 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
 
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-200">
+                      <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
                         <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Datum</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fahrzeug</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Von</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Bis</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Arbeitszeit</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Überstunden</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Datum</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Fahrzeug</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Von</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Bis</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Arbeitszeit</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Überstunden</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                         {customReport.entries.map(entry => {
                           const duration = calculateDuration(entry.start_time, entry.end_time);
                           const overtime = Math.max(0, duration - STANDARD_HOURS);
@@ -2054,11 +2064,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Fahrer vergleichen</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Fahrer vergleichen</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fahrer 1</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Fahrer 1</label>
                   <input
                     type="text"
                     value={compareDriver1Search}
@@ -2077,11 +2087,11 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                       }
                     }}
                     placeholder="Code oder Name eingeben"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fahrer 2</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Fahrer 2</label>
                   <input
                     type="text"
                     value={compareDriver2Search}
@@ -2100,15 +2110,15 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                       }
                     }}
                     placeholder="Code oder Name eingeben"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Zeitraum</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Zeitraum</label>
                   <select
                     value={comparePeriod}
                     onChange={(e) => setComparePeriod(e.target.value as PeriodType)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="diese_woche">Diese Woche</option>
                     <option value="letzte_woche">Letzte Woche</option>
@@ -2132,7 +2142,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                 <div className="mt-6 border-t pt-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
                         {comparison.driver1.driver.driver_name} ({comparison.driver1.driver.driver_code})
                       </h3>
                       <div className="space-y-2">
@@ -2152,7 +2162,7 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                     </div>
 
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
                         {comparison.driver2.driver.driver_name} ({comparison.driver2.driver.driver_code})
                       </h3>
                       <div className="space-y-2">
@@ -2172,18 +2182,18 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">Vergleich</h4>
+                  <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Vergleich</h4>
                     <div className="space-y-1 text-sm">
                       <div>
-                        <span className="text-gray-600">Unterschied Gesamtzeit: </span>
-                        <span className="font-medium text-gray-900">
+                        <span className="text-gray-600 dark:text-gray-300">Unterschied Gesamtzeit: </span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
                           {formatHours(Math.abs(comparison.driver1.summary.totalHours - comparison.driver2.summary.totalHours))}
                         </span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Unterschied Überstunden: </span>
-                        <span className="font-medium text-gray-900">
+                        <span className="text-gray-600 dark:text-gray-300">Unterschied Überstunden: </span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
                           {formatHours(Math.abs(comparison.driver1.summary.overtimeHours - comparison.driver2.summary.overtimeHours))}
                         </span>
                       </div>
@@ -2197,27 +2207,27 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
 
         {activeTab === 'settings' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">Admin-Passwort ändern</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Admin-Passwort ändern</h2>
               <div className="max-w-md space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Neues Passwort</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Neues Passwort</label>
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Mindestens 6 Zeichen"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Passwort bestätigen</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Passwort bestätigen</label>
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Passwort wiederholen"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <button

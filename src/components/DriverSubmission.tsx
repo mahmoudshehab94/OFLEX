@@ -257,10 +257,10 @@ export function DriverSubmission() {
 
   if (!hasSupabaseConfig) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 flex items-center justify-center p-4">
-        <div className="bg-red-900/20 border border-red-500 rounded-lg p-6 max-w-md">
-          <h2 className="text-red-400 font-bold text-xl mb-2">Konfigurationsfehler</h2>
-          <p className="text-red-300">
+      <div className="min-h-screen bg-gradient-to-br from-gray-100 via-slate-100 to-gray-200 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500 rounded-lg p-6 max-w-md">
+          <h2 className="text-red-700 dark:text-red-400 font-bold text-xl mb-2">Konfigurationsfehler</h2>
+          <p className="text-red-600 dark:text-red-300">
             Fehlende Supabase-Umgebungsvariablen. Bitte konfigurieren Sie VITE_SUPABASE_URL und VITE_SUPABASE_ANON_KEY in Ihrer .env-Datei.
           </p>
         </div>
@@ -272,24 +272,24 @@ export function DriverSubmission() {
   const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 flex items-center justify-center p-4">
-      <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-700">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-slate-100 to-gray-200 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-center mb-6">
           <div className="bg-blue-600 p-3 rounded-full shadow-lg">
             <Truck className="w-8 h-8 text-white" />
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-center text-white mb-2">
+        <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
           Trans Oflex
         </h1>
-        <p className="text-center text-gray-300 mb-8">
+        <p className="text-center text-gray-600 dark:text-gray-300 mb-8">
           Arbeitszeit erfassen
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="driverCode" className="block text-sm font-medium text-gray-200 mb-2">
+            <label htmlFor="driverCode" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Fahrer-Code
             </label>
             <input
@@ -297,14 +297,14 @@ export function DriverSubmission() {
               id="driverCode"
               value={driverCode}
               onChange={(e) => setDriverCode(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400"
+              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-500 dark:placeholder-gray-400"
               placeholder="z.B. D001, D002..."
               required
             />
           </div>
 
           <div>
-            <label htmlFor="workDate" className="block text-sm font-medium text-gray-200 mb-2">
+            <label htmlFor="workDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               <Calendar className="w-4 h-4 inline mr-1" />
               Datum
             </label>
@@ -313,13 +313,13 @@ export function DriverSubmission() {
               id="workDate"
               value={workDate}
               onChange={(e) => setWorkDate(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-200 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Kennzeichen
             </label>
             <div className="grid grid-cols-2 gap-3 relative">
@@ -331,13 +331,13 @@ export function DriverSubmission() {
                   onChange={(e) => handleLicenseLettersChange(e.target.value)}
                   onFocus={() => setShowVehicleSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowVehicleSuggestions(false), 200)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg uppercase text-white placeholder-gray-400"
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg uppercase text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   placeholder="MI"
                   maxLength={2}
                   required
                   autoComplete="off"
                 />
-                <p className="text-xs text-gray-400 mt-1 text-center">Buchstaben</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Buchstaben</p>
               </div>
               <div>
                 <input
@@ -348,7 +348,7 @@ export function DriverSubmission() {
                   onKeyDown={handleLicenseNumbersKeyDown}
                   onFocus={() => setShowVehicleSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowVehicleSuggestions(false), 200)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg text-white placeholder-gray-400"
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   placeholder="299"
                   maxLength={4}
                   required
@@ -356,17 +356,17 @@ export function DriverSubmission() {
                   pattern="[0-9]*"
                   autoComplete="off"
                 />
-                <p className="text-xs text-gray-400 mt-1 text-center">Nummer</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Nummer</p>
               </div>
             </div>
             {showVehicleSuggestions && vehicleSuggestions.length > 0 && (
-              <div className="mt-2 bg-gray-700 border border-gray-600 rounded-lg overflow-hidden">
+              <div className="mt-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
                 {vehicleSuggestions.map((vehicle, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleVehicleSuggestionClick(vehicle)}
-                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition"
+                    className="w-full px-4 py-2 text-left text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                   >
                     {vehicle}
                   </button>
@@ -377,7 +377,7 @@ export function DriverSubmission() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 <Clock className="w-4 h-4 inline mr-1" />
                 von
               </label>
@@ -386,33 +386,33 @@ export function DriverSubmission() {
                   <select
                     value={startHour}
                     onChange={(e) => setStartHour(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
                     required
                   >
                     {hours.map(h => (
                       <option key={h} value={h}>{h}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1 text-center">Stunde</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Stunde</p>
                 </div>
                 <div>
                   <select
                     value={startMinute}
                     onChange={(e) => setStartMinute(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
                     required
                   >
                     {minutes.map(m => (
                       <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1 text-center">Minute</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Minute</p>
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 <Clock className="w-4 h-4 inline mr-1" />
                 bis
               </label>
@@ -421,7 +421,7 @@ export function DriverSubmission() {
                   <select
                     value={endHour}
                     onChange={(e) => setEndHour(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
                     required
                   >
                     <option value="">--</option>
@@ -429,13 +429,13 @@ export function DriverSubmission() {
                       <option key={h} value={h}>{h}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1 text-center">Stunde</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Stunde</p>
                 </div>
                 <div>
                   <select
                     value={endMinute}
                     onChange={(e) => setEndMinute(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
                     required
                   >
                     <option value="">--</option>
@@ -443,48 +443,48 @@ export function DriverSubmission() {
                       <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1 text-center">Minute</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Minute</p>
                 </div>
               </div>
             </div>
           </div>
 
           <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-200 mb-2">
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Notiz (optional)
             </label>
             <textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 resize-none"
+              className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-500 dark:placeholder-gray-400 resize-none"
               placeholder="Optionale Notizen..."
               rows={3}
             />
           </div>
 
           {vehicleConflict && (
-            <div className="p-4 bg-amber-900/50 border border-amber-600 rounded-lg">
+            <div className="p-4 bg-amber-50 dark:bg-amber-900/50 border border-amber-200 dark:border-amber-600 rounded-lg">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-amber-800 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-amber-200 dark:bg-amber-800 rounded-full flex items-center justify-center">
                     <span className="text-lg">⚠️</span>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-amber-100 mb-1">Warnung: Fahrzeugkonflikt</h4>
-                  <p className="text-sm text-amber-200 mb-2">
+                  <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">Warnung: Fahrzeugkonflikt</h4>
+                  <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
                     Dieses Fahrzeug wurde heute bereits von einem anderen Fahrer eingetragen.
                   </p>
                   {showConflictDetails && (
-                    <div className="mt-3 p-3 bg-gray-800 rounded border border-amber-700">
-                      <p className="text-sm text-gray-200 mb-1">
+                    <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded border border-amber-200 dark:border-amber-700">
+                      <p className="text-sm text-gray-900 dark:text-gray-200 mb-1">
                         <strong>Fahrer:</strong> {vehicleConflict.driver.driver_name} ({vehicleConflict.driver.driver_code})
                       </p>
-                      <p className="text-sm text-gray-200 mb-1">
+                      <p className="text-sm text-gray-900 dark:text-gray-200 mb-1">
                         <strong>Fahrzeug:</strong> {vehicleConflict.entry.vehicle}
                       </p>
-                      <p className="text-sm text-gray-200">
+                      <p className="text-sm text-gray-900 dark:text-gray-200">
                         <strong>Arbeitszeit:</strong> {vehicleConflict.entry.start_time} - {vehicleConflict.entry.end_time}
                       </p>
                     </div>
@@ -492,7 +492,7 @@ export function DriverSubmission() {
                   <button
                     type="button"
                     onClick={() => setShowConflictDetails(!showConflictDetails)}
-                    className="mt-2 text-sm text-amber-300 hover:text-amber-100 underline"
+                    className="mt-2 text-sm text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 underline"
                   >
                     {showConflictDetails ? 'Details ausblenden' : 'Details anzeigen'}
                   </button>
@@ -505,8 +505,8 @@ export function DriverSubmission() {
             <div
               className={`p-4 rounded-lg ${
                 message.type === 'success'
-                  ? 'bg-green-900/50 text-green-200 border border-green-700'
-                  : 'bg-red-900/50 text-red-200 border border-red-700'
+                  ? 'bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/50 dark:text-green-200 dark:border-green-700'
+                  : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/50 dark:text-red-200 dark:border-red-700'
               }`}
             >
               {message.text}
@@ -524,10 +524,10 @@ export function DriverSubmission() {
 
         <PWAInstallInstructions />
 
-        <div className="mt-6 text-center text-xs text-gray-500">
+        <div className="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">
           <a
             href="/admin"
-            className="hover:text-gray-300 transition underline decoration-dotted cursor-pointer"
+            className="hover:text-gray-700 dark:hover:text-gray-300 transition underline decoration-dotted cursor-pointer"
           >
             created by - mahmoud shehab
           </a>
