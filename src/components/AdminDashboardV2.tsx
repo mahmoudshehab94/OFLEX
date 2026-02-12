@@ -96,6 +96,15 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   const [comparePeriod, setComparePeriod] = useState<PeriodType>('dieser_monat');
   const [comparison, setComparison] = useState<{ driver1: { driver: Driver, summary: ReportSummary }, driver2: { driver: Driver, summary: ReportSummary } } | null>(null);
 
+  const [vehicleLookup, setVehicleLookup] = useState('');
+  const [vehicleDate, setVehicleDate] = useState('');
+  const [vehicleResult, setVehicleResult] = useState<{ driver: Driver, entry: WorkEntry } | null>(null);
+  const [lookingUpVehicle, setLookingUpVehicle] = useState(false);
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(null), 5000);
@@ -108,7 +117,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     if (activeTab === 'reports') loadTodayEntries();
     if (activeTab === 'drivers') loadDrivers();
     if (activeTab === 'entries') loadEntries();
-  }, [activeTab]);
+  }, [activeTab, loadDashboardStats, loadTodayEntries, loadDrivers, loadEntries]);
 
   useEffect(() => {
     if (debouncedSearch.length > 0) {
@@ -179,7 +188,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     setShowSearchResults(false);
   };
 
-  const loadDashboardStats = async () => {
+  const loadDashboardStats = useCallback(async () => {
     if (!supabase) return;
     setLoadingDashboard(true);
     const today = new Date().toISOString().split('T')[0];
@@ -221,7 +230,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     } finally {
       setLoadingDashboard(false);
     }
-  };
+  }, []);
 
   const calculateDuration = (from: string, to: string): number => {
     const [fromH, fromM] = from.split(':').map(Number);
@@ -310,7 +319,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     };
   };
 
-  const loadDrivers = async () => {
+  const loadDrivers = useCallback(async () => {
     if (!supabase) return;
 
     try {
@@ -325,7 +334,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       console.error('Error loading drivers:', error);
       setMessage({ type: 'error', text: 'Fehler beim Laden der Fahrer' });
     }
-  };
+  }, []);
 
   const handleAddDriver = async () => {
     if (!supabase) return;
@@ -405,7 +414,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     }
   };
 
-  const loadEntries = async () => {
+  const loadEntries = useCallback(async () => {
     if (!supabase) return;
 
     try {
@@ -431,9 +440,9 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       console.error('Error loading entries:', error);
       setMessage({ type: 'error', text: 'Fehler beim Laden der Einträge' });
     }
-  };
+  }, [filterDateFrom, filterDateTo, filterDriverId]);
 
-  const loadTodayEntries = async () => {
+  const loadTodayEntries = useCallback(async () => {
     if (!supabase) return;
     setLoadingToday(true);
     const today = new Date().toISOString().split('T')[0];
@@ -453,7 +462,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     } finally {
       setLoadingToday(false);
     }
-  };
+  }, []);
 
   const handleUpdateEntry = async () => {
     if (!supabase || !editingEntry) return;
@@ -739,6 +748,114 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     XLSX.utils.book_append_sheet(wb, ws, 'Bericht');
     XLSX.writeFile(wb, `Bericht_${driver.driver_code}_${startDate}_${endDate}.xlsx`);
     setMessage({ type: 'success', text: 'Excel erfolgreich exportiert' });
+  };
+
+  const handleVehicleLookup = async () => {
+    if (!supabase || !vehicleLookup.trim() || !vehicleDate) {
+      setMessage({ type: 'error', text: 'Bitte Fahrzeug und Datum eingeben' });
+      return;
+    }
+
+    setLookingUpVehicle(true);
+
+    try {
+      const { data: entry, error: entryError } = await supabase
+        .from('work_entries')
+        .select('*, drivers(*)')
+        .ilike('vehicle', vehicleLookup.trim())
+        .eq('date', vehicleDate)
+        .maybeSingle();
+
+      if (entryError) throw entryError;
+
+      if (entry) {
+        const driverData = (entry as any).drivers;
+        setVehicleResult({
+          driver: driverData,
+          entry: entry
+        });
+        setMessage({ type: 'success', text: 'Fahrzeug gefunden' });
+      } else {
+        setVehicleResult(null);
+        setMessage({ type: 'error', text: 'Kein Eintrag für dieses Fahrzeug an diesem Tag gefunden' });
+      }
+    } catch (error) {
+      console.error('Vehicle lookup error:', error);
+      setMessage({ type: 'error', text: 'Fehler bei der Fahrzeugsuche' });
+      setVehicleResult(null);
+    } finally {
+      setLookingUpVehicle(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!supabase) return;
+
+    if (!newPassword || !confirmPassword) {
+      setMessage({ type: 'error', text: 'Bitte alle Felder ausfüllen' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setMessage({ type: 'error', text: 'Passwort muss mindestens 6 Zeichen lang sein' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setMessage({ type: 'error', text: 'Passwörter stimmen nicht überein' });
+      return;
+    }
+
+    setChangingPassword(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      setMessage({ type: 'success', text: 'Passwort erfolgreich geändert' });
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      console.error('Password change error:', error);
+      setMessage({ type: 'error', text: error.message || 'Fehler beim Ändern des Passworts' });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleDeleteDriver = async (driver: Driver) => {
+    if (!supabase) return;
+
+    const confirmDelete = window.confirm(
+      `Möchten Sie den Fahrer "${driver.driver_name}" (${driver.driver_code}) wirklich DAUERHAFT löschen?\n\nWARNUNG: Alle zugehörigen Arbeitseinträge werden ebenfalls gelöscht! Diese Aktion kann nicht rückgängig gemacht werden.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const { error: entriesError } = await supabase
+        .from('work_entries')
+        .delete()
+        .eq('driver_id', driver.id);
+
+      if (entriesError) throw entriesError;
+
+      const { error: driverError } = await supabase
+        .from('drivers')
+        .delete()
+        .eq('id', driver.id);
+
+      if (driverError) throw driverError;
+
+      setMessage({ type: 'success', text: 'Fahrer und alle zugehörigen Einträge wurden gelöscht' });
+      loadDrivers();
+    } catch (error) {
+      console.error('Error deleting driver:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Löschen des Fahrers' });
+    }
   };
 
   return (
@@ -1670,6 +1787,85 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         {activeTab === 'drivers' && (
           <div className="space-y-4">
             <div className="card p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Search className="w-5 h-5" />
+                Fahrzeug-Suche (Verkehrsstrafen)
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
+                Finden Sie schnell heraus, welcher Fahrer ein bestimmtes Fahrzeug an einem Tag genutzt hat.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="label-text">Fahrzeug</label>
+                  <input
+                    type="text"
+                    value={vehicleLookup}
+                    onChange={(e) => setVehicleLookup(e.target.value)}
+                    placeholder="z.B. MI299, MI 299, mi-299"
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="label-text">Datum</label>
+                  <input
+                    type="date"
+                    value={vehicleDate}
+                    onChange={(e) => setVehicleDate(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={handleVehicleLookup}
+                    disabled={lookingUpVehicle}
+                    className="btn-primary w-full flex items-center justify-center gap-2"
+                  >
+                    {lookingUpVehicle ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Search className="w-4 h-4" />
+                    )}
+                    Suchen
+                  </button>
+                </div>
+              </div>
+
+              {vehicleResult && (
+                <div className="mt-4 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <h3 className="font-semibold text-green-900 dark:text-green-200 mb-2">
+                    Gefunden
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-600 dark:text-slate-400">Fahrer:</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                        {vehicleResult.driver.driver_name} ({vehicleResult.driver.driver_code})
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600 dark:text-slate-400">Fahrzeug:</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                        {vehicleResult.entry.vehicle}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600 dark:text-slate-400">Datum:</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                        {vehicleResult.entry.date}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600 dark:text-slate-400">Zeit:</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                        {vehicleResult.entry.start_time} - {vehicleResult.entry.end_time}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="card p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Neuen Fahrer hinzufügen
               </h2>
@@ -1793,6 +1989,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                                     <Power className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                                   )}
                                 </button>
+                                <button
+                                  onClick={() => handleDeleteDriver(driver)}
+                                  className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                  title="Dauerhaft löschen"
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                </button>
                               </>
                             )}
                           </div>
@@ -1812,23 +2015,69 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         )}
 
         {activeTab === 'settings' && (
-          <div className="card p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Einstellungen
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="label-text">Design-Modus</label>
+          <div className="space-y-4">
+            <div className="card p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Admin-Passwort ändern
+              </h2>
+              <div className="space-y-4 max-w-md">
+                <div>
+                  <label className="label-text">Neues Passwort</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Mindestens 6 Zeichen"
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="label-text">Passwort bestätigen</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Passwort wiederholen"
+                    className="input-field"
+                  />
+                </div>
                 <button
-                  onClick={toggleDarkMode}
-                  className="btn-secondary flex items-center gap-2"
+                  onClick={handleChangePassword}
+                  disabled={changingPassword}
+                  className="btn-primary flex items-center gap-2"
                 >
-                  {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  {isDark ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'}
+                  {changingPassword ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Wird gespeichert...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Passwort ändern
+                    </>
+                  )}
                 </button>
               </div>
+            </div>
 
-              <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
+            <div className="card p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Einstellungen
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="label-text">Design-Modus</label>
+                  <button
+                    onClick={toggleDarkMode}
+                    className="btn-secondary flex items-center gap-2"
+                  >
+                    {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    {isDark ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'}
+                  </button>
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
                 <h3 className="font-medium text-gray-900 dark:text-white mb-2">
                   Über die Anwendung
                 </h3>
@@ -1840,6 +2089,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                 </p>
               </div>
             </div>
+          </div>
           </div>
         )}
       </main>

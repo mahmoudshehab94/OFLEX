@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 export function useDarkMode() {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
     const saved = localStorage.getItem('trans-oflex-dark-mode');
@@ -10,8 +10,8 @@ export function useDarkMode() {
       setIsDark(dark);
       applyTheme(dark);
     } else {
-      setIsDark(false);
-      applyTheme(false);
+      setIsDark(true);
+      applyTheme(true);
     }
   }, []);
 
