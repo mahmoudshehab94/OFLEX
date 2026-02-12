@@ -116,7 +116,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     if (activeTab === 'dashboard') loadDashboardStats();
     if (activeTab === 'reports') loadTodayEntries();
     if (activeTab === 'drivers') loadDrivers();
-    if (activeTab === 'entries') loadEntries();
+    if (activeTab === 'entries') { loadDrivers(); loadEntries(); }
   }, [activeTab]);
 
   useEffect(() => {
