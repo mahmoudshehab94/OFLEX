@@ -535,12 +535,12 @@ export function DriverSubmission() {
         </div>
 
         <div className="mt-6 text-center text-xs text-gray-500">
-          <p>Created by Mahmoud Shehab — V2.1.0</p>
           <a
             href="/admin"
-            className="hover:text-gray-300 transition underline decoration-dotted cursor-pointer mt-1 inline-block"
+            className="hover:text-gray-300 transition cursor-pointer"
           >
-            Admin-Bereich
+            <p>Created by Mahmoud Shehab</p>
+            <p className="mt-0.5">v2.1.0</p>
           </a>
         </div>
       </div>
