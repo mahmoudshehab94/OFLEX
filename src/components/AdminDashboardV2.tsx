@@ -3,7 +3,7 @@ import { supabase, Driver, WorkEntry } from '../lib/supabase';
 import {
   Users, FileText, BarChart3, Plus, Pencil, Trash2,
   Check, X, Search, Download, LogOut,
-  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet, Settings, Clock, Moon, Sun, Loader2
+  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet, Settings, Clock, Moon, Sun, Loader2, Save, Scale
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -31,6 +31,16 @@ interface ReportSummary {
   uberstunden: string;
   totalHours: number;
   overtimeHours: number;
+}
+
+interface EditingEntry {
+  id: string;
+  driver_id: string;
+  vehicle: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  notes: string;
 }
 
 type PeriodType = 'diese_woche' | 'letzte_woche' | 'dieser_monat' | 'letzter_monat' | 'dieses_jahr' | 'letztes_jahr';
@@ -62,11 +72,29 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   const [filterDateTo, setFilterDateTo] = useState('');
   const [filterDriverId, setFilterDriverId] = useState('');
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+  const [editingEntry, setEditingEntry] = useState<EditingEntry | null>(null);
 
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('dieser_monat');
-  const [reportSummary, setReportSummary] = useState<ReportSummary | null>(null);
-  const [reportEntries, setReportEntries] = useState<WorkEntry[]>([]);
-  const [loadingReport, setLoadingReport] = useState(false);
+  const [todayEntries, setTodayEntries] = useState<WorkEntry[]>([]);
+  const [loadingToday, setLoadingToday] = useState(false);
+
+  const [monthlyDriver, setMonthlyDriver] = useState('');
+  const [monthlyDriverSearch, setMonthlyDriverSearch] = useState('');
+  const [monthlyYear, setMonthlyYear] = useState(new Date().getFullYear());
+  const [monthlyMonth, setMonthlyMonth] = useState(new Date().getMonth() + 1);
+  const [monthlyReport, setMonthlyReport] = useState<{ driver: Driver, entries: WorkEntry[], summary: ReportSummary } | null>(null);
+
+  const [customDriver, setCustomDriver] = useState('');
+  const [customDriverSearch, setCustomDriverSearch] = useState('');
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
+  const [customReport, setCustomReport] = useState<{ driver: Driver, entries: WorkEntry[], summary: ReportSummary } | null>(null);
+
+  const [compareDriver1, setCompareDriver1] = useState('');
+  const [compareDriver1Search, setCompareDriver1Search] = useState('');
+  const [compareDriver2, setCompareDriver2] = useState('');
+  const [compareDriver2Search, setCompareDriver2Search] = useState('');
+  const [comparePeriod, setComparePeriod] = useState<PeriodType>('dieser_monat');
+  const [comparison, setComparison] = useState<{ driver1: { driver: Driver, summary: ReportSummary }, driver2: { driver: Driver, summary: ReportSummary } } | null>(null);
 
   useEffect(() => {
     if (message) {
@@ -77,6 +105,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
   useEffect(() => {
     if (activeTab === 'dashboard') loadDashboardStats();
+    if (activeTab === 'reports') loadTodayEntries();
     if (activeTab === 'drivers') loadDrivers();
     if (activeTab === 'entries') loadEntries();
   }, [activeTab]);
@@ -125,6 +154,15 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         setLoadingSearch(false);
       }
     }
+  };
+
+  const getDriverSuggestions = (search: string): Driver[] => {
+    if (!search) return [];
+    const lowerSearch = search.toLowerCase();
+    return drivers.filter(d =>
+      d.driver_code.toLowerCase().includes(lowerSearch) ||
+      d.driver_name.toLowerCase().includes(lowerSearch)
+    );
   };
 
   const handleSelectDriver = (driver: Driver) => {
@@ -188,15 +226,88 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   const calculateDuration = (from: string, to: string): number => {
     const [fromH, fromM] = from.split(':').map(Number);
     const [toH, toM] = to.split(':').map(Number);
-    const fromMinutes = fromH * 60 + fromM;
-    const toMinutes = toH * 60 + toM;
+    let fromMinutes = fromH * 60 + fromM;
+    let toMinutes = toH * 60 + toM;
+
+    if (toMinutes < fromMinutes) {
+      toMinutes += 24 * 60;
+    }
+
     return (toMinutes - fromMinutes) / 60;
   };
 
   const formatHours = (hours: number): string => {
-    if (hours === 0) return '0';
-    const formatted = hours.toFixed(2).replace(/\.?0+$/, '');
-    return formatted;
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
+  };
+
+  const calculateSummary = (entries: WorkEntry[]): ReportSummary => {
+    const arbeitstage = new Set(entries.map(e => e.date)).size;
+    const totalHours = entries.reduce((sum, e) => sum + calculateDuration(e.start_time, e.end_time), 0);
+    const overtimeHours = entries.reduce((sum, e) => {
+      const daily = calculateDuration(e.start_time, e.end_time);
+      return sum + Math.max(0, daily - STANDARD_HOURS);
+    }, 0);
+
+    return {
+      arbeitstage,
+      gesamtarbeitszeit: formatHours(totalHours),
+      uberstunden: formatHours(overtimeHours),
+      totalHours,
+      overtimeHours
+    };
+  };
+
+  const getDateRange = (period: PeriodType): { from: string, to: string } => {
+    const now = new Date();
+    let from: Date, to: Date;
+
+    switch (period) {
+      case 'diese_woche': {
+        const day = now.getDay();
+        const diff = day === 0 ? 6 : day - 1;
+        from = new Date(now);
+        from.setDate(now.getDate() - diff);
+        to = new Date(from);
+        to.setDate(from.getDate() + 6);
+        break;
+      }
+      case 'letzte_woche': {
+        const day = now.getDay();
+        const diff = day === 0 ? 6 : day - 1;
+        from = new Date(now);
+        from.setDate(now.getDate() - diff - 7);
+        to = new Date(from);
+        to.setDate(from.getDate() + 6);
+        break;
+      }
+      case 'dieser_monat': {
+        from = new Date(now.getFullYear(), now.getMonth(), 1);
+        to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        break;
+      }
+      case 'letzter_monat': {
+        from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        to = new Date(now.getFullYear(), now.getMonth(), 0);
+        break;
+      }
+      case 'dieses_jahr': {
+        from = new Date(now.getFullYear(), 0, 1);
+        to = new Date(now.getFullYear(), 11, 31);
+        break;
+      }
+      case 'letztes_jahr': {
+        from = new Date(now.getFullYear() - 1, 0, 1);
+        to = new Date(now.getFullYear() - 1, 11, 31);
+        break;
+      }
+    }
+
+    return {
+      from: from.toISOString().split('T')[0],
+      to: to.toISOString().split('T')[0]
+    };
   };
 
   const loadDrivers = async () => {
@@ -322,6 +433,56 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     }
   };
 
+  const loadTodayEntries = async () => {
+    if (!supabase) return;
+    setLoadingToday(true);
+    const today = new Date().toISOString().split('T')[0];
+
+    try {
+      const { data, error } = await supabase
+        .from('work_entries')
+        .select('*, drivers(driver_code, driver_name)')
+        .eq('date', today)
+        .order('start_time', { ascending: true });
+
+      if (error) throw error;
+      setTodayEntries(data || []);
+    } catch (error) {
+      console.error('Error loading today entries:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Laden der heutigen Einträge' });
+    } finally {
+      setLoadingToday(false);
+    }
+  };
+
+  const handleUpdateEntry = async () => {
+    if (!supabase || !editingEntry) return;
+
+    try {
+      const { error } = await supabase
+        .from('work_entries')
+        .update({
+          driver_id: editingEntry.driver_id,
+          vehicle: editingEntry.vehicle || null,
+          date: editingEntry.date,
+          start_time: editingEntry.start_time,
+          end_time: editingEntry.end_time,
+          notes: editingEntry.notes || null
+        })
+        .eq('id', editingEntry.id);
+
+      if (error) throw error;
+
+      setMessage({ type: 'success', text: 'Eintrag aktualisiert' });
+      setEditingEntry(null);
+      loadEntries();
+      if (activeTab === 'reports') loadTodayEntries();
+    } catch (error) {
+      console.error('Error updating entry:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Aktualisieren' });
+    }
+  };
+
   const toggleSelectEntry = (id: string) => {
     const newSelected = new Set(selectedEntries);
     if (newSelected.has(id)) {
@@ -354,6 +515,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
       setMessage({ type: 'success', text: 'Eintrag gelöscht' });
       loadEntries();
+      if (activeTab === 'reports') loadTodayEntries();
       if (activeTab === 'dashboard') loadDashboardStats();
     } catch (error) {
       console.error('Error deleting entry:', error);
@@ -384,6 +546,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         setMessage({ type: 'success', text: `${selectedEntries.size} Einträge gelöscht` });
         setSelectedEntries(new Set());
         loadEntries();
+        if (activeTab === 'reports') loadTodayEntries();
         if (activeTab === 'dashboard') loadDashboardStats();
       }
     } catch (error) {
@@ -392,128 +555,143 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     }
   };
 
-  const getDateRangeForPeriod = (period: PeriodType): { from: string; to: string } => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const day = now.getDay();
-
-    let from: Date;
-    let to: Date;
-
-    switch (period) {
-      case 'diese_woche':
-        from = new Date(now);
-        from.setDate(now.getDate() - day + (day === 0 ? -6 : 1));
-        to = new Date(from);
-        to.setDate(from.getDate() + 6);
-        break;
-
-      case 'letzte_woche':
-        from = new Date(now);
-        from.setDate(now.getDate() - day + (day === 0 ? -6 : 1) - 7);
-        to = new Date(from);
-        to.setDate(from.getDate() + 6);
-        break;
-
-      case 'dieser_monat':
-        from = new Date(year, month, 1);
-        to = new Date(year, month + 1, 0);
-        break;
-
-      case 'letzter_monat':
-        from = new Date(year, month - 1, 1);
-        to = new Date(year, month, 0);
-        break;
-
-      case 'dieses_jahr':
-        from = new Date(year, 0, 1);
-        to = new Date(year, 11, 31);
-        break;
-
-      case 'letztes_jahr':
-        from = new Date(year - 1, 0, 1);
-        to = new Date(year - 1, 11, 31);
-        break;
-    }
-
-    return {
-      from: from.toISOString().split('T')[0],
-      to: to.toISOString().split('T')[0]
-    };
-  };
-
-  const generateReport = async () => {
+  const handleGenerateMonthlyReport = async () => {
     if (!supabase) return;
-
-    if (!selectedDriver) {
-      setMessage({ type: 'error', text: 'Bitte wählen Sie einen Fahrer aus' });
+    if (!monthlyDriver) {
+      setMessage({ type: 'error', text: 'Bitte Fahrer auswählen' });
       return;
     }
 
-    setLoadingReport(true);
+    const startDate = `${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}-01`;
+    const lastDay = new Date(monthlyYear, monthlyMonth, 0).getDate();
+    const endDate = `${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
     try {
-      const { from, to } = getDateRangeForPeriod(selectedPeriod);
+      const { data: driver } = await supabase
+        .from('drivers')
+        .select('*')
+        .eq('id', monthlyDriver)
+        .single();
 
-      const { data, error } = await supabase
+      const { data: entries } = await supabase
         .from('work_entries')
         .select('*')
-        .eq('driver_id', selectedDriver.id)
-        .gte('date', from)
-        .lte('date', to)
+        .eq('driver_id', monthlyDriver)
+        .gte('date', startDate)
+        .lte('date', endDate)
         .order('date', { ascending: true });
 
-      if (error) throw error;
+      if (!driver) {
+        setMessage({ type: 'error', text: 'Fahrer nicht gefunden' });
+        return;
+      }
 
-      let totalHours = 0;
-      let totalOvertime = 0;
-      const arbeitstage = data?.length || 0;
-
-      data?.forEach(entry => {
-        const hours = calculateDuration(entry.start_time, entry.end_time);
-        totalHours += hours;
-        const overtime = Math.max(0, hours - STANDARD_HOURS);
-        totalOvertime += overtime;
-      });
-
-      setReportSummary({
-        arbeitstage,
-        gesamtarbeitszeit: `${formatHours(totalHours)} Stunden`,
-        uberstunden: `${formatHours(totalOvertime)} Stunden`,
-        totalHours,
-        overtimeHours: totalOvertime
-      });
-
-      setReportEntries(data || []);
+      const summary = calculateSummary(entries || []);
+      setMonthlyReport({ driver, entries: entries || [], summary });
     } catch (error) {
-      console.error('Error generating report:', error);
+      console.error('Error generating monthly report:', error);
       setMessage({ type: 'error', text: 'Fehler beim Erstellen des Berichts' });
-    } finally {
-      setLoadingReport(false);
     }
   };
 
-  const exportReportPDF = () => {
-    if (!selectedDriver || !reportSummary) return;
+  const handleGenerateCustomReport = async () => {
+    if (!supabase) return;
+    if (!customDriver || !customDateFrom || !customDateTo) {
+      setMessage({ type: 'error', text: 'Bitte alle Felder ausfüllen' });
+      return;
+    }
 
+    try {
+      const { data: driver } = await supabase
+        .from('drivers')
+        .select('*')
+        .eq('id', customDriver)
+        .single();
+
+      const { data: entries } = await supabase
+        .from('work_entries')
+        .select('*')
+        .eq('driver_id', customDriver)
+        .gte('date', customDateFrom)
+        .lte('date', customDateTo)
+        .order('date', { ascending: true });
+
+      if (!driver) {
+        setMessage({ type: 'error', text: 'Fahrer nicht gefunden' });
+        return;
+      }
+
+      const summary = calculateSummary(entries || []);
+      setCustomReport({ driver, entries: entries || [], summary });
+    } catch (error) {
+      console.error('Error generating custom report:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Erstellen des Berichts' });
+    }
+  };
+
+  const handleCompareDrivers = async () => {
+    if (!supabase) return;
+    if (!compareDriver1 || !compareDriver2) {
+      setMessage({ type: 'error', text: 'Bitte beide Fahrer auswählen' });
+      return;
+    }
+
+    const { from, to } = getDateRange(comparePeriod);
+
+    try {
+      const results = await Promise.all([compareDriver1, compareDriver2].map(async (driverId) => {
+        const { data: driver } = await supabase
+          .from('drivers')
+          .select('*')
+          .eq('id', driverId)
+          .single();
+
+        const { data: entries } = await supabase
+          .from('work_entries')
+          .select('*')
+          .eq('driver_id', driverId)
+          .gte('date', from)
+          .lte('date', to);
+
+        if (!driver || !entries) return null;
+
+        const summary = calculateSummary(entries);
+
+        return { driver, summary };
+      }));
+
+      if (results[0] && results[1]) {
+        setComparison({
+          driver1: results[0],
+          driver2: results[1]
+        });
+      } else {
+        setMessage({ type: 'error', text: 'Fehler beim Laden der Fahrerdaten' });
+      }
+    } catch (error) {
+      console.error('Error comparing drivers:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Vergleichen' });
+    }
+  };
+
+  const exportPDF = (driver: Driver, entries: WorkEntry[], summary: ReportSummary, startDate: string, endDate: string) => {
     const doc = new jsPDF();
 
     doc.setFontSize(18);
     doc.text('Arbeitszeitbericht', 14, 20);
 
     doc.setFontSize(12);
-    doc.text(`Fahrer: ${selectedDriver.driver_name} (${selectedDriver.driver_code})`, 14, 30);
-    doc.text(`Zeitraum: ${selectedPeriod.replace('_', ' ')}`, 14, 37);
+    doc.text(`Fahrer: ${driver.driver_name} (${driver.driver_code})`, 14, 30);
+    doc.text(`Zeitraum: ${startDate} bis ${endDate}`, 14, 37);
     doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, 14, 44);
 
     doc.setFontSize(10);
-    doc.text(`Arbeitstage: ${reportSummary.arbeitstage}`, 14, 55);
-    doc.text(`Gesamtarbeitszeit: ${reportSummary.gesamtarbeitszeit}`, 14, 62);
-    doc.text(`Überstunden: ${reportSummary.uberstunden}`, 14, 69);
+    doc.text(`Arbeitstage: ${summary.arbeitstage}`, 14, 55);
+    doc.text(`Gesamtarbeitszeit: ${summary.gesamtarbeitszeit}`, 14, 62);
+    doc.text(`Überstunden: ${summary.uberstunden}`, 14, 69);
 
-    if (reportEntries.length > 0) {
-      const tableData = reportEntries.map(entry => {
+    if (entries.length > 0) {
+      const tableData = entries.map(entry => {
         const hours = calculateDuration(entry.start_time, entry.end_time);
         const overtime = Math.max(0, hours - STANDARD_HOURS);
 
@@ -536,14 +714,12 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       });
     }
 
-    doc.save(`Bericht_${selectedDriver.driver_code}_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`Bericht_${driver.driver_code}_${startDate}_${endDate}.pdf`);
     setMessage({ type: 'success', text: 'PDF erfolgreich exportiert' });
   };
 
-  const exportReportExcel = () => {
-    if (!selectedDriver || !reportSummary) return;
-
-    const excelData = reportEntries.map(entry => {
+  const exportExcel = (driver: Driver, entries: WorkEntry[], summary: ReportSummary, startDate: string, endDate: string) => {
+    const excelData = entries.map(entry => {
       const hours = calculateDuration(entry.start_time, entry.end_time);
       const overtime = Math.max(0, hours - STANDARD_HOURS);
 
@@ -561,7 +737,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     const ws = XLSX.utils.json_to_sheet(excelData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Bericht');
-    XLSX.writeFile(wb, `Bericht_${selectedDriver.driver_code}_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(wb, `Bericht_${driver.driver_code}_${startDate}_${endDate}.xlsx`);
     setMessage({ type: 'success', text: 'Excel erfolgreich exportiert' });
   };
 
@@ -701,7 +877,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                       {formatHours(dashboardStats.totalHoursToday)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                      Stunden heute
+                      heute
                     </p>
                   </div>
 
@@ -718,7 +894,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                       {formatHours(dashboardStats.overtimeToday)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                      Stunden heute
+                      heute
                     </p>
                   </div>
                 </div>
@@ -755,87 +931,434 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         {activeTab === 'reports' && (
           <div className="space-y-6">
             <div className="card p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Bericht erstellen
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Heutige Einträge
+                </h2>
+                <button
+                  onClick={loadTodayEntries}
+                  disabled={loadingToday}
+                  className="btn-icon"
+                  title="Aktualisieren"
+                >
+                  <RefreshCw className={`w-5 h-5 ${loadingToday ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="label-text">
-                    Fahrer suchen
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={searchText}
-                      onChange={(e) => {
-                        setSearchText(e.target.value);
-                        if (e.target.value === '') {
-                          handleClearDriver();
+              {todayEntries.length === 0 ? (
+                <p className="text-gray-500 dark:text-slate-400 text-center py-8">
+                  Keine Einträge für heute
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-slate-700">
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Datum</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Fahrer</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Fahrzeug</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Von</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Bis</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Dauer</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Notiz</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Aktionen</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {todayEntries.map(entry => {
+                        const hours = calculateDuration(entry.start_time, entry.end_time);
+                        const driverInfo = (entry as any).drivers;
+
+                        if (editingEntry?.id === entry.id) {
+                          return (
+                            <tr key={entry.id} className="border-b border-gray-200 dark:border-slate-700">
+                              <td className="py-3 px-4">
+                                <input
+                                  type="date"
+                                  value={editingEntry.date}
+                                  onChange={(e) => setEditingEntry({ ...editingEntry, date: e.target.value })}
+                                  className="input-field py-1 text-sm"
+                                />
+                              </td>
+                              <td className="py-3 px-4">
+                                <select
+                                  value={editingEntry.driver_id}
+                                  onChange={(e) => setEditingEntry({ ...editingEntry, driver_id: e.target.value })}
+                                  className="input-field py-1 text-sm"
+                                >
+                                  {drivers.filter(d => d.is_active).map(d => (
+                                    <option key={d.id} value={d.id}>{d.driver_name}</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="py-3 px-4">
+                                <input
+                                  type="text"
+                                  value={editingEntry.vehicle}
+                                  onChange={(e) => setEditingEntry({ ...editingEntry, vehicle: e.target.value })}
+                                  className="input-field py-1 text-sm"
+                                  placeholder="z.B. B AB 1234"
+                                />
+                              </td>
+                              <td className="py-3 px-4">
+                                <input
+                                  type="time"
+                                  value={editingEntry.start_time}
+                                  onChange={(e) => setEditingEntry({ ...editingEntry, start_time: e.target.value })}
+                                  className="input-field py-1 text-sm"
+                                />
+                              </td>
+                              <td className="py-3 px-4">
+                                <input
+                                  type="time"
+                                  value={editingEntry.end_time}
+                                  onChange={(e) => setEditingEntry({ ...editingEntry, end_time: e.target.value })}
+                                  className="input-field py-1 text-sm"
+                                />
+                              </td>
+                              <td className="py-3 px-4">
+                                {formatHours(calculateDuration(editingEntry.start_time, editingEntry.end_time))}
+                              </td>
+                              <td className="py-3 px-4">
+                                <input
+                                  type="text"
+                                  value={editingEntry.notes}
+                                  onChange={(e) => setEditingEntry({ ...editingEntry, notes: e.target.value })}
+                                  className="input-field py-1 text-sm"
+                                />
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={handleUpdateEntry}
+                                    className="p-1 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
+                                    title="Speichern"
+                                  >
+                                    <Save className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingEntry(null)}
+                                    className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                    title="Abbrechen"
+                                  >
+                                    <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
                         }
-                      }}
-                      onFocus={() => {
-                        if (searchText && searchResults.length > 0) {
-                          setShowSearchResults(true);
-                        }
-                      }}
-                      placeholder="Fahrercode oder Name eingeben..."
-                      className="input-field pr-10"
-                      disabled={loadingReport}
-                    />
-                    {loadingSearch && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                      </div>
-                    )}
-                    {showSearchResults && searchResults.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 card max-h-64 overflow-y-auto z-20">
-                        {searchResults.map(driver => (
-                          <button
-                            key={driver.id}
-                            onClick={() => handleSelectDriver(driver)}
-                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-800 border-b border-gray-200 dark:border-slate-700 last:border-b-0 transition-colors"
-                          >
-                            <div className="font-medium text-gray-900 dark:text-white">
-                              {driver.driver_name}
-                            </div>
-                            <div className="text-sm text-gray-500 dark:text-slate-400">
-                              {driver.driver_code}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {selectedDriver && (
-                    <div className="mt-2 flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {selectedDriver.driver_name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">
-                          {selectedDriver.driver_code}
-                        </p>
-                      </div>
-                      <button
-                        onClick={handleClearDriver}
-                        className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
+
+                        return (
+                          <tr key={entry.id} className="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                            <td className="py-3 px-4">{entry.date}</td>
+                            <td className="py-3 px-4">{driverInfo?.driver_name || '-'}</td>
+                            <td className="py-3 px-4">{entry.vehicle || '-'}</td>
+                            <td className="py-3 px-4">{entry.start_time}</td>
+                            <td className="py-3 px-4">{entry.end_time}</td>
+                            <td className="py-3 px-4">{formatHours(hours)}</td>
+                            <td className="py-3 px-4">{entry.notes || '-'}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setEditingEntry({
+                                    id: entry.id,
+                                    driver_id: entry.driver_id,
+                                    vehicle: entry.vehicle || '',
+                                    date: entry.date,
+                                    start_time: entry.start_time,
+                                    end_time: entry.end_time,
+                                    notes: entry.notes || ''
+                                  })}
+                                  className="p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                                  title="Bearbeiten"
+                                >
+                                  <Pencil className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteEntry(entry.id)}
+                                  className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                  title="Löschen"
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
+              )}
+            </div>
 
+            <div className="card p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Monatsbericht
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label className="label-text">
-                    Zeitraum
-                  </label>
-                  <select
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value as PeriodType)}
+                  <label className="label-text">Fahrer (Code oder Name)</label>
+                  <input
+                    type="text"
+                    value={monthlyDriverSearch}
+                    onChange={(e) => {
+                      setMonthlyDriverSearch(e.target.value);
+                      const suggestions = getDriverSuggestions(e.target.value);
+                      if (suggestions.length > 0) {
+                        setMonthlyDriver(suggestions[0].id);
+                      }
+                    }}
+                    onBlur={() => {
+                      const suggestions = getDriverSuggestions(monthlyDriverSearch);
+                      if (suggestions.length > 0) {
+                        setMonthlyDriver(suggestions[0].id);
+                        setMonthlyDriverSearch(`${suggestions[0].driver_code} - ${suggestions[0].driver_name}`);
+                      }
+                    }}
+                    placeholder="Code oder Name eingeben"
                     className="input-field"
-                    disabled={loadingReport}
+                  />
+                </div>
+                <div>
+                  <label className="label-text">Jahr</label>
+                  <input
+                    type="number"
+                    value={monthlyYear}
+                    onChange={(e) => setMonthlyYear(parseInt(e.target.value))}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="label-text">Monat</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="12"
+                    value={monthlyMonth}
+                    onChange={(e) => setMonthlyMonth(parseInt(e.target.value))}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleGenerateMonthlyReport}
+                  className="btn-primary flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Bericht erstellen
+                </button>
+                {monthlyReport && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const startDate = `${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}-01`;
+                        const lastDay = new Date(monthlyYear, monthlyMonth, 0).getDate();
+                        const endDate = `${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+                        exportPDF(monthlyReport.driver, monthlyReport.entries, monthlyReport.summary, startDate, endDate);
+                      }}
+                      className="btn-secondary flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => {
+                        const startDate = `${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}-01`;
+                        const lastDay = new Date(monthlyYear, monthlyMonth, 0).getDate();
+                        const endDate = `${monthlyYear}-${String(monthlyMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+                        exportExcel(monthlyReport.driver, monthlyReport.entries, monthlyReport.summary, startDate, endDate);
+                      }}
+                      className="btn-secondary flex items-center gap-2"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      Excel
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {monthlyReport && (
+                <div className="mt-6 border-t border-gray-200 dark:border-slate-700 pt-6">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
+                    {monthlyReport.driver.driver_name} ({monthlyReport.driver.driver_code})
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                    <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
+                      <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Arbeitstage</div>
+                      <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">{monthlyReport.summary.arbeitstage}</div>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-4">
+                      <div className="text-sm text-green-600 dark:text-green-400 font-medium">Gesamtarbeitszeit</div>
+                      <div className="text-2xl font-bold text-green-900 dark:text-green-200">{monthlyReport.summary.gesamtarbeitszeit}</div>
+                    </div>
+                    <div className="bg-orange-50 dark:bg-orange-950/20 rounded-lg p-4">
+                      <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Überstunden</div>
+                      <div className="text-2xl font-bold text-orange-900 dark:text-orange-200">{monthlyReport.summary.uberstunden}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="card p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Zeitraum-Bericht
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="label-text">Fahrer (Code oder Name)</label>
+                  <input
+                    type="text"
+                    value={customDriverSearch}
+                    onChange={(e) => {
+                      setCustomDriverSearch(e.target.value);
+                      const suggestions = getDriverSuggestions(e.target.value);
+                      if (suggestions.length > 0) {
+                        setCustomDriver(suggestions[0].id);
+                      }
+                    }}
+                    onBlur={() => {
+                      const suggestions = getDriverSuggestions(customDriverSearch);
+                      if (suggestions.length > 0) {
+                        setCustomDriver(suggestions[0].id);
+                        setCustomDriverSearch(`${suggestions[0].driver_code} - ${suggestions[0].driver_name}`);
+                      }
+                    }}
+                    placeholder="Code oder Name eingeben"
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="label-text">Von Datum</label>
+                  <input
+                    type="date"
+                    value={customDateFrom}
+                    onChange={(e) => setCustomDateFrom(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="label-text">Bis Datum</label>
+                  <input
+                    type="date"
+                    value={customDateTo}
+                    onChange={(e) => setCustomDateTo(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleGenerateCustomReport}
+                  className="btn-primary flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Bericht erstellen
+                </button>
+                {customReport && (
+                  <>
+                    <button
+                      onClick={() => exportPDF(customReport.driver, customReport.entries, customReport.summary, customDateFrom, customDateTo)}
+                      className="btn-secondary flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => exportExcel(customReport.driver, customReport.entries, customReport.summary, customDateFrom, customDateTo)}
+                      className="btn-secondary flex items-center gap-2"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      Excel
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {customReport && (
+                <div className="mt-6 border-t border-gray-200 dark:border-slate-700 pt-6">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
+                    {customReport.driver.driver_name} ({customReport.driver.driver_code})
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                    <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
+                      <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Arbeitstage</div>
+                      <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">{customReport.summary.arbeitstage}</div>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-4">
+                      <div className="text-sm text-green-600 dark:text-green-400 font-medium">Gesamtarbeitszeit</div>
+                      <div className="text-2xl font-bold text-green-900 dark:text-green-200">{customReport.summary.gesamtarbeitszeit}</div>
+                    </div>
+                    <div className="bg-orange-50 dark:bg-orange-950/20 rounded-lg p-4">
+                      <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Überstunden</div>
+                      <div className="text-2xl font-bold text-orange-900 dark:text-orange-200">{customReport.summary.uberstunden}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="card p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Scale className="w-5 h-5" />
+                Fahrer vergleichen
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="label-text">Fahrer 1</label>
+                  <input
+                    type="text"
+                    value={compareDriver1Search}
+                    onChange={(e) => {
+                      setCompareDriver1Search(e.target.value);
+                      const suggestions = getDriverSuggestions(e.target.value);
+                      if (suggestions.length > 0) {
+                        setCompareDriver1(suggestions[0].id);
+                      }
+                    }}
+                    onBlur={() => {
+                      const suggestions = getDriverSuggestions(compareDriver1Search);
+                      if (suggestions.length > 0) {
+                        setCompareDriver1(suggestions[0].id);
+                        setCompareDriver1Search(`${suggestions[0].driver_code} - ${suggestions[0].driver_name}`);
+                      }
+                    }}
+                    placeholder="Code oder Name eingeben"
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="label-text">Fahrer 2</label>
+                  <input
+                    type="text"
+                    value={compareDriver2Search}
+                    onChange={(e) => {
+                      setCompareDriver2Search(e.target.value);
+                      const suggestions = getDriverSuggestions(e.target.value);
+                      if (suggestions.length > 0) {
+                        setCompareDriver2(suggestions[0].id);
+                      }
+                    }}
+                    onBlur={() => {
+                      const suggestions = getDriverSuggestions(compareDriver2Search);
+                      if (suggestions.length > 0) {
+                        setCompareDriver2(suggestions[0].id);
+                        setCompareDriver2Search(`${suggestions[0].driver_code} - ${suggestions[0].driver_name}`);
+                      }
+                    }}
+                    placeholder="Code oder Name eingeben"
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="label-text">Zeitraum</label>
+                  <select
+                    value={comparePeriod}
+                    onChange={(e) => setComparePeriod(e.target.value as PeriodType)}
+                    className="input-field"
                   >
                     <option value="diese_woche">Diese Woche</option>
                     <option value="letzte_woche">Letzte Woche</option>
@@ -845,112 +1368,61 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                     <option value="letztes_jahr">Letztes Jahr</option>
                   </select>
                 </div>
-
-                <button
-                  onClick={generateReport}
-                  disabled={!selectedDriver || loadingReport}
-                  className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2"
-                >
-                  {loadingReport ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Wird erstellt...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4" />
-                      Bericht erstellen
-                    </>
-                  )}
-                </button>
               </div>
-            </div>
+              <button
+                onClick={handleCompareDrivers}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Scale className="w-4 h-4" />
+                Vergleichen
+              </button>
 
-            {reportSummary && (
-              <>
-                <div className="card p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Zusammenfassung
-                    </h3>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={exportReportPDF}
-                        className="btn-secondary text-sm flex items-center gap-2"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span className="hidden sm:inline">PDF</span>
-                      </button>
-                      <button
-                        onClick={exportReportExcel}
-                        className="btn-secondary text-sm flex items-center gap-2"
-                      >
-                        <FileSpreadsheet className="w-4 h-4" />
-                        <span className="hidden sm:inline">Excel</span>
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {comparison && (
+                <div className="mt-6 border-t border-gray-200 dark:border-slate-700 pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-slate-400">Arbeitstage</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {reportSummary.arbeitstage}
-                      </p>
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
+                        {comparison.driver1.driver.driver_name} ({comparison.driver1.driver.driver_code})
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3">
+                          <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Arbeitstage</div>
+                          <div className="text-xl font-bold text-blue-900 dark:text-blue-200">{comparison.driver1.summary.arbeitstage}</div>
+                        </div>
+                        <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3">
+                          <div className="text-sm text-green-600 dark:text-green-400 font-medium">Gesamtarbeitszeit</div>
+                          <div className="text-xl font-bold text-green-900 dark:text-green-200">{comparison.driver1.summary.gesamtarbeitszeit}</div>
+                        </div>
+                        <div className="bg-orange-50 dark:bg-orange-950/20 rounded-lg p-3">
+                          <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Überstunden</div>
+                          <div className="text-xl font-bold text-orange-900 dark:text-orange-200">{comparison.driver1.summary.uberstunden}</div>
+                        </div>
+                      </div>
                     </div>
+
                     <div>
-                      <p className="text-sm text-gray-600 dark:text-slate-400">Gesamtarbeitszeit</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {reportSummary.gesamtarbeitszeit}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-slate-400">Überstunden</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {reportSummary.uberstunden}
-                      </p>
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
+                        {comparison.driver2.driver.driver_name} ({comparison.driver2.driver.driver_code})
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3">
+                          <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Arbeitstage</div>
+                          <div className="text-xl font-bold text-blue-900 dark:text-blue-200">{comparison.driver2.summary.arbeitstage}</div>
+                        </div>
+                        <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3">
+                          <div className="text-sm text-green-600 dark:text-green-400 font-medium">Gesamtarbeitszeit</div>
+                          <div className="text-xl font-bold text-green-900 dark:text-green-200">{comparison.driver2.summary.gesamtarbeitszeit}</div>
+                        </div>
+                        <div className="bg-orange-50 dark:bg-orange-950/20 rounded-lg p-3">
+                          <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Überstunden</div>
+                          <div className="text-xl font-bold text-orange-900 dark:text-orange-200">{comparison.driver2.summary.uberstunden}</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                {reportEntries.length > 0 && (
-                  <div className="card p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Einträge ({reportEntries.length})
-                    </h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-gray-200 dark:border-slate-700">
-                            <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Datum</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Fahrzeug</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Von</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Bis</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Stunden</th>
-                            <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Überstunden</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {reportEntries.map(entry => {
-                            const hours = calculateDuration(entry.start_time, entry.end_time);
-                            const overtime = Math.max(0, hours - STANDARD_HOURS);
-                            return (
-                              <tr key={entry.id} className="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50">
-                                <td className="py-3 px-4">{entry.date}</td>
-                                <td className="py-3 px-4">{entry.vehicle || '-'}</td>
-                                <td className="py-3 px-4">{entry.start_time}</td>
-                                <td className="py-3 px-4">{entry.end_time}</td>
-                                <td className="py-3 px-4">{formatHours(hours)}h</td>
-                                <td className="py-3 px-4">{formatHours(overtime)}h</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+              )}
+            </div>
           </div>
         )}
 
@@ -1035,14 +1507,106 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                       <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Datum</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Fahrer</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Fahrzeug</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Von-Bis</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Stunden</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Von</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Bis</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Dauer</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Notiz</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Aktionen</th>
                     </tr>
                   </thead>
                   <tbody>
                     {entries.map(entry => {
                       const hours = calculateDuration(entry.start_time, entry.end_time);
+                      const driverInfo = (entry as any).drivers;
+
+                      if (editingEntry?.id === entry.id) {
+                        return (
+                          <tr key={entry.id} className="border-b border-gray-200 dark:border-slate-700">
+                            <td className="py-3 px-4">
+                              <input
+                                type="checkbox"
+                                checked={selectedEntries.has(entry.id)}
+                                onChange={() => toggleSelectEntry(entry.id)}
+                                className="rounded"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <input
+                                type="date"
+                                value={editingEntry.date}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, date: e.target.value })}
+                                className="input-field py-1 text-sm"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <select
+                                value={editingEntry.driver_id}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, driver_id: e.target.value })}
+                                className="input-field py-1 text-sm"
+                              >
+                                {drivers.filter(d => d.is_active).map(d => (
+                                  <option key={d.id} value={d.id}>{d.driver_name}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="py-3 px-4">
+                              <input
+                                type="text"
+                                value={editingEntry.vehicle}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, vehicle: e.target.value })}
+                                className="input-field py-1 text-sm"
+                                placeholder="z.B. B AB 1234"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <input
+                                type="time"
+                                value={editingEntry.start_time}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, start_time: e.target.value })}
+                                className="input-field py-1 text-sm"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <input
+                                type="time"
+                                value={editingEntry.end_time}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, end_time: e.target.value })}
+                                className="input-field py-1 text-sm"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              {formatHours(calculateDuration(editingEntry.start_time, editingEntry.end_time))}
+                            </td>
+                            <td className="py-3 px-4">
+                              <input
+                                type="text"
+                                value={editingEntry.notes}
+                                onChange={(e) => setEditingEntry({ ...editingEntry, notes: e.target.value })}
+                                className="input-field py-1 text-sm"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={handleUpdateEntry}
+                                  className="p-1 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
+                                  title="Speichern"
+                                >
+                                  <Save className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                </button>
+                                <button
+                                  onClick={() => setEditingEntry(null)}
+                                  className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                  title="Abbrechen"
+                                >
+                                  <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
+
                       return (
                         <tr key={entry.id} className="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50">
                           <td className="py-3 px-4">
@@ -1055,21 +1619,38 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                           </td>
                           <td className="py-3 px-4">{entry.date}</td>
                           <td className="py-3 px-4">
-                            {(entry as any).drivers?.driver_name || '-'}
+                            {driverInfo?.driver_name || '-'}
                           </td>
                           <td className="py-3 px-4">{entry.vehicle || '-'}</td>
+                          <td className="py-3 px-4">{entry.start_time}</td>
+                          <td className="py-3 px-4">{entry.end_time}</td>
+                          <td className="py-3 px-4">{formatHours(hours)}</td>
+                          <td className="py-3 px-4">{entry.notes || '-'}</td>
                           <td className="py-3 px-4">
-                            {entry.start_time} - {entry.end_time}
-                          </td>
-                          <td className="py-3 px-4">{formatHours(hours)}h</td>
-                          <td className="py-3 px-4">
-                            <button
-                              onClick={() => handleDeleteEntry(entry.id)}
-                              className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                              title="Löschen"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setEditingEntry({
+                                  id: entry.id,
+                                  driver_id: entry.driver_id,
+                                  vehicle: entry.vehicle || '',
+                                  date: entry.date,
+                                  start_time: entry.start_time,
+                                  end_time: entry.end_time,
+                                  notes: entry.notes || ''
+                                })}
+                                className="p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                                title="Bearbeiten"
+                              >
+                                <Pencil className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteEntry(entry.id)}
+                                className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                title="Löschen"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1179,14 +1760,14 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                               <>
                                 <button
                                   onClick={() => handleUpdateDriver(editingDriver)}
-                                  className="p-1 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                                  className="p-1 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                                   title="Speichern"
                                 >
                                   <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                                 </button>
                                 <button
                                   onClick={() => setEditingDriver(null)}
-                                  className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                  className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                                   title="Abbrechen"
                                 >
                                   <X className="w-4 h-4 text-red-600 dark:text-red-400" />
@@ -1196,14 +1777,14 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                               <>
                                 <button
                                   onClick={() => setEditingDriver(driver)}
-                                  className="p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                                  className="p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
                                   title="Bearbeiten"
                                 >
                                   <Pencil className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                 </button>
                                 <button
                                   onClick={() => handleToggleDriverStatus(driver)}
-                                  className="p-1 hover:bg-gray-50 dark:hover:bg-slate-800 rounded transition-colors"
+                                  className="p-1 hover:bg-gray-50 dark:hover:bg-slate-800 rounded"
                                   title={driver.is_active ? 'Deaktivieren' : 'Aktivieren'}
                                 >
                                   {driver.is_active ? (
