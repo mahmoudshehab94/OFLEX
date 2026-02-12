@@ -117,7 +117,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     if (activeTab === 'reports') loadTodayEntries();
     if (activeTab === 'drivers') loadDrivers();
     if (activeTab === 'entries') loadEntries();
-  }, [activeTab, loadDashboardStats, loadTodayEntries, loadDrivers, loadEntries]);
+  }, [activeTab]);
 
   useEffect(() => {
     if (debouncedSearch.length > 0) {
@@ -188,7 +188,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     setShowSearchResults(false);
   };
 
-  const loadDashboardStats = useCallback(async () => {
+  const loadDashboardStats = async () => {
     if (!supabase) return;
     setLoadingDashboard(true);
     const today = new Date().toISOString().split('T')[0];
@@ -230,7 +230,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     } finally {
       setLoadingDashboard(false);
     }
-  }, []);
+  };
 
   const calculateDuration = (from: string, to: string): number => {
     const [fromH, fromM] = from.split(':').map(Number);
@@ -319,7 +319,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     };
   };
 
-  const loadDrivers = useCallback(async () => {
+  const loadDrivers = async () => {
     if (!supabase) return;
 
     try {
@@ -334,7 +334,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       console.error('Error loading drivers:', error);
       setMessage({ type: 'error', text: 'Fehler beim Laden der Fahrer' });
     }
-  }, []);
+  };
 
   const handleAddDriver = async () => {
     if (!supabase) return;
@@ -414,7 +414,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     }
   };
 
-  const loadEntries = useCallback(async () => {
+  const loadEntries = async () => {
     if (!supabase) return;
 
     try {
@@ -440,9 +440,9 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       console.error('Error loading entries:', error);
       setMessage({ type: 'error', text: 'Fehler beim Laden der Einträge' });
     }
-  }, [filterDateFrom, filterDateTo, filterDriverId]);
+  };
 
-  const loadTodayEntries = useCallback(async () => {
+  const loadTodayEntries = async () => {
     if (!supabase) return;
     setLoadingToday(true);
     const today = new Date().toISOString().split('T')[0];
@@ -462,7 +462,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     } finally {
       setLoadingToday(false);
     }
-  }, []);
+  };
 
   const handleUpdateEntry = async () => {
     if (!supabase || !editingEntry) return;
