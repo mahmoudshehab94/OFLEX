@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DriverSubmission } from './components/DriverSubmission';
 import { AdminLogin } from './components/AdminLogin';
-import AdminDashboardFull from './components/AdminDashboardFull';
+import AdminDashboardV2 from './components/AdminDashboardV2';
 
 function App() {
   const [page, setPage] = useState<'driver' | 'admin-login' | 'admin-dashboard'>('driver');
@@ -53,7 +53,7 @@ function App() {
   }
 
   if (page === 'admin-dashboard') {
-    return <AdminDashboardFull onLogout={handleAdminLogout} />;
+    return <AdminDashboardV2 onLogout={handleAdminLogout} />;
   }
 
   return <DriverSubmission />;

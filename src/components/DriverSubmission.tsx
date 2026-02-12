@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Truck, Clock, Calendar } from 'lucide-react';
+import { Truck, Clock, Calendar, Download } from 'lucide-react';
 import { supabase, hasSupabaseConfig } from '../lib/supabase';
-import { PWAInstallInstructions } from './PWAInstallInstructions';
+import { InstallationQuickTourModal } from './InstallationQuickTourModal';
 
 export function DriverSubmission() {
   const [driverCode, setDriverCode] = useState('');
@@ -19,6 +19,7 @@ export function DriverSubmission() {
   const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
   const [vehicleConflict, setVehicleConflict] = useState<any>(null);
   const [showConflictDetails, setShowConflictDetails] = useState(false);
+  const [showInstallTour, setShowInstallTour] = useState(false);
 
   useEffect(() => {
     if (licenseLetters.length > 0 || licenseNumbers.length > 0) {
@@ -522,17 +523,32 @@ export function DriverSubmission() {
           </button>
         </form>
 
-        <PWAInstallInstructions />
+        <div className="mt-6 border-t border-gray-700 pt-6">
+          <button
+            type="button"
+            onClick={() => setShowInstallTour(true)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 border border-gray-600 hover:border-gray-500 text-gray-200 rounded-lg transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            <span className="font-medium">App installieren</span>
+          </button>
+        </div>
 
         <div className="mt-6 text-center text-xs text-gray-500">
+          <p>Created by Mahmoud Shehab — V2.1.0</p>
           <a
             href="/admin"
-            className="hover:text-gray-300 transition underline decoration-dotted cursor-pointer"
+            className="hover:text-gray-300 transition underline decoration-dotted cursor-pointer mt-1 inline-block"
           >
-            created by - mahmoud shehab
+            Admin-Bereich
           </a>
         </div>
       </div>
+
+      <InstallationQuickTourModal
+        isOpen={showInstallTour}
+        onClose={() => setShowInstallTour(false)}
+      />
     </div>
   );
 }
