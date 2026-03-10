@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, validateInviteToken, markInviteAsUsed } from '../lib/supabase';
 
 interface User {
   id: string;
@@ -14,6 +14,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, username: string, inviteToken: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -99,13 +100,81 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const register = async (email: string, password: string, username: string, inviteToken: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      if (!supabase) {
+        return { success: false, error: 'Database connection error' };
+      }
+
+      const validation = await validateInviteToken(inviteToken);
+      if (!validation.valid) {
+        return { success: false, error: validation.error || 'Invalid invite' };
+      }
+
+      const invite = validation.invite!;
+
+      const { data: existingUser } = await supabase
+        .from('user_accounts')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (existingUser) {
+        return { success: false, error: 'Email already registered' };
+      }
+
+      const { data: newUser, error: insertError } = await supabase
+        .from('user_accounts')
+        .insert({
+          email,
+          password_hash: password,
+          username,
+          role: invite.role,
+          driver_id: invite.driver_id,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        return { success: false, error: 'Failed to create account' };
+      }
+
+      await markInviteAsUsed(inviteToken);
+
+      const userData: User = {
+        id: newUser.id,
+        email: newUser.email,
+        username: newUser.username,
+        role: newUser.role,
+        driver_id: newUser.driver_id,
+        avatar_url: newUser.avatar_url,
+      };
+
+      setUser(userData);
+
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+
+      localStorage.setItem('userSession', JSON.stringify({
+        user: userData,
+        expiresAt: expiresAt.toISOString(),
+      }));
+
+      return { success: true };
+    } catch (error) {
+      console.error('Registration error:', error);
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  };
+
   const logout = async () => {
     setUser(null);
     localStorage.removeItem('userSession');
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -53,6 +53,18 @@ export interface AdminSettings {
   updated_at: string;
 }
 
+export interface AccountInvite {
+  id: string;
+  token: string;
+  role: 'driver' | 'supervisor' | 'admin';
+  driver_id: string | null;
+  created_by: string | null;
+  expires_at: string;
+  used_at: string | null;
+  is_used: boolean;
+  created_at: string;
+}
+
 export async function testDatabaseConnection(): Promise<{
   success: boolean;
   message: string;
@@ -106,4 +118,100 @@ export function getConfigStatus() {
     hasAdminPassword: !!import.meta.env.VITE_ADMIN_PASSWORD,
     urlValue: import.meta.env.VITE_SUPABASE_URL || '(not set)',
   };
+}
+
+export async function generateInviteToken(
+  role: 'driver' | 'supervisor' | 'admin',
+  createdBy: string,
+  driverId?: string
+): Promise<{ success: boolean; token?: string; error?: string }> {
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
+  try {
+    const token = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    const { data, error } = await supabase
+      .from('account_invites')
+      .insert({
+        token,
+        role,
+        created_by: createdBy,
+        driver_id: driverId || null,
+        expires_at: expiresAt.toISOString(),
+        is_used: false,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, token };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function validateInviteToken(
+  token: string
+): Promise<{ valid: boolean; invite?: AccountInvite; error?: string }> {
+  if (!supabase) {
+    return { valid: false, error: 'Supabase not configured' };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('account_invites')
+      .select('*')
+      .eq('token', token)
+      .single();
+
+    if (error || !data) {
+      return { valid: false, error: 'Invalid invite token' };
+    }
+
+    if (data.is_used) {
+      return { valid: false, error: 'Invite has already been used' };
+    }
+
+    if (new Date(data.expires_at) < new Date()) {
+      return { valid: false, error: 'Invite has expired' };
+    }
+
+    return { valid: true, invite: data };
+  } catch (error: any) {
+    return { valid: false, error: error.message };
+  }
+}
+
+export async function markInviteAsUsed(
+  token: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
+  try {
+    const { error } = await supabase
+      .from('account_invites')
+      .update({
+        is_used: true,
+        used_at: new Date().toISOString(),
+      })
+      .eq('token', token)
+      .eq('is_used', false);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 }

@@ -10,13 +10,14 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useDebounce } from '../hooks/useDebounce';
+import { InviteManagement } from './InviteManagement';
 
 interface Message {
   type: 'success' | 'error';
   text: string;
 }
 
-type TabType = 'dashboard' | 'reports' | 'entries' | 'drivers' | 'settings';
+type TabType = 'dashboard' | 'reports' | 'entries' | 'drivers' | 'invites' | 'settings';
 
 interface DashboardStats {
   driversSubmittedToday: number;
@@ -937,6 +938,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
               { id: 'reports', label: 'Berichte', icon: FileText },
               { id: 'entries', label: 'Einträge', icon: Clock },
               { id: 'drivers', label: 'Fahrer', icon: Users },
+              { id: 'invites', label: 'Einladungen', icon: Plus },
               { id: 'settings', label: 'Einstellungen', icon: Settings }
             ].map(tab => {
               const IconComponent = tab.icon;
@@ -2034,6 +2036,10 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
               </div>
             </div>
           </div>
+        )}
+
+        {activeTab === 'invites' && (
+          <InviteManagement />
         )}
 
         {activeTab === 'settings' && (

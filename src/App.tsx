@@ -5,6 +5,7 @@ import { DriverSubmission } from './components/DriverSubmission';
 import { SupervisorDashboard } from './components/SupervisorDashboard';
 import { AdminLogin } from './components/AdminLogin';
 import AdminDashboardV2 from './components/AdminDashboardV2';
+import { RegisterWithInvite } from './components/RegisterWithInvite';
 
 function AppContent() {
   const { user, loading, logout } = useAuth();
@@ -28,6 +29,11 @@ function AppContent() {
   }
 
   const path = window.location.pathname;
+
+  if (path === '/register') {
+    return <RegisterWithInvite />;
+  }
+
   if (path === '/admin') {
     const isOldAdminLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
     if (isOldAdminLoggedIn) {
