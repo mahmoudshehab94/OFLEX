@@ -30,9 +30,16 @@ Deno.serve(async (req: Request) => {
     const body: UpdateUserRequest = await req.json();
     const { userId, email, username, sessionUserId } = body;
 
+    console.log('Received request:', { userId, email, username, sessionUserId });
+
     if (!userId || !sessionUserId) {
+      console.error('Missing fields:', { userId, sessionUserId });
       return new Response(
-        JSON.stringify({ success: false, error: 'Missing required fields' }),
+        JSON.stringify({
+          success: false,
+          error: 'Missing required fields',
+          details: { userId: !!userId, sessionUserId: !!sessionUserId }
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

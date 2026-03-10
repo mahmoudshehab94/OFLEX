@@ -939,9 +939,14 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       return;
     }
 
+    if (!user) {
+      setMessage({ type: 'error', text: 'Sitzung abgelaufen' });
+      return;
+    }
+
     setUpdatingEmail(true);
     try {
-      const result = await updateUserEmail(userId, newEmail);
+      const result = await updateUserEmail(userId, newEmail, user.id);
       if (result.success) {
         setMessage({ type: 'success', text: 'E-Mail erfolgreich aktualisiert' });
         setEditingUserEmail(null);
@@ -963,9 +968,14 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       return;
     }
 
+    if (!user) {
+      setMessage({ type: 'error', text: 'Sitzung abgelaufen' });
+      return;
+    }
+
     setUpdatingDriverEmail(true);
     try {
-      const result = await updateUserEmail(accountId, newEmail);
+      const result = await updateUserEmail(accountId, newEmail, user.id);
       if (result.success) {
         setMessage({ type: 'success', text: 'E-Mail erfolgreich aktualisiert' });
         setEditingDriverEmail(null);
