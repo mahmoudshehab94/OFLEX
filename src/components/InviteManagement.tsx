@@ -27,6 +27,7 @@ export function InviteManagement() {
   const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
 
   const [newDriverData, setNewDriverData] = useState({
+    code: '',
     name: '',
     license_letters: '',
     license_numbers: ''
@@ -109,6 +110,10 @@ export function InviteManagement() {
       }
 
       if (inviteType === 'new') {
+        if (!newDriverData.code.trim()) {
+          setMessage({ type: 'error', text: 'Driver code is required' });
+          return;
+        }
         if (!newDriverData.name.trim()) {
           setMessage({ type: 'error', text: 'Driver name is required' });
           return;
@@ -133,7 +138,7 @@ export function InviteManagement() {
       await loadInvites();
       setSelectedDriverId('');
       setDriverSearch('');
-      setNewDriverData({ name: '', license_letters: '', license_numbers: '' });
+      setNewDriverData({ code: '', name: '', license_letters: '', license_numbers: '' });
     } else {
       setMessage({ type: 'error', text: result.error || 'Failed to create invite' });
     }
@@ -367,6 +372,19 @@ export function InviteManagement() {
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Neuer Fahrer Information
                   </p>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Fahrer-Code *
+                    </label>
+                    <input
+                      type="text"
+                      value={newDriverData.code}
+                      onChange={(e) => setNewDriverData({ ...newDriverData, code: e.target.value.toUpperCase() })}
+                      placeholder="z.B. F001"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      required
+                    />
+                  </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                       Fahrername *

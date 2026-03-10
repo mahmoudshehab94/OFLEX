@@ -131,7 +131,7 @@ export async function generateInviteToken(
   role: 'driver' | 'supervisor' | 'admin',
   createdBy: string,
   driverId?: string,
-  newDriverData?: { name: string; license_letters: string; license_numbers: string }
+  newDriverData?: { code: string; name: string; license_letters: string; license_numbers: string }
 ): Promise<{ success: boolean; token?: string; error?: string }> {
   if (!supabase) {
     return { success: false, error: 'Supabase not configured' };
@@ -153,6 +153,7 @@ export async function generateInviteToken(
     if (driverId) {
       inviteData.driver_id = driverId;
     } else if (newDriverData) {
+      inviteData.new_driver_code = newDriverData.code;
       inviteData.new_driver_name = newDriverData.name;
       inviteData.new_driver_license_letters = newDriverData.license_letters || null;
       inviteData.new_driver_license_numbers = newDriverData.license_numbers || null;
