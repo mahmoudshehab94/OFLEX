@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../hooks/useDarkMode';
-import { supabase, Driver } from '../lib/supabase';
+import { supabase, Driver, getDriversWithAccounts } from '../lib/supabase';
 import { InviteManagement } from './InviteManagement';
 import { SupervisorProfile } from './SupervisorProfile';
 import { hasPermission } from '../lib/permissions';
@@ -66,13 +66,13 @@ export function SupervisorDashboard() {
     if (!supabase) return;
 
     setLoading(true);
-    const { data, error } = await supabase
-      .from('drivers')
-      .select('*')
-      .order('driver_name');
+    const result = await getDriversWithAccounts();
 
-    if (!error && data) {
-      setDrivers(data);
+    if (result.success && result.drivers) {
+      const sortedDrivers = result.drivers.sort((a, b) =>
+        a.driver_name.localeCompare(b.driver_name)
+      );
+      setDrivers(sortedDrivers);
     }
     setLoading(false);
   };
@@ -559,6 +559,7 @@ export function SupervisorDashboard() {
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Status</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Code</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Name</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Email</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">License</th>
                         <th className="text-right py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Actions</th>
                       </tr>
@@ -577,6 +578,9 @@ export function SupervisorDashboard() {
                           </td>
                           <td className="py-3 px-4 text-slate-900 dark:text-white font-medium">{driver.driver_code}</td>
                           <td className="py-3 px-4 text-slate-900 dark:text-white">{driver.driver_name}</td>
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                            {driver.account_email || '-'}
+                          </td>
                           <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
                             {driver.license_letters || driver.license_numbers
                               ? `${driver.license_letters || ''} ${driver.license_numbers || ''}`.trim()
