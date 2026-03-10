@@ -992,7 +992,8 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       // Update AuthContext with new profile data
       updateUserProfile({
         username: updates.username,
-        // Note: full_name and phone are not in User interface, but avatar and other fields are kept
+        full_name: updates.full_name,
+        phone: updates.phone,
       });
 
       setMessage({ type: 'success', text: 'Profil erfolgreich aktualisiert' });

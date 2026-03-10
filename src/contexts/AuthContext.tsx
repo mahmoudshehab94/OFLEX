@@ -8,6 +8,8 @@ interface User {
   role: 'admin' | 'supervisor' | 'driver';
   driver_id: string | null;
   avatar_url: string | null;
+  full_name: string | null;
+  phone: string | null;
 }
 
 interface AuthContextType {
@@ -85,6 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: users.role,
         driver_id: users.driver_id,
         avatar_url: users.avatar_url,
+        full_name: users.full_name,
+        phone: users.phone,
       };
 
       setUser(userData);

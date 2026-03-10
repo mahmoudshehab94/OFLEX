@@ -306,18 +306,25 @@ export async function resetUserPassword(
 
   try {
     const passwordHash = await hashPassword(newPassword);
+    console.log('Resetting password for user:', userId);
+    console.log('New password hash:', passwordHash);
 
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from('user_accounts')
       .update({ password_hash: passwordHash })
-      .eq('id', userId);
+      .eq('id', userId)
+      .select();
+
+    console.log('Update result:', { error, data });
 
     if (error) {
+      console.error('Password reset error:', error);
       return { success: false, error: error.message };
     }
 
     return { success: true };
   } catch (error: any) {
+    console.error('Password reset exception:', error);
     return { success: false, error: error.message };
   }
 }
