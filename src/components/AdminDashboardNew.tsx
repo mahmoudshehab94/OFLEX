@@ -25,6 +25,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [editCode, setEditCode] = useState('');
   const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editLicenseLetters, setEditLicenseLetters] = useState('');
+  const [editLicenseNumbers, setEditLicenseNumbers] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -55,7 +58,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     try {
       const { data: driversData, error: driversError } = await supabase
         .from('drivers')
-        .select('*')
+        .select(`
+          *,
+          user_accounts!drivers_user_account_id_fkey(email)
+        `)
         .order('driver_code', { ascending: true });
 
       if (driversError) {
@@ -126,16 +132,36 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     }
   };
 
-  const startEditDriver = (driver: Driver) => {
+  const startEditDriver = async (driver: Driver) => {
     setEditingDriver(driver);
     setEditCode(driver.driver_code);
     setEditName(driver.driver_name);
+    setEditLicenseLetters(driver.license_letters || '');
+    setEditLicenseNumbers(driver.license_numbers || '');
+
+    // Load driver's email from user_accounts
+    if (supabase && driver.user_account_id) {
+      const { data } = await supabase
+        .from('user_accounts')
+        .select('email')
+        .eq('id', driver.user_account_id)
+        .maybeSingle();
+
+      if (data) {
+        setEditEmail(data.email);
+      }
+    } else {
+      setEditEmail('');
+    }
   };
 
   const cancelEdit = () => {
     setEditingDriver(null);
     setEditCode('');
     setEditName('');
+    setEditEmail('');
+    setEditLicenseLetters('');
+    setEditLicenseNumbers('');
   };
 
   const saveDriverEdit = async () => {
@@ -146,26 +172,53 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       return;
     }
 
+    // Validate email format if provided
+    if (editEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(editEmail.trim())) {
+        setMessage({ type: 'error', text: 'Ungültige E-Mail-Adresse' });
+        return;
+      }
+    }
+
     try {
-      const { error } = await supabase
+      // Update driver information
+      const { error: driverError } = await supabase
         .from('drivers')
         .update({
           driver_code: editCode.trim(),
-          driver_name: editName.trim()
+          driver_name: editName.trim(),
+          license_letters: editLicenseLetters.trim() || null,
+          license_numbers: editLicenseNumbers.trim() || null
         })
         .eq('id', editingDriver.id);
 
-      if (error) {
-        if (error.code === '23505') {
+      if (driverError) {
+        if (driverError.code === '23505') {
           setMessage({ type: 'error', text: 'Dieser Code ist bereits vergeben' });
         } else {
-          setMessage({ type: 'error', text: `Fehler: ${error.message}` });
+          setMessage({ type: 'error', text: `Fehler: ${driverError.message}` });
         }
-      } else {
-        setMessage({ type: 'success', text: 'Fahrer erfolgreich aktualisiert' });
-        cancelEdit();
-        loadDrivers();
+        return;
       }
+
+      // Update email if driver has a user account and email was changed
+      if (editingDriver.user_account_id && editEmail.trim()) {
+        const { error: emailError } = await supabase
+          .from('user_accounts')
+          .update({ email: editEmail.trim() })
+          .eq('id', editingDriver.user_account_id);
+
+        if (emailError) {
+          setMessage({ type: 'error', text: `Fahrer aktualisiert, aber E-Mail-Update fehlgeschlagen: ${emailError.message}` });
+          loadDrivers();
+          return;
+        }
+      }
+
+      setMessage({ type: 'success', text: 'Fahrer erfolgreich aktualisiert' });
+      cancelEdit();
+      loadDrivers();
     } catch (error: any) {
       console.error('Update driver error:', error);
       setMessage({ type: 'error', text: 'Fehler beim Aktualisieren' });
@@ -376,20 +429,62 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   {editingDriver?.id === driver.id ? (
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Code</label>
+                          <input
+                            type="text"
+                            value={editCode}
+                            onChange={(e) => setEditCode(e.target.value)}
+                            placeholder="Code"
+                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            placeholder="Name"
+                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">License Letters</label>
+                          <input
+                            type="text"
+                            value={editLicenseLetters}
+                            onChange={(e) => setEditLicenseLetters(e.target.value)}
+                            placeholder="e.g., ABC"
+                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">License Numbers</label>
+                          <input
+                            type="text"
+                            value={editLicenseNumbers}
+                            onChange={(e) => setEditLicenseNumbers(e.target.value)}
+                            placeholder="e.g., 123456"
+                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
                         <input
-                          type="text"
-                          value={editCode}
-                          onChange={(e) => setEditCode(e.target.value)}
-                          placeholder="Code"
-                          className="px-3 py-2 border border-gray-300 rounded"
+                          type="email"
+                          value={editEmail}
+                          onChange={(e) => setEditEmail(e.target.value)}
+                          placeholder="email@example.com"
+                          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          disabled={!editingDriver.user_account_id}
                         />
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          placeholder="Name"
-                          className="px-3 py-2 border border-gray-300 rounded"
-                        />
+                        {!editingDriver.user_account_id && (
+                          <p className="text-xs text-gray-500 mt-1">Dieser Fahrer hat kein Benutzerkonto</p>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -410,14 +505,20 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     </div>
                   ) : (
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <p className={`font-semibold ${driver.is_active ? 'text-gray-900' : 'text-gray-500'}`}>
                           {driver.driver_name} (Code: {driver.driver_code})
                         </p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <p className="text-sm text-gray-600">
-                            Einträge: {driver.entry_count || 0}
-                          </p>
+                        <div className="flex items-center gap-3 mt-1 text-sm text-gray-600">
+                          <span>Einträge: {driver.entry_count || 0}</span>
+                          {driver.license_letters && driver.license_numbers && (
+                            <span>Führerschein: {driver.license_letters} {driver.license_numbers}</span>
+                          )}
+                          {driver.user_accounts && (
+                            <span>Email: {driver.user_accounts.email}</span>
+                          )}
+                        </div>
+                        <div className="mt-1">
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
                             driver.is_active
                               ? 'bg-green-100 text-green-700'
