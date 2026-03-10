@@ -1200,13 +1200,6 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
       if (entriesError) throw entriesError;
 
-      const { error: accountError } = await supabase
-        .from('user_accounts')
-        .delete()
-        .eq('driver_id', driver.id);
-
-      if (accountError) throw accountError;
-
       const { error: driverError } = await supabase
         .from('drivers')
         .delete()

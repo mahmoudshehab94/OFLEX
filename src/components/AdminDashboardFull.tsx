@@ -349,11 +349,6 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
   const handleDeleteDriver = async (id: string) => {
     if (!confirm('Fahrer wirklich löschen? Alle zugehörigen Einträge und das Benutzerkonto werden ebenfalls gelöscht.')) return;
 
-    await supabase
-      .from('user_accounts')
-      .delete()
-      .eq('driver_id', id);
-
     const { error } = await supabase
       .from('drivers')
       .delete()

@@ -249,11 +249,6 @@ export function SupervisorDashboard() {
       return;
     }
 
-    await supabase
-      .from('user_accounts')
-      .delete()
-      .eq('driver_id', driverId);
-
     const { error } = await supabase
       .from('drivers')
       .delete()
