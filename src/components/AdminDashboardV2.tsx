@@ -68,7 +68,7 @@ const getAvatarUrl = (avatarPath: string | null): string | null => {
 };
 
 export default function AdminDashboardV2({ onLogout }: { onLogout: () => void }) {
-  const { user } = useAuth();
+  const { user, updateUserProfile } = useAuth();
 
   if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
     window.history.pushState({}, '', '/');
@@ -954,7 +954,9 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
       if (updateError) throw updateError;
 
+      // Update local state and AuthContext
       setProfileAvatarUrl(filePath);
+      updateUserProfile({ avatar_url: filePath });
       setMessage({ type: 'success', text: 'Profilbild erfolgreich hochgeladen' });
     } catch (error: any) {
       console.error('Error uploading avatar:', error);
@@ -974,16 +976,24 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
     setUpdatingProfile(true);
     try {
+      const updates = {
+        username: profileUsername.trim(),
+        full_name: profileFullName.trim() || null,
+        phone: profilePhone.trim() || null
+      };
+
       const { error } = await supabase
         .from('user_accounts')
-        .update({
-          username: profileUsername.trim(),
-          full_name: profileFullName.trim() || null,
-          phone: profilePhone.trim() || null
-        })
+        .update(updates)
         .eq('id', user.id);
 
       if (error) throw error;
+
+      // Update AuthContext with new profile data
+      updateUserProfile({
+        username: updates.username,
+        // Note: full_name and phone are not in User interface, but avatar and other fields are kept
+      });
 
       setMessage({ type: 'success', text: 'Profil erfolgreich aktualisiert' });
     } catch (error: any) {

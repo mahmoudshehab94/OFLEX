@@ -17,6 +17,7 @@ interface AuthContextType {
   register: (email: string, password: string, username: string, inviteToken: string, avatarUrl?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateUserAvatar: (avatarUrl: string) => void;
+  updateUserProfile: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -215,13 +216,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUserProfile = (updates: Partial<User>) => {
+    if (!user) return;
+
+    const updatedUser = {
+      ...user,
+      ...updates
+    };
+
+    setUser(updatedUser);
+
+    const sessionData = localStorage.getItem('userSession');
+    if (sessionData) {
+      const session = JSON.parse(sessionData);
+      session.user = updatedUser;
+      localStorage.setItem('userSession', JSON.stringify(session));
+    }
+  };
+
   const logout = async () => {
     setUser(null);
     localStorage.removeItem('userSession');
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUserAvatar }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUserAvatar, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, Camera, Lock, Save, AlertCircle, CheckCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, hashPassword } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProfileData {
@@ -8,8 +8,22 @@ interface ProfileData {
   avatar_url: string | null;
 }
 
+const getAvatarUrl = (avatarPath: string | null): string | null => {
+  if (!avatarPath || !supabase) return null;
+
+  // If it's already a full URL, return it
+  if (avatarPath.startsWith('http')) return avatarPath;
+
+  // Otherwise, generate public URL from path
+  const { data: { publicUrl } } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(avatarPath);
+
+  return publicUrl;
+};
+
 export function SupervisorProfile() {
-  const { user } = useAuth();
+  const { user, updateUserProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -31,14 +45,14 @@ export function SupervisorProfile() {
     try {
       const { data, error } = await supabase
         .from('user_accounts')
-        .select('display_name, avatar_url')
+        .select('username, avatar_url')
         .eq('id', user.id)
         .maybeSingle();
 
       if (error) throw error;
 
       if (data) {
-        setDisplayName(data.display_name || '');
+        setDisplayName(data.username || '');
         setAvatarUrl(data.avatar_url);
       }
     } catch (error) {
@@ -76,18 +90,17 @@ export function SupervisorProfile() {
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
+      // Store file path instead of public URL for consistency
       const { error: updateError } = await supabase
         .from('user_accounts')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: filePath })
         .eq('id', user.id);
 
       if (updateError) throw updateError;
 
-      setAvatarUrl(publicUrl);
+      // Update local state and AuthContext
+      setAvatarUrl(filePath);
+      updateUserProfile({ avatar_url: filePath });
       setMessage({ type: 'success', text: 'تم تحديث الصورة الشخصية بنجاح' });
     } catch (error: any) {
       console.error('Error uploading image:', error);
@@ -105,13 +118,16 @@ export function SupervisorProfile() {
     setMessage(null);
 
     try {
+      // Update username in user_accounts table
       const { error } = await supabase
         .from('user_accounts')
-        .update({ display_name: displayName })
+        .update({ username: displayName })
         .eq('id', user.id);
 
       if (error) throw error;
 
+      // Update AuthContext with new username
+      updateUserProfile({ username: displayName });
       setMessage({ type: 'success', text: 'تم تحديث الاسم بنجاح' });
     } catch (error: any) {
       console.error('Error updating profile:', error);
@@ -138,20 +154,26 @@ export function SupervisorProfile() {
     setMessage(null);
 
     try {
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-        email: user?.email || '',
-        password: currentPassword,
-      });
+      // Verify current password by comparing with stored hash
+      const { data: account } = await supabase
+        .from('user_accounts')
+        .select('password_hash')
+        .eq('id', user?.id)
+        .maybeSingle();
 
-      if (loginError) {
+      const currentPasswordHash = await hashPassword(currentPassword);
+      if (!account || account.password_hash !== currentPasswordHash) {
         setMessage({ type: 'error', text: 'كلمة المرور الحالية غير صحيحة' });
         setSaving(false);
         return;
       }
 
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      // Hash and update new password
+      const newPasswordHash = await hashPassword(newPassword);
+      const { error: updateError } = await supabase
+        .from('user_accounts')
+        .update({ password_hash: newPasswordHash })
+        .eq('id', user?.id);
 
       if (updateError) throw updateError;
 
@@ -206,8 +228,8 @@ export function SupervisorProfile() {
         <div className="flex flex-col items-center mb-8">
           <div className="relative">
             <div className="w-32 h-32 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden border-4 border-slate-200 dark:border-slate-600">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+              {getAvatarUrl(avatarUrl) ? (
+                <img src={getAvatarUrl(avatarUrl)!} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 <User className="w-16 h-16 text-slate-400 dark:text-slate-500" />
               )}
