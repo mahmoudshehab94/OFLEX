@@ -27,7 +27,6 @@ export function InviteManagement() {
   const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
 
   const [newDriverData, setNewDriverData] = useState({
-    code: '',
     name: '',
     license_letters: '',
     license_numbers: ''
@@ -110,18 +109,8 @@ export function InviteManagement() {
       }
 
       if (inviteType === 'new') {
-        if (!newDriverData.code.trim()) {
-          setMessage({ type: 'error', text: 'Driver code is required' });
-          return;
-        }
         if (!newDriverData.name.trim()) {
           setMessage({ type: 'error', text: 'Driver name is required' });
-          return;
-        }
-
-        const existingDriver = drivers.find(d => d.driver_code.toLowerCase() === newDriverData.code.toLowerCase());
-        if (existingDriver) {
-          setMessage({ type: 'error', text: 'Driver code already exists. Use "Link to Existing Driver" option instead.' });
           return;
         }
       }
@@ -144,7 +133,7 @@ export function InviteManagement() {
       await loadInvites();
       setSelectedDriverId('');
       setDriverSearch('');
-      setNewDriverData({ code: '', name: '', license_letters: '', license_numbers: '' });
+      setNewDriverData({ name: '', license_letters: '', license_numbers: '' });
     } else {
       setMessage({ type: 'error', text: result.error || 'Failed to create invite' });
     }
@@ -380,19 +369,6 @@ export function InviteManagement() {
                   </p>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Driver Code *
-                    </label>
-                    <input
-                      type="text"
-                      value={newDriverData.code}
-                      onChange={(e) => setNewDriverData({ ...newDriverData, code: e.target.value })}
-                      placeholder="e.g., D001"
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                       Driver Name *
                     </label>
                     <input
@@ -484,7 +460,7 @@ export function InviteManagement() {
           <div className="space-y-3">
             {invites.map((invite) => {
               const statusInfo = getInviteStatus(invite);
-              const isNewDriver = invite.new_driver_code != null;
+              const isNewDriver = invite.new_driver_name != null;
               const inviteUrl = `${appUrl || ''}/register?token=${invite.token}`;
               return (
                 <div
@@ -510,7 +486,7 @@ export function InviteManagement() {
                       </div>
                       {isNewDriver && (
                         <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
-                          {invite.new_driver_code} - {invite.new_driver_name}
+                          {invite.new_driver_name}
                         </p>
                       )}
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate mb-1">
