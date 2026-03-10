@@ -309,17 +309,22 @@ export async function resetUserPassword(
     console.log('Resetting password for user:', userId);
     console.log('New password hash:', passwordHash);
 
-    const { error, data } = await supabase
-      .from('user_accounts')
-      .update({ password_hash: passwordHash })
-      .eq('id', userId)
-      .select();
+    const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-profile`;
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, password_hash: passwordHash }),
+    });
 
-    console.log('Update result:', { error, data });
+    const result = await response.json();
+    console.log('Update result:', result);
 
-    if (error) {
-      console.error('Password reset error:', error);
-      return { success: false, error: error.message };
+    if (!result.success) {
+      console.error('Password reset error:', result.error);
+      return { success: false, error: result.error || 'Failed to reset password' };
     }
 
     return { success: true };
