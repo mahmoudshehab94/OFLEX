@@ -326,6 +326,7 @@ export interface UserAccount {
   driver_id: string | null;
   avatar_url: string | null;
   created_at: string;
+  driver_name?: string | null;
 }
 
 export async function getAllUserAccounts(): Promise<{ success: boolean; users?: UserAccount[]; error?: string }> {
@@ -336,14 +337,20 @@ export async function getAllUserAccounts(): Promise<{ success: boolean; users?: 
   try {
     const { data, error } = await supabase
       .from('user_accounts')
-      .select('*')
+      .select('*, drivers(driver_name)')
       .order('created_at', { ascending: false });
 
     if (error) {
       return { success: false, error: error.message };
     }
 
-    return { success: true, users: data };
+    const users = data?.map((account: any) => ({
+      ...account,
+      driver_name: account.drivers?.driver_name || null,
+      drivers: undefined
+    }));
+
+    return { success: true, users };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

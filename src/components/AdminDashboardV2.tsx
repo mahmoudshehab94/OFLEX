@@ -122,6 +122,9 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(null);
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [userSearchText, setUserSearchText] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'admin' | 'supervisor' | 'driver'>('all');
+  const [filteredUserAccounts, setFilteredUserAccounts] = useState<UserAccount[]>([]);
 
   useEffect(() => {
     if (message) {
@@ -150,6 +153,26 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       setShowSearchResults(false);
     }
   }, [debouncedSearch]);
+
+  useEffect(() => {
+    let filtered = userAccounts;
+
+    if (userRoleFilter !== 'all') {
+      filtered = filtered.filter(account => account.role === userRoleFilter);
+    }
+
+    if (userSearchText.trim()) {
+      const searchLower = userSearchText.toLowerCase();
+      filtered = filtered.filter(account => {
+        const matchesUsername = account.username.toLowerCase().includes(searchLower);
+        const matchesEmail = account.email.toLowerCase().includes(searchLower);
+        const matchesDriverName = account.driver_name?.toLowerCase().includes(searchLower);
+        return matchesUsername || matchesEmail || matchesDriverName;
+      });
+    }
+
+    setFilteredUserAccounts(filtered);
+  }, [userAccounts, userSearchText, userRoleFilter]);
 
   const searchDrivers = async (query: string) => {
     if (!supabase) return;
@@ -2157,10 +2180,62 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         {activeTab === 'users' && (
           <div className="space-y-6">
             <div className="card p-6">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                 <ShieldAlert className="w-6 h-6 text-blue-600" />
                 Benutzerverwaltung
               </h2>
+
+              <div className="mb-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      <Search className="w-4 h-4 inline mr-2" />
+                      Suchen
+                    </label>
+                    <input
+                      type="text"
+                      value={userSearchText}
+                      onChange={(e) => setUserSearchText(e.target.value)}
+                      placeholder="Benutzername, E-Mail oder Fahrername..."
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      <Filter className="w-4 h-4 inline mr-2" />
+                      Rolle filtern
+                    </label>
+                    <select
+                      value={userRoleFilter}
+                      onChange={(e) => setUserRoleFilter(e.target.value as any)}
+                      className="input-field w-full"
+                    >
+                      <option value="all">Alle Rollen</option>
+                      <option value="admin">Admin</option>
+                      <option value="supervisor">Supervisor</option>
+                      <option value="driver">Fahrer</option>
+                    </select>
+                  </div>
+                </div>
+
+                {(userSearchText || userRoleFilter !== 'all') && (
+                  <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
+                    <span>
+                      {filteredUserAccounts.length} von {userAccounts.length} Benutzer{userAccounts.length !== 1 ? 'n' : ''}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setUserSearchText('');
+                        setUserRoleFilter('all');
+                      }}
+                      className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                    >
+                      <X className="w-4 h-4" />
+                      Filter zurücksetzen
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {loadingUsers ? (
                 <div className="flex items-center justify-center py-12">
@@ -2170,6 +2245,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                 <p className="text-center text-slate-500 dark:text-slate-400 py-8">
                   Keine Benutzer gefunden
                 </p>
+              ) : filteredUserAccounts.length === 0 ? (
+                <div className="text-center py-12">
+                  <Search className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-500 dark:text-slate-400">
+                    Keine Benutzer entsprechen den Filterkriterien
+                  </p>
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -2185,6 +2267,9 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                           Rolle
                         </th>
                         <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                          Fahrer
+                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
                           Erstellt
                         </th>
                         <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
@@ -2193,7 +2278,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                       </tr>
                     </thead>
                     <tbody>
-                      {userAccounts.map((userAccount) => (
+                      {filteredUserAccounts.map((userAccount) => (
                         <tr
                           key={userAccount.id}
                           className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
@@ -2216,6 +2301,9 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                             </span>
                           </td>
                           <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                            {userAccount.driver_name || '—'}
+                          </td>
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
                             {new Date(userAccount.created_at).toLocaleDateString('de-DE')}
                           </td>
                           <td className="py-3 px-4">
@@ -2229,7 +2317,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                               title={permissions.canResetPasswords ? "Passwort zurücksetzen" : "Keine Berechtigung"}
                             >
                               <Key className="w-4 h-4" />
-                              Passwort zurücksetzen
+                              Zurücksetzen
                             </button>
                           </td>
                         </tr>
