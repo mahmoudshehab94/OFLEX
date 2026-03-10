@@ -28,9 +28,6 @@ export function DirectAccountCreation() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
 
-  const [newDriverData, setNewDriverData] = useState({
-    code: ''
-  });
 
   useEffect(() => {
     loadDrivers();
@@ -127,20 +124,10 @@ export function DirectAccountCreation() {
       return;
     }
 
-    if (formData.role === 'driver') {
-      if (accountType === 'existing' && !selectedDriverId) {
-        setMessage({ type: 'error', text: 'Please select a driver' });
-        setLoading(false);
-        return;
-      }
-
-      if (accountType === 'new') {
-        if (!newDriverData.code.trim()) {
-          setMessage({ type: 'error', text: 'Driver code is required' });
-          setLoading(false);
-          return;
-        }
-      }
+    if (formData.role === 'driver' && accountType === 'existing' && !selectedDriverId) {
+      setMessage({ type: 'error', text: 'Please select a driver' });
+      setLoading(false);
+      return;
     }
 
     const result = await createAccountDirect(
@@ -151,7 +138,7 @@ export function DirectAccountCreation() {
         password: formData.password,
         role: formData.role,
         driverId: formData.role === 'driver' && accountType === 'existing' ? selectedDriverId : undefined,
-        newDriverData: formData.role === 'driver' && accountType === 'new' ? newDriverData : undefined,
+        newDriverData: formData.role === 'driver' && accountType === 'new' ? { code: formData.username } : undefined,
       },
       user.id
     );
@@ -170,7 +157,6 @@ export function DirectAccountCreation() {
       });
       setSelectedDriverId('');
       setDriverSearch('');
-      setNewDriverData({ code: '' });
       setAccountType('new');
       await loadDrivers();
     } else {
@@ -367,21 +353,6 @@ export function DirectAccountCreation() {
               </div>
             )}
 
-            {accountType === 'new' && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Driver Code *
-                </label>
-                <input
-                  type="text"
-                  value={newDriverData.code}
-                  onChange={(e) => setNewDriverData({ ...newDriverData, code: e.target.value })}
-                  placeholder="e.g., D001"
-                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-            )}
           </>
         )}
 
