@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  LogOut, Users, FileText, BarChart2, Plus, Edit2, Trash2, Save, X, Download
+  LogOut, Users, FileText, BarChart2, Plus, Edit2, Trash2, Save, X, Download, Key, Mail, CheckCircle, XCircle, Eye, EyeOff
 } from 'lucide-react';
 import { supabase, Driver, WorkEntry, DriverWithWorkEntries, hasSupabaseConfig } from '../lib/supabase';
 import jsPDF from 'jspdf';
@@ -11,11 +11,22 @@ interface AdminDashboardProps {
 
 type Tab = 'fahrer' | 'eintraege' | 'berichte';
 
+interface DriverAccount {
+  id: string;
+  email: string;
+  driver_id: string | null;
+  is_active: boolean;
+}
+
+interface DriverWithAccount extends DriverWithWorkEntries {
+  account?: DriverAccount;
+}
+
 const STANDARD_DAILY_HOURS = 8;
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('fahrer');
-  const [drivers, setDrivers] = useState<DriverWithWorkEntries[]>([]);
+  const [drivers, setDrivers] = useState<DriverWithAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -25,6 +36,18 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [editCode, setEditCode] = useState('');
   const [editName, setEditName] = useState('');
+
+  // Account management states
+  const [creatingAccountFor, setCreatingAccountFor] = useState<Driver | null>(null);
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountUsername, setAccountUsername] = useState('');
+  const [showAccountPassword, setShowAccountPassword] = useState(false);
+
+  // Password reset states
+  const [resettingPasswordFor, setResettingPasswordFor] = useState<DriverAccount | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   // Entry management states
   const [manualDriverCode, setManualDriverCode] = useState('');
@@ -66,7 +89,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: driversData, error: driversError } = await supabase
         .from('drivers')
         .select(`
           *,
@@ -74,12 +97,27 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         `)
         .order('driver_code', { ascending: true });
 
-      if (error) {
-        console.error('Load drivers error:', error);
+      if (driversError) {
+        console.error('Load drivers error:', driversError);
         setMessage({ type: 'error', text: 'Interner Serverfehler beim Laden der Fahrer' });
-      } else {
-        setDrivers(data || []);
+        setLoading(false);
+        return;
       }
+
+      const { data: accountsData } = await supabase
+        .from('user_accounts')
+        .select('id, email, driver_id, is_active')
+        .eq('role', 'driver');
+
+      const driversWithAccounts: DriverWithAccount[] = (driversData || []).map(driver => {
+        const account = accountsData?.find(acc => acc.driver_id === driver.id);
+        return {
+          ...driver,
+          account: account || undefined
+        };
+      });
+
+      setDrivers(driversWithAccounts);
     } catch (error: any) {
       console.error('Unexpected error:', error);
       setMessage({ type: 'error', text: 'Interner Serverfehler' });
@@ -212,6 +250,122 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     }
   };
 
+  // ============ ACCOUNT MANAGEMENT ============
+
+  const startCreateAccount = (driver: Driver) => {
+    setCreatingAccountFor(driver);
+    setAccountEmail('');
+    setAccountPassword('');
+    setAccountUsername(driver.driver_name);
+  };
+
+  const cancelCreateAccount = () => {
+    setCreatingAccountFor(null);
+    setAccountEmail('');
+    setAccountPassword('');
+    setAccountUsername('');
+    setShowAccountPassword(false);
+  };
+
+  const createAccount = async () => {
+    if (!supabase || !creatingAccountFor) return;
+
+    if (!accountEmail.trim() || !accountPassword.trim() || !accountUsername.trim()) {
+      setMessage({ type: 'error', text: 'Bitte alle Felder ausfüllen' });
+      return;
+    }
+
+    if (!accountEmail.includes('@')) {
+      setMessage({ type: 'error', text: 'Bitte gültige E-Mail-Adresse eingeben' });
+      return;
+    }
+
+    if (accountPassword.length < 6) {
+      setMessage({ type: 'error', text: 'Passwort muss mindestens 6 Zeichen lang sein' });
+      return;
+    }
+
+    try {
+      const { data: existingAccount } = await supabase
+        .from('user_accounts')
+        .select('id')
+        .eq('email', accountEmail.trim())
+        .maybeSingle();
+
+      if (existingAccount) {
+        setMessage({ type: 'error', text: 'E-Mail bereits vergeben' });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('user_accounts')
+        .insert({
+          email: accountEmail.trim(),
+          password_hash: accountPassword,
+          username: accountUsername.trim(),
+          role: 'driver',
+          driver_id: creatingAccountFor.id,
+          is_active: true
+        });
+
+      if (error) {
+        console.error('Create account error:', error);
+        setMessage({ type: 'error', text: `Fehler: ${error.message}` });
+      } else {
+        setMessage({ type: 'success', text: 'Konto erfolgreich erstellt' });
+        cancelCreateAccount();
+        loadDrivers();
+      }
+    } catch (error: any) {
+      console.error('Create account error:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Erstellen des Kontos' });
+    }
+  };
+
+  const startResetPassword = (account: DriverAccount) => {
+    setResettingPasswordFor(account);
+    setNewPassword('');
+    setShowResetPassword(false);
+  };
+
+  const cancelResetPassword = () => {
+    setResettingPasswordFor(null);
+    setNewPassword('');
+    setShowResetPassword(false);
+  };
+
+  const resetPassword = async () => {
+    if (!supabase || !resettingPasswordFor) return;
+
+    if (!newPassword.trim()) {
+      setMessage({ type: 'error', text: 'Bitte Passwort eingeben' });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setMessage({ type: 'error', text: 'Passwort muss mindestens 6 Zeichen lang sein' });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_accounts')
+        .update({ password_hash: newPassword })
+        .eq('id', resettingPasswordFor.id);
+
+      if (error) {
+        console.error('Reset password error:', error);
+        setMessage({ type: 'error', text: `Fehler: ${error.message}` });
+      } else {
+        setMessage({ type: 'success', text: 'Passwort erfolgreich zurückgesetzt' });
+        cancelResetPassword();
+      }
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Zurücksetzen des Passworts' });
+    }
+  };
+
   // ============ ENTRY MANAGEMENT ============
 
   const addManualEntry = async () => {
@@ -228,7 +382,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       return;
     }
 
-    // Validate end time > start time
     if (manualEndTime <= manualStartTime) {
       setMessage({ type: 'error', text: 'Endzeit muss nach Startzeit liegen' });
       return;
@@ -240,7 +393,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       return;
     }
 
-    // Check for existing entry if override not checked
     if (!allowMultipleEntries) {
       const { data: existing } = await supabase
         .from('work_entries')
@@ -273,7 +425,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         setMessage({ type: 'error', text: `Fehler: ${error.message}` });
       } else {
         setMessage({ type: 'success', text: 'Eintrag erfolgreich gespeichert' });
-        // Reset form
         setManualDriverCode('');
         setManualVehicle('');
         setManualStartTime('');
@@ -412,14 +563,12 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     let totalHours = 0;
     let totalOvertime = 0;
 
-    // Group by date
     const byDate: { [date: string]: WorkEntry[] } = {};
     entries.forEach(entry => {
       if (!byDate[entry.date]) byDate[entry.date] = [];
       byDate[entry.date].push(entry);
     });
 
-    // Calculate daily totals and overtime
     const dailyData: { date: string; hours: number; overtime: number }[] = [];
     Object.keys(byDate).sort().forEach(date => {
       let dayHours = 0;
@@ -500,20 +649,17 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
     const doc = new jsPDF();
 
-    // Header
     doc.setFontSize(18);
     doc.text('Trans Oflex', 14, 20);
     doc.setFontSize(14);
     doc.text('Monatsbericht', 14, 30);
 
-    // Driver info
     doc.setFontSize(10);
     doc.text(`Fahrer: ${report.driver.driver_name}`, 14, 40);
     doc.text(`Code: ${report.driver.driver_code}`, 14, 46);
     doc.text(`Zeitraum: ${reportMonth}/${reportYear}`, 14, 52);
     doc.text(`Erstellt: ${new Date().toLocaleDateString('de-DE')}`, 14, 58);
 
-    // Summary
     doc.setFontSize(12);
     doc.text('Zusammenfassung', 14, 70);
     doc.setFontSize(10);
@@ -521,7 +667,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     doc.text(`Gesamtstunden: ${formatHours(report.totalHours)}`, 14, 84);
     doc.text(`Überstunden: ${formatHours(report.totalOvertime)}`, 14, 90);
 
-    // Daily details
     if (report.dailyData.length > 0) {
       doc.setFontSize(12);
       doc.text('Tägliche Aufschlüsselung', 14, 102);
@@ -711,29 +856,172 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             </button>
                           </div>
                         </div>
-                      ) : (
-                        <div className="flex items-center justify-between">
+                      ) : creatingAccountFor?.id === driver.id ? (
+                        <div className="space-y-3 bg-blue-50 p-4 rounded">
+                          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                            <Key className="w-5 h-5 text-blue-600" />
+                            Konto erstellen für {driver.driver_name}
+                          </h3>
                           <div>
-                            <p className="font-semibold text-gray-900">
-                              {driver.driver_name} (Code: {driver.driver_code})
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Einträge: {driver.work_entries?.length || 0}
-                            </p>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">E-Mail *</label>
+                            <input
+                              type="email"
+                              value={accountEmail}
+                              onChange={(e) => setAccountEmail(e.target.value)}
+                              placeholder="fahrer@example.com"
+                              className="w-full px-3 py-2 border border-gray-300 rounded"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Benutzername *</label>
+                            <input
+                              type="text"
+                              value={accountUsername}
+                              onChange={(e) => setAccountUsername(e.target.value)}
+                              placeholder="Anzeigename"
+                              className="w-full px-3 py-2 border border-gray-300 rounded"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Passwort *</label>
+                            <div className="relative">
+                              <input
+                                type={showAccountPassword ? 'text' : 'password'}
+                                value={accountPassword}
+                                onChange={(e) => setAccountPassword(e.target.value)}
+                                placeholder="Mindestens 6 Zeichen"
+                                className="w-full px-3 py-2 border border-gray-300 rounded pr-10"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowAccountPassword(!showAccountPassword)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                              >
+                                {showAccountPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => startEditDriver(driver)}
-                              className="p-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                              onClick={createAccount}
+                              className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                             >
-                              <Edit2 className="w-4 h-4" />
+                              <Save className="w-4 h-4" />
+                              Konto erstellen
                             </button>
                             <button
-                              onClick={() => deleteDriver(driver.id)}
-                              className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                              onClick={cancelCreateAccount}
+                              className="flex items-center gap-1 px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <X className="w-4 h-4" />
+                              Abbrechen
                             </button>
+                          </div>
+                        </div>
+                      ) : resettingPasswordFor?.id === driver.account?.id ? (
+                        <div className="space-y-3 bg-orange-50 p-4 rounded">
+                          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                            <Key className="w-5 h-5 text-orange-600" />
+                            Passwort zurücksetzen für {driver.driver_name}
+                          </h3>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Neues Passwort *</label>
+                            <div className="relative">
+                              <input
+                                type={showResetPassword ? 'text' : 'password'}
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="Mindestens 6 Zeichen"
+                                className="w-full px-3 py-2 border border-gray-300 rounded pr-10"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowResetPassword(!showResetPassword)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                              >
+                                {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={resetPassword}
+                              className="flex items-center gap-1 px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm"
+                            >
+                              <Save className="w-4 h-4" />
+                              Passwort ändern
+                            </button>
+                            <button
+                              onClick={cancelResetPassword}
+                              className="flex items-center gap-1 px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
+                            >
+                              <X className="w-4 h-4" />
+                              Abbrechen
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="font-semibold text-gray-900">
+                                {driver.driver_name} (Code: {driver.driver_code})
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                Einträge: {driver.work_entries?.length || 0}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => startEditDriver(driver)}
+                                className="p-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => deleteDriver(driver.id)}
+                                className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            {driver.account ? (
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle className="w-5 h-5 text-green-600" />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">Konto vorhanden</p>
+                                    <p className="text-xs text-gray-600 flex items-center gap-1">
+                                      <Mail className="w-3 h-3" />
+                                      {driver.account.email}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => startResetPassword(driver.account!)}
+                                  className="flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 text-sm"
+                                >
+                                  <Key className="w-4 h-4" />
+                                  Passwort zurücksetzen
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <XCircle className="w-5 h-5 text-gray-400" />
+                                  <p className="text-sm text-gray-600">Kein Konto vorhanden</p>
+                                </div>
+                                <button
+                                  onClick={() => startCreateAccount(driver)}
+                                  className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-sm"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  Konto erstellen
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
