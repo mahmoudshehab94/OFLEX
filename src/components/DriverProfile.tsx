@@ -1,22 +1,21 @@
 import { useState, useEffect } from 'react';
-import { User, Lock, Camera, BarChart3, Calendar, Clock, Truck, ArrowLeft, LogOut, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Camera, BarChart3, Calendar, Clock, Truck, ArrowLeft, LogOut, Eye, EyeOff, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
 interface DriverStats {
-  totalEntries: number;
-  totalHours: number;
   currentMonthEntries: number;
   currentMonthHours: number;
+  currentMonthDays: number;
+  averageHoursPerDay: number;
   mostUsedVehicle: string | null;
+  monthName: string;
+  year: number;
 }
 
 interface DriverInfo {
   driver_name: string;
   driver_code: string;
-  license_number: string | null;
-  phone: string | null;
-  email: string | null;
 }
 
 interface DriverProfileProps {
@@ -25,7 +24,7 @@ interface DriverProfileProps {
 
 export function DriverProfile({ onBack }: DriverProfileProps) {
   const { user, logout, updateUserAvatar } = useAuth();
-  const [activeTab, setActiveTab] = useState<'stats' | 'info' | 'settings'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'settings'>('stats');
   const [stats, setStats] = useState<DriverStats | null>(null);
   const [driverInfo, setDriverInfo] = useState<DriverInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,6 +47,25 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
     loadDriverData();
   }, []);
 
+  const getMonthName = (monthIndex: number): string => {
+    const months = [
+      'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+      'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+    ];
+    return months[monthIndex];
+  };
+
+  const calculateWorkHours = (startTime: string, endTime: string, breakMinutes: number): number => {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+
+    let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+    if (totalMinutes < 0) totalMinutes += 24 * 60;
+
+    totalMinutes -= breakMinutes;
+    return totalMinutes / 60;
+  };
+
   const loadDriverData = async () => {
     if (!user?.driver_id) return;
     if (!supabase) return;
@@ -55,7 +73,7 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
     try {
       const { data: driver } = await supabase
         .from('drivers')
-        .select('*')
+        .select('driver_name, driver_code')
         .eq('id', user.driver_id)
         .single();
 
@@ -64,31 +82,25 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
         setNewDisplayName(driver.driver_name);
       }
 
+      const now = new Date();
+      const currentMonth = now.toISOString().slice(0, 7);
+      const monthIndex = now.getMonth();
+      const year = now.getFullYear();
+
       const { data: entries } = await supabase
         .from('work_entries')
         .select('*')
-        .eq('driver_id', user.driver_id);
+        .eq('driver_id', user.driver_id)
+        .gte('date', `${currentMonth}-01`)
+        .lt('date', `${year}-${String(monthIndex + 2).padStart(2, '0')}-01`);
 
-      if (entries) {
+      if (entries && entries.length > 0) {
         const totalHours = entries.reduce((sum, entry) => {
-          const start = entry.start_time.split(':');
-          const end = entry.end_time.split(':');
-          const startMinutes = parseInt(start[0]) * 60 + parseInt(start[1]);
-          const endMinutes = parseInt(end[0]) * 60 + parseInt(end[1]);
-          const hours = (endMinutes - startMinutes) / 60;
-          return sum + hours;
+          return sum + calculateWorkHours(entry.start_time, entry.end_time, entry.break_minutes);
         }, 0);
 
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        const currentMonthEntries = entries.filter(e => e.date.startsWith(currentMonth));
-        const currentMonthHours = currentMonthEntries.reduce((sum, entry) => {
-          const start = entry.start_time.split(':');
-          const end = entry.end_time.split(':');
-          const startMinutes = parseInt(start[0]) * 60 + parseInt(start[1]);
-          const endMinutes = parseInt(end[0]) * 60 + parseInt(end[1]);
-          const hours = (endMinutes - startMinutes) / 60;
-          return sum + hours;
-        }, 0);
+        const uniqueDays = new Set(entries.map(e => e.date)).size;
+        const avgHours = uniqueDays > 0 ? totalHours / uniqueDays : 0;
 
         const vehicleCounts: Record<string, number> = {};
         entries.forEach(entry => {
@@ -102,11 +114,23 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
           : null;
 
         setStats({
-          totalEntries: entries.length,
-          totalHours: Math.round(totalHours * 10) / 10,
-          currentMonthEntries: currentMonthEntries.length,
-          currentMonthHours: Math.round(currentMonthHours * 10) / 10,
-          mostUsedVehicle
+          currentMonthEntries: entries.length,
+          currentMonthHours: Math.round(totalHours * 10) / 10,
+          currentMonthDays: uniqueDays,
+          averageHoursPerDay: Math.round(avgHours * 10) / 10,
+          mostUsedVehicle,
+          monthName: getMonthName(monthIndex),
+          year
+        });
+      } else {
+        setStats({
+          currentMonthEntries: 0,
+          currentMonthHours: 0,
+          currentMonthDays: 0,
+          averageHoursPerDay: 0,
+          mostUsedVehicle: null,
+          monthName: getMonthName(monthIndex),
+          year
         });
       }
     } catch (error) {
@@ -338,7 +362,7 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
               </div>
               <div className="flex-1">
                 <h1 className="text-2xl font-bold text-white">{user?.username}</h1>
-                <p className="text-blue-100">{driverInfo?.driver_code}</p>
+                <p className="text-blue-100">Code: {driverInfo?.driver_code}</p>
               </div>
             </div>
           </div>
@@ -354,17 +378,6 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
             >
               <BarChart3 className="w-4 h-4 inline mr-2" />
               Statistiken
-            </button>
-            <button
-              onClick={() => setActiveTab('info')}
-              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'info'
-                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700/30'
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              <User className="w-4 h-4 inline mr-2" />
-              Persönliche Daten
             </button>
             <button
               onClick={() => setActiveTab('settings')}
@@ -394,85 +407,86 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
 
             {activeTab === 'stats' && stats && (
               <div className="space-y-6">
+                <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+                  <h2 className="text-2xl font-bold mb-1">{stats.monthName} {stats.year}</h2>
+                  <p className="text-blue-100">Aktuelle Monatsstatistik</p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Calendar className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-gray-300 font-medium">Gesamt Einträge</h3>
+                  <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white shadow-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-white/20 p-3 rounded-lg">
+                        <Calendar className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-purple-100 text-sm font-medium">Arbeitstage</p>
+                        <p className="text-3xl font-bold">{stats.currentMonthDays}</p>
+                      </div>
                     </div>
-                    <p className="text-3xl font-bold text-white">{stats.totalEntries}</p>
+                    <p className="text-purple-100 text-sm">Tage mit Einträgen</p>
                   </div>
 
-                  <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Clock className="w-5 h-5 text-green-400" />
-                      <h3 className="text-gray-300 font-medium">Gesamt Stunden</h3>
+                  <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-6 text-white shadow-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-white/20 p-3 rounded-lg">
+                        <Clock className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-green-100 text-sm font-medium">Gesamtstunden</p>
+                        <p className="text-3xl font-bold">{stats.currentMonthHours}h</p>
+                      </div>
                     </div>
-                    <p className="text-3xl font-bold text-white">{stats.totalHours}h</p>
+                    <p className="text-green-100 text-sm">Im aktuellen Monat</p>
                   </div>
 
-                  <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Calendar className="w-5 h-5 text-purple-400" />
-                      <h3 className="text-gray-300 font-medium">Dieser Monat</h3>
+                  <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl p-6 text-white shadow-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-white/20 p-3 rounded-lg">
+                        <TrendingUp className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-orange-100 text-sm font-medium">Durchschnitt</p>
+                        <p className="text-3xl font-bold">{stats.averageHoursPerDay}h</p>
+                      </div>
                     </div>
-                    <p className="text-3xl font-bold text-white">{stats.currentMonthEntries}</p>
-                    <p className="text-sm text-gray-400 mt-1">Einträge</p>
+                    <p className="text-orange-100 text-sm">Stunden pro Tag</p>
                   </div>
 
-                  <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Clock className="w-5 h-5 text-orange-400" />
-                      <h3 className="text-gray-300 font-medium">Stunden (Monat)</h3>
+                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white shadow-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-white/20 p-3 rounded-lg">
+                        <BarChart3 className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-blue-100 text-sm font-medium">Einträge</p>
+                        <p className="text-3xl font-bold">{stats.currentMonthEntries}</p>
+                      </div>
                     </div>
-                    <p className="text-3xl font-bold text-white">{stats.currentMonthHours}h</p>
+                    <p className="text-blue-100 text-sm">Erfasste Arbeitstage</p>
                   </div>
                 </div>
 
                 {stats.mostUsedVehicle && (
-                  <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Truck className="w-5 h-5 text-yellow-400" />
-                      <h3 className="text-gray-300 font-medium">Meist genutztes Fahrzeug</h3>
+                  <div className="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-xl p-6 text-white shadow-lg">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-white/20 p-4 rounded-lg">
+                        <Truck className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <p className="text-yellow-100 text-sm font-medium mb-1">Meist genutztes Fahrzeug</p>
+                        <p className="text-3xl font-bold">{stats.mostUsedVehicle}</p>
+                      </div>
                     </div>
-                    <p className="text-2xl font-bold text-white">{stats.mostUsedVehicle}</p>
                   </div>
                 )}
-              </div>
-            )}
 
-            {activeTab === 'info' && driverInfo && (
-              <div className="space-y-4">
-                <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-1">Name</label>
-                      <p className="text-lg text-white">{driverInfo.driver_name}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-1">Fahrer-Code</label>
-                      <p className="text-lg text-white">{driverInfo.driver_code}</p>
-                    </div>
-                    {driverInfo.license_number && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">Führerscheinnummer</label>
-                        <p className="text-lg text-white">{driverInfo.license_number}</p>
-                      </div>
-                    )}
-                    {driverInfo.phone && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">Telefon</label>
-                        <p className="text-lg text-white">{driverInfo.phone}</p>
-                      </div>
-                    )}
-                    {driverInfo.email && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">E-Mail</label>
-                        <p className="text-lg text-white">{driverInfo.email}</p>
-                      </div>
-                    )}
+                {stats.currentMonthEntries === 0 && (
+                  <div className="bg-gray-700/50 border border-gray-600 rounded-xl p-8 text-center">
+                    <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                    <p className="text-gray-400 text-lg">Keine Einträge für diesen Monat</p>
+                    <p className="text-gray-500 text-sm mt-2">Fügen Sie Ihre ersten Arbeitsstunden hinzu</p>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
