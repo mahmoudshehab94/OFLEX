@@ -51,6 +51,22 @@ type PeriodType = 'diese_woche' | 'letzte_woche' | 'dieser_monat' | 'letzter_mon
 
 const STANDARD_HOURS = 8;
 
+const getAvatarUrl = (avatarPath: string | null): string | null => {
+  if (!avatarPath || !supabase) return null;
+
+  // If it's already a full URL, return it
+  if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+    return avatarPath;
+  }
+
+  // Otherwise, generate the public URL from the path
+  const { data: { publicUrl } } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(avatarPath);
+
+  return publicUrl;
+};
+
 export default function AdminDashboardV2({ onLogout }: { onLogout: () => void }) {
   const { user } = useAuth();
 
@@ -922,7 +938,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -930,18 +946,15 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
+      // Store the file path instead of full URL for better reliability
       const { error: updateError } = await supabase
         .from('user_accounts')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: filePath })
         .eq('id', user.id);
 
       if (updateError) throw updateError;
 
-      setProfileAvatarUrl(publicUrl);
+      setProfileAvatarUrl(filePath);
       setMessage({ type: 'success', text: 'Profilbild erfolgreich hochgeladen' });
     } catch (error: any) {
       console.error('Error uploading avatar:', error);
@@ -2686,9 +2699,9 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                 <div className="flex items-start gap-6">
                   <div className="flex-shrink-0">
                     <div className="relative">
-                      {profileAvatarUrl ? (
+                      {getAvatarUrl(profileAvatarUrl) ? (
                         <img
-                          src={profileAvatarUrl}
+                          src={getAvatarUrl(profileAvatarUrl)!}
                           alt="Profilbild"
                           className="w-32 h-32 rounded-full object-cover border-4 border-slate-200 dark:border-slate-700"
                         />

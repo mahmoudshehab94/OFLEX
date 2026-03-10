@@ -22,6 +22,22 @@ interface DriverProfileProps {
   onBack: () => void;
 }
 
+const getAvatarUrl = (avatarPath: string | null): string | null => {
+  if (!avatarPath || !supabase) return null;
+
+  // If it's already a full URL, return it
+  if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+    return avatarPath;
+  }
+
+  // Otherwise, generate the public URL from the path
+  const { data: { publicUrl } } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(avatarPath);
+
+  return publicUrl;
+};
+
 export function DriverProfile({ onBack }: DriverProfileProps) {
   const { user, logout, updateUserAvatar } = useAuth();
   const [activeTab, setActiveTab] = useState<'stats' | 'settings'>('stats');
@@ -293,19 +309,16 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
         throw uploadError;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
+      // Store the file path instead of full URL for better reliability
       const { error: updateError } = await supabase
         .from('user_accounts')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: filePath })
         .eq('id', user.id);
 
       if (updateError) throw updateError;
 
       if (updateUserAvatar) {
-        updateUserAvatar(publicUrl);
+        updateUserAvatar(filePath);
       }
 
       setMessage({ type: 'success', text: 'Profilbild erfolgreich hochgeladen' });
@@ -348,9 +361,9 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
             </div>
             <div className="flex items-center gap-4">
               <div className="relative">
-                {user?.avatar_url ? (
+                {getAvatarUrl(user?.avatar_url || null) ? (
                   <img
-                    src={user.avatar_url}
+                    src={getAvatarUrl(user?.avatar_url || null)!}
                     alt="Profile"
                     className="w-20 h-20 rounded-full border-4 border-white/20 object-cover"
                   />
@@ -498,9 +511,9 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
                     Profilbild
                   </h3>
                   <div className="flex items-center gap-4">
-                    {user?.avatar_url ? (
+                    {getAvatarUrl(user?.avatar_url || null) ? (
                       <img
-                        src={user.avatar_url}
+                        src={getAvatarUrl(user?.avatar_url || null)!}
                         alt="Profile"
                         className="w-20 h-20 rounded-full border-2 border-gray-600 object-cover"
                       />
