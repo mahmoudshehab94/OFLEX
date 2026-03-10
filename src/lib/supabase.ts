@@ -406,9 +406,6 @@ export interface CreateAccountDirectParams {
   driverId?: string;
   newDriverData?: {
     code: string;
-    name: string;
-    license_letters: string;
-    license_numbers: string;
   };
 }
 
@@ -469,9 +466,9 @@ export async function createAccountDirect(
         .from('drivers')
         .insert({
           driver_code: newDriverData.code,
-          driver_name: newDriverData.name,
-          license_letters: newDriverData.license_letters || null,
-          license_numbers: newDriverData.license_numbers || null,
+          driver_name: fullName,
+          license_letters: null,
+          license_numbers: null,
           is_active: true,
         })
         .select()

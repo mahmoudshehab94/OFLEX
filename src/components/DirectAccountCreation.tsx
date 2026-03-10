@@ -29,8 +29,7 @@ export function DirectAccountCreation() {
   const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
 
   const [newDriverData, setNewDriverData] = useState({
-    code: '',
-    name: ''
+    code: ''
   });
 
   useEffect(() => {
@@ -141,11 +140,6 @@ export function DirectAccountCreation() {
           setLoading(false);
           return;
         }
-        if (!newDriverData.name.trim()) {
-          setMessage({ type: 'error', text: 'Driver name is required' });
-          setLoading(false);
-          return;
-        }
       }
     }
 
@@ -176,7 +170,7 @@ export function DirectAccountCreation() {
       });
       setSelectedDriverId('');
       setDriverSearch('');
-      setNewDriverData({ code: '', name: '' });
+      setNewDriverData({ code: '' });
       setAccountType('new');
       await loadDrivers();
     } else {
@@ -374,34 +368,19 @@ export function DirectAccountCreation() {
             )}
 
             {accountType === 'new' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Driver Code *
-                  </label>
-                  <input
-                    type="text"
-                    value={newDriverData.code}
-                    onChange={(e) => setNewDriverData({ ...newDriverData, code: e.target.value })}
-                    placeholder="e.g., D001"
-                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Driver Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={newDriverData.name}
-                    onChange={(e) => setNewDriverData({ ...newDriverData, name: e.target.value })}
-                    placeholder="Full name"
-                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-              </>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Driver Code *
+                </label>
+                <input
+                  type="text"
+                  value={newDriverData.code}
+                  onChange={(e) => setNewDriverData({ ...newDriverData, code: e.target.value })}
+                  placeholder="e.g., D001"
+                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
             )}
           </>
         )}
