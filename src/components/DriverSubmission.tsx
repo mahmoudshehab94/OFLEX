@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Truck, Clock, Calendar, Download } from 'lucide-react';
 import { supabase, hasSupabaseConfig } from '../lib/supabase';
 import { InstallationQuickTourModal } from './InstallationQuickTourModal';
+import { useAuth } from '../contexts/AuthContext';
 
 export function DriverSubmission() {
-  const [driverCode, setDriverCode] = useState('');
+  const { user } = useAuth();
   const [workDate, setWorkDate] = useState(new Date().toISOString().split('T')[0]);
   const [licenseLetters, setLicenseLetters] = useState('');
   const [licenseNumbers, setLicenseNumbers] = useState('');
@@ -153,41 +154,16 @@ export function DriverSubmission() {
     const vehicle = `${licenseLetters}${licenseNumbers}`;
 
     try {
-      const { data: existingDriver, error: driverError } = await supabase
-        .from('drivers')
-        .select('id, is_active')
-        .eq('driver_code', driverCode)
-        .maybeSingle();
-
-      if (driverError) {
-        console.error('Driver lookup error:', driverError);
+      if (!user?.driver_id) {
         setMessage({
           type: 'error',
-          text: `Fehler beim Abrufen des Fahrers: ${driverError.message}`
+          text: 'Kein Fahrer-Konto verknüpft. Bitte wenden Sie sich an den Administrator.'
         });
         setLoading(false);
         return;
       }
 
-      if (!existingDriver) {
-        setMessage({
-          type: 'error',
-          text: 'Ungültiger Fahrer-Code. Bitte wenden Sie sich an den Administrator.'
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (!existingDriver.is_active) {
-        setMessage({
-          type: 'error',
-          text: 'Dieser Fahrer-Code ist nicht registriert oder deaktiviert.'
-        });
-        setLoading(false);
-        return;
-      }
-
-      const driverId = existingDriver.id;
+      const driverId = user.driver_id;
 
       if (!vehicleConflict) {
         const conflict = await checkVehicleConflict(vehicle, workDate, driverId);
@@ -236,7 +212,6 @@ export function DriverSubmission() {
         text: 'Arbeitszeit erfolgreich gespeichert!'
       });
 
-      setDriverCode('');
       setLicenseLetters('');
       setLicenseNumbers('');
       setStartHour('05');
@@ -289,21 +264,6 @@ export function DriverSubmission() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="driverCode" className="block text-sm font-medium text-gray-200 mb-2">
-              Fahrer-Code
-            </label>
-            <input
-              type="text"
-              id="driverCode"
-              value={driverCode}
-              onChange={(e) => setDriverCode(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400"
-              placeholder="z.B. D001, D002..."
-              required
-            />
-          </div>
-
           <div>
             <label htmlFor="workDate" className="block text-sm font-medium text-gray-200 mb-2">
               <Calendar className="w-4 h-4 inline mr-1" />
