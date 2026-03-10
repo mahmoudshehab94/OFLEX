@@ -50,6 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
+      if (!supabase) {
+        return { success: false, error: 'Database connection error' };
+      }
+
       const { data: users, error: queryError } = await supabase
         .from('user_accounts')
         .select('*')
