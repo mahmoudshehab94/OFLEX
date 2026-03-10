@@ -15,8 +15,8 @@ export default defineConfig({
         description: 'Arbeitszeit App für Fahrer',
         start_url: '/',
         display: 'standalone',
-        background_color: '#2563eb',
-        theme_color: '#2563eb',
+        background_color: '#1e293b',
+        theme_color: '#1e293b',
         icons: [
           {
             src: 'icon.svg',

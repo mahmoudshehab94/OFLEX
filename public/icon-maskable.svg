@@ -1,45 +1,47 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background with gradient -->
-  <defs>
-    <linearGradient id="bg-gradient-maskable" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
-    </linearGradient>
-  </defs>
+  <!-- Dark background - full bleed for maskable -->
+  <rect width="512" height="512" fill="#1e293b"/>
 
-  <!-- Full bleed background -->
-  <rect width="512" height="512" fill="url(#bg-gradient-maskable)"/>
+  <!-- Stylized truck icon (scaled for safe zone) -->
+  <g transform="translate(100, 165)">
+    <!-- Main truck body -->
+    <g>
+      <!-- Cargo container -->
+      <rect x="80" y="70" width="200" height="110" rx="6" fill="#3b82f6"/>
 
-  <!-- Modern delivery truck icon (centered for safe zone) -->
-  <g transform="translate(110, 160)">
-    <!-- Truck body -->
-    <rect x="40" y="60" width="220" height="100" rx="6" fill="white" opacity="0.95"/>
+      <!-- Cabin -->
+      <path d="M 45 85 L 45 150 L 10 150 L 10 115 C 10 95 22 85 45 85 Z" fill="#2563eb"/>
 
-    <!-- Truck cabin -->
-    <path d="M 40 60 L 40 135 L 5 135 L 5 100 C 5 77 18 60 40 60 Z" fill="white" opacity="0.95"/>
+      <!-- Cabin to cargo connector -->
+      <rect x="45" y="85" width="38" height="95" fill="#2563eb"/>
 
-    <!-- Windshield -->
-    <path d="M 36 73 L 36 115 L 15 115 L 15 88 C 15 80 22 73 36 73 Z" fill="#3b82f6" opacity="0.5"/>
+      <!-- Windshield -->
+      <path d="M 40 98 L 40 130 L 18 130 L 18 110 C 18 102 25 98 40 98 Z" fill="#60a5fa" opacity="0.7"/>
 
-    <!-- Cargo area separator -->
-    <line x1="145" y1="75" x2="145" y2="155" stroke="#2563eb" stroke-width="3"/>
+      <!-- Door line on cabin -->
+      <line x1="62" y1="110" x2="62" y2="165" stroke="#1e40af" stroke-width="2.5"/>
 
-    <!-- Side window -->
-    <rect x="155" y="75" width="90" height="45" rx="3" fill="#3b82f6" opacity="0.5"/>
+      <!-- Cargo door lines -->
+      <line x1="180" y1="82" x2="180" y2="168" stroke="#1e40af" stroke-width="2.5"/>
 
-    <!-- Front wheel -->
-    <circle cx="80" cy="160" r="28" fill="#1f2937"/>
-    <circle cx="80" cy="160" r="16" fill="#4b5563"/>
-    <circle cx="80" cy="160" r="7" fill="#9ca3af"/>
+      <!-- Side windows on cargo -->
+      <rect x="95" y="85" width="65" height="40" rx="3" fill="#60a5fa" opacity="0.5"/>
+      <rect x="200" y="85" width="65" height="40" rx="3" fill="#60a5fa" opacity="0.5"/>
 
-    <!-- Rear wheel -->
-    <circle cx="220" cy="160" r="28" fill="#1f2937"/>
-    <circle cx="220" cy="160" r="16" fill="#4b5563"/>
-    <circle cx="220" cy="160" r="7" fill="#9ca3af"/>
+      <!-- Front wheel -->
+      <circle cx="70" cy="180" r="32" fill="#374151"/>
+      <circle cx="70" cy="180" r="20" fill="#6b7280"/>
+      <circle cx="70" cy="180" r="10" fill="#9ca3af"/>
 
-    <!-- Speed lines -->
-    <line x1="270" y1="85" x2="290" y2="85" stroke="white" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
-    <line x1="270" y1="105" x2="285" y2="105" stroke="white" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
-    <line x1="270" y1="125" x2="288" y2="125" stroke="white" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+      <!-- Rear wheel -->
+      <circle cx="240" cy="180" r="32" fill="#374151"/>
+      <circle cx="240" cy="180" r="20" fill="#6b7280"/>
+      <circle cx="240" cy="180" r="10" fill="#9ca3af"/>
+
+      <!-- Motion lines -->
+      <line x1="290" y1="95" x2="310" y2="95" stroke="#3b82f6" stroke-width="6" stroke-linecap="round"/>
+      <line x1="290" y1="120" x2="305" y2="120" stroke="#3b82f6" stroke-width="6" stroke-linecap="round"/>
+      <line x1="290" y1="145" x2="308" y2="145" stroke="#3b82f6" stroke-width="6" stroke-linecap="round"/>
+    </g>
   </g>
 </svg>
