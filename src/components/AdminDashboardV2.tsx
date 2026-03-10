@@ -2197,8 +2197,8 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
         {activeTab === 'invites' && (
           <div className="space-y-6">
-            <DirectAccountCreation />
             <InviteManagement />
+            <DirectAccountCreation />
           </div>
         )}
 
