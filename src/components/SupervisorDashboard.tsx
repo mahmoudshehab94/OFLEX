@@ -21,7 +21,7 @@ type Tab = 'drivers' | 'attendance' | 'invites';
 
 export function SupervisorDashboard() {
   const { user, logout } = useAuth();
-  const [isDarkMode, setIsDarkMode] = useDarkMode();
+  const { isDark, toggleDarkMode } = useDarkMode();
   const [activeTab, setActiveTab] = useState<Tab>('attendance');
 
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -231,11 +231,11 @@ export function SupervisorDashboard() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setIsDarkMode(!isDarkMode)}
+                onClick={toggleDarkMode}
                 className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                 aria-label="Toggle dark mode"
               >
-                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               <button
                 onClick={handleLogout}
