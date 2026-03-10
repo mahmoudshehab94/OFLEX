@@ -128,6 +128,8 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   const [filteredUserAccounts, setFilteredUserAccounts] = useState<UserAccount[]>([]);
   const [editingUserEmail, setEditingUserEmail] = useState<{ id: string; email: string } | null>(null);
   const [updatingEmail, setUpdatingEmail] = useState(false);
+  const [editingDriverEmail, setEditingDriverEmail] = useState<{ accountId: string; email: string } | null>(null);
+  const [updatingDriverEmail, setUpdatingDriverEmail] = useState(false);
 
   useEffect(() => {
     if (message) {
@@ -952,6 +954,30 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       setMessage({ type: 'error', text: 'Fehler beim Aktualisieren der E-Mail' });
     } finally {
       setUpdatingEmail(false);
+    }
+  };
+
+  const handleUpdateDriverEmail = async (accountId: string, newEmail: string) => {
+    if (!newEmail || !newEmail.includes('@')) {
+      setMessage({ type: 'error', text: 'Bitte geben Sie eine gültige E-Mail-Adresse ein' });
+      return;
+    }
+
+    setUpdatingDriverEmail(true);
+    try {
+      const result = await updateUserEmail(accountId, newEmail);
+      if (result.success) {
+        setMessage({ type: 'success', text: 'E-Mail erfolgreich aktualisiert' });
+        setEditingDriverEmail(null);
+        await loadDrivers();
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Fehler beim Aktualisieren der E-Mail' });
+      }
+    } catch (error) {
+      console.error('Error updating driver email:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Aktualisieren der E-Mail' });
+    } finally {
+      setUpdatingDriverEmail(false);
     }
   };
 
@@ -2096,7 +2122,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                   </thead>
                   <tbody>
                     {drivers.map(driver => (
-                      <tr key={driver.id} className="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                      <tr key={driver.id} className="group border-b border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50">
                         <td className="py-3 px-4">
                           {editingDriver?.id === driver.id ? (
                             <input
@@ -2147,7 +2173,44 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                               </div>
                               <div className="text-xs text-gray-600 dark:text-slate-400">
                                 <div className="font-medium">{driver.account_username}</div>
-                                <div className="text-xs">{driver.account_email}</div>
+                                {editingDriverEmail?.accountId === driver.account_id ? (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <input
+                                      type="email"
+                                      value={editingDriverEmail.email}
+                                      onChange={(e) => setEditingDriverEmail({ ...editingDriverEmail, email: e.target.value })}
+                                      className="px-2 py-1 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded text-xs w-full"
+                                      disabled={updatingDriverEmail}
+                                    />
+                                    <button
+                                      onClick={() => handleUpdateDriverEmail(driver.account_id!, editingDriverEmail.email)}
+                                      disabled={updatingDriverEmail}
+                                      className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded disabled:opacity-50"
+                                      title="Speichern"
+                                    >
+                                      {updatingDriverEmail ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingDriverEmail(null)}
+                                      disabled={updatingDriverEmail}
+                                      className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-50"
+                                      title="Abbrechen"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 group">
+                                    <span className="text-xs">{driver.account_email}</span>
+                                    <button
+                                      onClick={() => setEditingDriverEmail({ accountId: driver.account_id!, email: driver.account_email! })}
+                                      className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                      title="E-Mail bearbeiten"
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ) : (
