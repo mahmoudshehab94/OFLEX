@@ -18,6 +18,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { supabase, Driver, getDriversWithAccounts } from '../lib/supabase';
 import { InviteManagement } from './InviteManagement';
+import { DirectAccountCreation } from './DirectAccountCreation';
 import { SupervisorProfile } from './SupervisorProfile';
 import { hasPermission } from '../lib/permissions';
 
@@ -629,7 +630,10 @@ export function SupervisorDashboard() {
         )}
 
         {activeTab === 'invites' && (
-          <InviteManagement />
+          <div className="space-y-6">
+            <DirectAccountCreation />
+            <InviteManagement />
+          </div>
         )}
 
         {activeTab === 'profile' && (

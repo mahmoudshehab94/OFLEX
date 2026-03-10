@@ -396,3 +396,117 @@ export async function getDriversWithAccounts(): Promise<{ success: boolean; driv
     return { success: false, error: error.message };
   }
 }
+
+export interface CreateAccountDirectParams {
+  fullName: string;
+  username: string;
+  emailLocalPart: string;
+  password: string;
+  role: 'driver' | 'supervisor';
+  driverId?: string;
+  newDriverData?: {
+    code: string;
+    name: string;
+    license_letters: string;
+    license_numbers: string;
+  };
+}
+
+export async function createAccountDirect(
+  params: CreateAccountDirectParams,
+  createdByUserId: string
+): Promise<{ success: boolean; accountId?: string; driverId?: string; error?: string }> {
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
+  try {
+    const { fullName, username, emailLocalPart, password, role, driverId, newDriverData } = params;
+
+    const emailLocalPattern = /^[a-zA-Z0-9]+$/;
+    if (!emailLocalPattern.test(emailLocalPart)) {
+      return { success: false, error: 'Email local part can only contain English letters and numbers' };
+    }
+
+    const email = `${emailLocalPart}@malek.com`;
+
+    const { data: existingEmail } = await supabase
+      .from('user_accounts')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingEmail) {
+      return { success: false, error: 'Email already exists' };
+    }
+
+    const { data: existingUsername } = await supabase
+      .from('user_accounts')
+      .select('id')
+      .eq('username', username)
+      .maybeSingle();
+
+    if (existingUsername) {
+      return { success: false, error: 'Username already exists' };
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    let finalDriverId = driverId;
+
+    if (role === 'driver' && !driverId && newDriverData) {
+      const { data: existingDriver } = await supabase
+        .from('drivers')
+        .select('id')
+        .eq('driver_code', newDriverData.code)
+        .maybeSingle();
+
+      if (existingDriver) {
+        return { success: false, error: 'Driver code already exists' };
+      }
+
+      const { data: newDriver, error: driverError } = await supabase
+        .from('drivers')
+        .insert({
+          driver_code: newDriverData.code,
+          driver_name: newDriverData.name,
+          license_letters: newDriverData.license_letters || null,
+          license_numbers: newDriverData.license_numbers || null,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (driverError || !newDriver) {
+        return { success: false, error: driverError?.message || 'Failed to create driver' };
+      }
+
+      finalDriverId = newDriver.id;
+    }
+
+    const { data: newAccount, error: accountError } = await supabase
+      .from('user_accounts')
+      .insert({
+        email,
+        username,
+        password_hash: passwordHash,
+        role,
+        driver_id: role === 'driver' ? finalDriverId : null,
+        full_name: fullName,
+      })
+      .select()
+      .single();
+
+    if (accountError || !newAccount) {
+      return { success: false, error: accountError?.message || 'Failed to create account' };
+    }
+
+    return {
+      success: true,
+      accountId: newAccount.id,
+      driverId: finalDriverId
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
