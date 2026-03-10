@@ -4,7 +4,8 @@ import {
   LogOut,
   UserPlus,
   Trash2,
-  Key,
+  Power,
+  PowerOff,
   CheckCircle2,
   XCircle,
   Search,
@@ -18,6 +19,7 @@ import { useDarkMode } from '../hooks/useDarkMode';
 import { supabase, Driver } from '../lib/supabase';
 import { InviteManagement } from './InviteManagement';
 import { SupervisorProfile } from './SupervisorProfile';
+import { hasPermission } from '../lib/permissions';
 
 type Tab = 'drivers' | 'attendance' | 'invites' | 'profile';
 
@@ -67,7 +69,6 @@ export function SupervisorDashboard() {
     const { data, error } = await supabase
       .from('drivers')
       .select('*')
-      .eq('is_active', true)
       .order('driver_name');
 
     if (!error && data) {
@@ -132,6 +133,11 @@ export function SupervisorDashboard() {
       return;
     }
 
+    if (!hasPermission(user?.role || null, 'canCreateDrivers')) {
+      setMessage({ type: 'error', text: 'You do not have permission to create drivers' });
+      return;
+    }
+
     setAddingDriver(true);
     setMessage(null);
 
@@ -158,44 +164,56 @@ export function SupervisorDashboard() {
     setAddingDriver(false);
   };
 
-  const handleDeleteDriver = async (driverId: string, driverName: string) => {
+  const handleToggleDriverStatus = async (driver: Driver) => {
     if (!supabase) return;
 
-    if (!confirm(`Are you sure you want to deactivate ${driverName}?`)) {
+    if (!hasPermission(user?.role || null, 'canManageDriverStatus')) {
+      setMessage({ type: 'error', text: 'You do not have permission to manage driver status' });
+      return;
+    }
+
+    const action = driver.is_active ? 'deactivate' : 'activate';
+    if (!confirm(`Are you sure you want to ${action} ${driver.driver_name}?`)) {
       return;
     }
 
     const { error } = await supabase
       .from('drivers')
-      .update({ is_active: false })
-      .eq('id', driverId);
+      .update({ is_active: !driver.is_active })
+      .eq('id', driver.id);
 
     if (error) {
       setMessage({ type: 'error', text: error.message });
     } else {
-      setMessage({ type: 'success', text: 'Driver deactivated successfully' });
+      setMessage({ type: 'success', text: `Driver ${action}d successfully` });
       await loadDrivers();
       await loadAttendance();
     }
   };
 
-  const handleResetPassword = async (driverId: string, driverCode: string) => {
+  const handleDeleteDriver = async (driverId: string, driverName: string) => {
     if (!supabase) return;
 
-    const newPassword = prompt(`Enter new password for driver ${driverCode}:`);
-    if (!newPassword) return;
+    if (!hasPermission(user?.role || null, 'canDeleteDrivers')) {
+      setMessage({ type: 'error', text: 'You do not have permission to delete drivers' });
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to permanently delete ${driverName}? This action cannot be undone.`)) {
+      return;
+    }
 
     const { error } = await supabase
       .from('drivers')
-      .update({
-        driver_code: driverCode
-      })
+      .delete()
       .eq('id', driverId);
 
     if (error) {
-      setMessage({ type: 'error', text: 'Password reset not available in current setup' });
+      setMessage({ type: 'error', text: error.message });
     } else {
-      setMessage({ type: 'success', text: `Password updated for ${driverCode}` });
+      setMessage({ type: 'success', text: 'Driver deleted successfully' });
+      await loadDrivers();
+      await loadAttendance();
     }
   };
 
@@ -216,6 +234,8 @@ export function SupervisorDashboard() {
   if (!user || user.role !== 'supervisor') {
     return null;
   }
+
+  const permissions = hasPermission(user.role, 'canCreateDrivers');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -431,16 +451,18 @@ export function SupervisorDashboard() {
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">Manage Drivers</h2>
-                <button
-                  onClick={() => setShowAddForm(!showAddForm)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                >
-                  <UserPlus className="w-5 h-5" />
-                  Add Driver
-                </button>
+                {permissions && (
+                  <button
+                    onClick={() => setShowAddForm(!showAddForm)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  >
+                    <UserPlus className="w-5 h-5" />
+                    Add Driver
+                  </button>
+                )}
               </div>
 
-              {showAddForm && (
+              {showAddForm && permissions && (
                 <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
                   <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Add New Driver</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -534,6 +556,7 @@ export function SupervisorDashboard() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-slate-200 dark:border-slate-700">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Status</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Code</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Name</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">License</th>
@@ -543,6 +566,15 @@ export function SupervisorDashboard() {
                     <tbody>
                       {filteredDrivers.map((driver) => (
                         <tr key={driver.id} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              driver.is_active
+                                ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                                : 'bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300'
+                            }`}>
+                              {driver.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
                           <td className="py-3 px-4 text-slate-900 dark:text-white font-medium">{driver.driver_code}</td>
                           <td className="py-3 px-4 text-slate-900 dark:text-white">{driver.driver_name}</td>
                           <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
@@ -552,20 +584,28 @@ export function SupervisorDashboard() {
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => handleResetPassword(driver.id, driver.driver_code)}
-                                className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                title="Reset Password"
-                              >
-                                <Key className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteDriver(driver.id, driver.driver_name)}
-                                className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                title="Deactivate Driver"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              {hasPermission(user?.role || null, 'canManageDriverStatus') && (
+                                <button
+                                  onClick={() => handleToggleDriverStatus(driver)}
+                                  className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                  title={driver.is_active ? 'Deactivate Driver' : 'Activate Driver'}
+                                >
+                                  {driver.is_active ? (
+                                    <PowerOff className="w-4 h-4" />
+                                  ) : (
+                                    <Power className="w-4 h-4" />
+                                  )}
+                                </button>
+                              )}
+                              {hasPermission(user?.role || null, 'canDeleteDrivers') && (
+                                <button
+                                  onClick={() => handleDeleteDriver(driver.id, driver.driver_name)}
+                                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                  title="Delete Driver"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

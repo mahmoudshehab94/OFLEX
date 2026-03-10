@@ -3,6 +3,7 @@ export type Role = 'admin' | 'supervisor' | 'driver';
 export interface Permissions {
   canCreateDrivers: boolean;
   canDeleteDrivers: boolean;
+  canManageDriverStatus: boolean;
   canViewWorkingHours: boolean;
   canViewReports: boolean;
   canModifyWorkEntries: boolean;
@@ -17,6 +18,7 @@ export function getPermissions(role: Role | null): Permissions {
     return {
       canCreateDrivers: false,
       canDeleteDrivers: false,
+      canManageDriverStatus: false,
       canViewWorkingHours: false,
       canViewReports: false,
       canModifyWorkEntries: false,
@@ -31,6 +33,7 @@ export function getPermissions(role: Role | null): Permissions {
     return {
       canCreateDrivers: true,
       canDeleteDrivers: true,
+      canManageDriverStatus: true,
       canViewWorkingHours: true,
       canViewReports: true,
       canModifyWorkEntries: true,
@@ -45,6 +48,7 @@ export function getPermissions(role: Role | null): Permissions {
     return {
       canCreateDrivers: true,
       canDeleteDrivers: true,
+      canManageDriverStatus: true,
       canViewWorkingHours: false,
       canViewReports: false,
       canModifyWorkEntries: false,
@@ -58,6 +62,7 @@ export function getPermissions(role: Role | null): Permissions {
   return {
     canCreateDrivers: false,
     canDeleteDrivers: false,
+    canManageDriverStatus: false,
     canViewWorkingHours: false,
     canViewReports: false,
     canModifyWorkEntries: false,
