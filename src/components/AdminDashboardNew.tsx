@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LogOut, Users, Edit2, Trash2, Save, X, Search, Power, FileText } from 'lucide-react';
+import { LogOut, Users, CreditCard as Edit2, Trash2, Save, X, Search, Power, FileText } from 'lucide-react';
 import { supabase, Driver, hasSupabaseConfig } from '../lib/supabase';
 import { ReportsTab } from './ReportsTab';
 
