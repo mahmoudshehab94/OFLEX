@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  LogOut, Users, FileText, BarChart2, Plus, Edit2, Trash2, Save, X, Download, Key, Mail, CheckCircle, XCircle, Eye, EyeOff
-} from 'lucide-react';
+import { LogOut, Users, FileText, BarChart2, Plus, CreditCard as Edit2, Trash2, Save, X, Download, Key, Mail, CheckCircle, XCircle, Eye, EyeOff } from 'lucide-react';
 import { supabase, Driver, WorkEntry, DriverWithWorkEntries, hasSupabaseConfig } from '../lib/supabase';
 import jsPDF from 'jspdf';
 
