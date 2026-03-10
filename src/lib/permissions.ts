@@ -9,6 +9,7 @@ export interface Permissions {
   canCreateSupervisors: boolean;
   canCreateAdmins: boolean;
   canManageInvites: boolean;
+  canResetPasswords: boolean;
 }
 
 export function getPermissions(role: Role | null): Permissions {
@@ -22,6 +23,7 @@ export function getPermissions(role: Role | null): Permissions {
       canCreateSupervisors: false,
       canCreateAdmins: false,
       canManageInvites: false,
+      canResetPasswords: false,
     };
   }
 
@@ -35,6 +37,7 @@ export function getPermissions(role: Role | null): Permissions {
       canCreateSupervisors: true,
       canCreateAdmins: true,
       canManageInvites: true,
+      canResetPasswords: true,
     };
   }
 
@@ -48,6 +51,7 @@ export function getPermissions(role: Role | null): Permissions {
       canCreateSupervisors: false,
       canCreateAdmins: false,
       canManageInvites: true,
+      canResetPasswords: false,
     };
   }
 
@@ -60,6 +64,7 @@ export function getPermissions(role: Role | null): Permissions {
     canCreateSupervisors: false,
     canCreateAdmins: false,
     canManageInvites: false,
+    canResetPasswords: false,
   };
 }
 

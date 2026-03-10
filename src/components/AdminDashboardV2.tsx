@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, Driver, WorkEntry } from '../lib/supabase';
+import { supabase, Driver, WorkEntry, UserAccount, getAllUserAccounts, generatePassword, resetUserPassword } from '../lib/supabase';
 import {
   Users, FileText, BarChart3, Plus, Pencil, Trash2,
   Check, X, Search, Download, LogOut,
-  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet, Settings, Clock, Moon, Sun, Loader2, Save, Scale
+  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet, Settings, Clock, Moon, Sun, Loader2, Save, Scale, Key, Copy, ShieldAlert
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -19,7 +19,7 @@ interface Message {
   text: string;
 }
 
-type TabType = 'dashboard' | 'reports' | 'entries' | 'drivers' | 'invites' | 'settings';
+type TabType = 'dashboard' | 'reports' | 'entries' | 'drivers' | 'invites' | 'users' | 'settings';
 
 interface DashboardStats {
   driversSubmittedToday: number;
@@ -110,6 +110,12 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
 
+  const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
+  const [resettingPassword, setResettingPassword] = useState(false);
+
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(null), 5000);
@@ -126,6 +132,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     if (activeTab === 'reports') loadTodayEntries();
     if (activeTab === 'drivers') loadDrivers();
     if (activeTab === 'entries') { loadDrivers(); loadEntries(); }
+    if (activeTab === 'users') loadUserAccounts();
   }, [activeTab]);
 
   useEffect(() => {
@@ -870,6 +877,62 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     }
   };
 
+  const loadUserAccounts = async () => {
+    setLoadingUsers(true);
+    try {
+      const result = await getAllUserAccounts();
+      if (result.success && result.users) {
+        setUserAccounts(result.users);
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Fehler beim Laden der Benutzer' });
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Laden der Benutzer' });
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleGeneratePassword = () => {
+    const password = generatePassword(12);
+    setGeneratedPassword(password);
+  };
+
+  const handleResetPassword = async (userId: string) => {
+    if (!permissions.canResetPasswords) {
+      setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Passwörter zurückzusetzen' });
+      return;
+    }
+
+    if (!generatedPassword) {
+      setMessage({ type: 'error', text: 'Bitte generieren Sie zuerst ein Passwort' });
+      return;
+    }
+
+    setResettingPassword(true);
+    try {
+      const result = await resetUserPassword(userId, generatedPassword);
+      if (result.success) {
+        setMessage({ type: 'success', text: 'Passwort erfolgreich zurückgesetzt' });
+        setResetPasswordUserId(null);
+        setGeneratedPassword(null);
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Fehler beim Zurücksetzen des Passworts' });
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Zurücksetzen des Passworts' });
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setMessage({ type: 'success', text: 'In Zwischenablage kopiert' });
+  };
+
   const handleDeleteDriver = async (driver: Driver) => {
     if (!supabase) return;
 
@@ -960,6 +1023,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
               { id: 'entries', label: 'Einträge', icon: Clock },
               { id: 'drivers', label: 'Fahrer', icon: Users },
               { id: 'invites', label: 'Einladungen', icon: Plus },
+              { id: 'users', label: 'Benutzer', icon: ShieldAlert, requiresPermission: 'canResetPasswords' },
               { id: 'settings', label: 'Einstellungen', icon: Settings }
             ]
               .filter(tab => !tab.requiresPermission || permissions[tab.requiresPermission as keyof typeof permissions])
@@ -2081,6 +2145,167 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
         {activeTab === 'invites' && (
           <InviteManagement />
+        )}
+
+        {activeTab === 'users' && (
+          <div className="space-y-6">
+            <div className="card p-6">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <ShieldAlert className="w-6 h-6 text-blue-600" />
+                Benutzerverwaltung
+              </h2>
+
+              {loadingUsers ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : userAccounts.length === 0 ? (
+                <p className="text-center text-slate-500 dark:text-slate-400 py-8">
+                  Keine Benutzer gefunden
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-700">
+                        <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                          Benutzername
+                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                          E-Mail
+                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                          Rolle
+                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                          Erstellt
+                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                          Aktionen
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {userAccounts.map((userAccount) => (
+                        <tr
+                          key={userAccount.id}
+                          className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                        >
+                          <td className="py-3 px-4 text-slate-900 dark:text-white">
+                            {userAccount.username}
+                          </td>
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                            {userAccount.email}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              userAccount.role === 'admin'
+                                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                : userAccount.role === 'supervisor'
+                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                            }`}>
+                              {userAccount.role}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                            {new Date(userAccount.created_at).toLocaleDateString('de-DE')}
+                          </td>
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() => {
+                                setResetPasswordUserId(userAccount.id);
+                                setGeneratedPassword(null);
+                              }}
+                              disabled={!permissions.canResetPasswords}
+                              className="btn-secondary text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={permissions.canResetPasswords ? "Passwort zurücksetzen" : "Keine Berechtigung"}
+                            >
+                              <Key className="w-4 h-4" />
+                              Passwort zurücksetzen
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {resetPasswordUserId && (
+              <div className="card p-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                  Passwort zurücksetzen
+                </h3>
+
+                <div className="space-y-4 max-w-2xl">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleGeneratePassword}
+                      className="btn-primary flex items-center gap-2"
+                    >
+                      <Key className="w-4 h-4" />
+                      Passwort generieren
+                    </button>
+                    {generatedPassword && (
+                      <button
+                        onClick={() => copyToClipboard(generatedPassword)}
+                        className="btn-secondary flex items-center gap-2"
+                      >
+                        <Copy className="w-4 h-4" />
+                        Kopieren
+                      </button>
+                    )}
+                  </div>
+
+                  {generatedPassword && (
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-300 dark:border-slate-600">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Generiertes Passwort:
+                      </label>
+                      <code className="block p-3 bg-slate-100 dark:bg-slate-900 rounded text-lg font-mono text-slate-900 dark:text-white break-all">
+                        {generatedPassword}
+                      </code>
+                      <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+                        ⚠️ Wichtig: Kopieren Sie dieses Passwort und teilen Sie es sicher mit dem Benutzer.
+                        Es kann nach dem Schließen nicht mehr angezeigt werden.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleResetPassword(resetPasswordUserId)}
+                      disabled={!generatedPassword || resettingPassword}
+                      className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {resettingPassword ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Wird zurückgesetzt...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Passwort zurücksetzen
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setResetPasswordUserId(null);
+                        setGeneratedPassword(null);
+                      }}
+                      className="btn-secondary"
+                    >
+                      Abbrechen
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {activeTab === 'settings' && (
