@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Truck, Clock, Calendar, Download } from 'lucide-react';
+import { Truck, Clock, Calendar, Download, LogOut } from 'lucide-react';
 import { supabase, hasSupabaseConfig } from '../lib/supabase';
 import { InstallationQuickTourModal } from './InstallationQuickTourModal';
 import { useAuth } from '../contexts/AuthContext';
 
 export function DriverSubmission() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [workDate, setWorkDate] = useState(new Date().toISOString().split('T')[0]);
   const [licenseLetters, setLicenseLetters] = useState('');
   const [licenseNumbers, setLicenseNumbers] = useState('');
@@ -250,10 +250,20 @@ export function DriverSubmission() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 flex items-center justify-center p-4">
       <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-700">
-        <div className="flex items-center justify-center mb-6">
-          <div className="bg-blue-600 p-3 rounded-full shadow-lg">
-            <Truck className="w-8 h-8 text-white" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600 p-3 rounded-full shadow-lg">
+              <Truck className="w-8 h-8 text-white" />
+            </div>
           </div>
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-colors"
+            title="تسجيل الخروج"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="text-sm">Abmelden</span>
+          </button>
         </div>
 
         <h1 className="text-2xl font-bold text-center text-white mb-2">
