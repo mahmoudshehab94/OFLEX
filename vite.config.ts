@@ -8,36 +8,38 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon-192x192.png', 'icon-512x512.png', 'icon-maskable-192x192.png', 'icon-maskable-512x512.png'],
+      includeAssets: ['icon.svg', 'icon-maskable.svg', 'apple-touch-icon.png.png'],
       manifest: {
         name: 'Trans Oflex',
         short_name: 'Trans Oflex',
         description: 'Arbeitszeit App für Fahrer',
         start_url: '/',
         display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: '#ffffff',
+        background_color: '#2563eb',
+        theme_color: '#2563eb',
         icons: [
           {
-            src: 'icon-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'icon-512x512.png',
+            src: 'icon.svg',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/svg+xml',
+            purpose: 'any'
           },
           {
-            src: 'icon-maskable-192x192.png',
+            src: 'icon.svg',
             sizes: '192x192',
-            type: 'image/png',
+            type: 'image/svg+xml',
+            purpose: 'any'
+          },
+          {
+            src: 'icon-maskable.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
             purpose: 'maskable'
           },
           {
-            src: 'icon-maskable-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
+            src: 'icon-maskable.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml',
             purpose: 'maskable'
           }
         ]
