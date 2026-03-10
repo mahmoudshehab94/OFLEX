@@ -20,6 +20,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUserAvatar: (avatarUrl: string) => void;
   updateUserProfile: (updates: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -238,13 +239,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshUser = async () => {
+    if (!user || !supabase) return;
+
+    try {
+      const { data: userData, error } = await supabase
+        .from('user_accounts')
+        .select('id, email, username, role, driver_id, avatar_url, full_name, phone')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error || !userData) {
+        console.error('Error refreshing user data:', error);
+        return;
+      }
+
+      const refreshedUser: User = {
+        id: userData.id,
+        email: userData.email,
+        username: userData.username,
+        role: userData.role,
+        driver_id: userData.driver_id,
+        avatar_url: userData.avatar_url,
+        full_name: userData.full_name,
+        phone: userData.phone,
+      };
+
+      setUser(refreshedUser);
+
+      const sessionData = localStorage.getItem('userSession');
+      if (sessionData) {
+        const session = JSON.parse(sessionData);
+        session.user = refreshedUser;
+        localStorage.setItem('userSession', JSON.stringify(session));
+      }
+
+      console.log('User data refreshed from database:', refreshedUser);
+    } catch (error) {
+      console.error('Exception refreshing user:', error);
+    }
+  };
+
   const logout = async () => {
     setUser(null);
     localStorage.removeItem('userSession');
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUserAvatar, updateUserProfile }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUserAvatar, updateUserProfile, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

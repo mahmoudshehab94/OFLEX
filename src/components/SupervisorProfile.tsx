@@ -23,7 +23,7 @@ const getAvatarUrl = (avatarPath: string | null): string | null => {
 };
 
 export function SupervisorProfile() {
-  const { user, updateUserProfile } = useAuth();
+  const { user, updateUserProfile, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -90,17 +90,16 @@ export function SupervisorProfile() {
 
       if (uploadError) throw uploadError;
 
-      // Store file path instead of public URL for consistency
-      const { error: updateError } = await supabase
-        .from('user_accounts')
-        .update({ avatar_url: filePath })
-        .eq('id', user.id);
+      // Update profile using Edge Function (bypasses RLS)
+      const result = await updateUserProfileAPI(user.id, { avatar_url: filePath });
 
-      if (updateError) throw updateError;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update avatar');
+      }
 
-      // Update local state and AuthContext
+      // Refresh user data from database
+      await refreshUser();
       setAvatarUrl(filePath);
-      updateUserProfile({ avatar_url: filePath });
       setMessage({ type: 'success', text: 'تم تحديث الصورة الشخصية بنجاح' });
     } catch (error: any) {
       console.error('Error uploading image:', error);
@@ -118,16 +117,15 @@ export function SupervisorProfile() {
     setMessage(null);
 
     try {
-      // Update username in user_accounts table
-      const { error } = await supabase
-        .from('user_accounts')
-        .update({ username: displayName })
-        .eq('id', user.id);
+      // Update profile using Edge Function (bypasses RLS)
+      const result = await updateUserProfileAPI(user.id, { username: displayName });
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update profile');
+      }
 
-      // Update AuthContext with new username
-      updateUserProfile({ username: displayName });
+      // Refresh user data from database
+      await refreshUser();
       setMessage({ type: 'success', text: 'تم تحديث الاسم بنجاح' });
     } catch (error: any) {
       console.error('Error updating profile:', error);
@@ -168,14 +166,13 @@ export function SupervisorProfile() {
         return;
       }
 
-      // Hash and update new password
+      // Hash and update new password using Edge Function
       const newPasswordHash = await hashPassword(newPassword);
-      const { error: updateError } = await supabase
-        .from('user_accounts')
-        .update({ password_hash: newPasswordHash })
-        .eq('id', user?.id);
+      const result = await updateUserProfileAPI(user.id, { password_hash: newPasswordHash });
 
-      if (updateError) throw updateError;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update password');
+      }
 
       setMessage({ type: 'success', text: 'تم تغيير كلمة المرور بنجاح' });
       setCurrentPassword('');

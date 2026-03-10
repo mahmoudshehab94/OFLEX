@@ -68,7 +68,7 @@ const getAvatarUrl = (avatarPath: string | null): string | null => {
 };
 
 export default function AdminDashboardV2({ onLogout }: { onLogout: () => void }) {
-  const { user, updateUserProfile } = useAuth();
+  const { user, updateUserProfile, refreshUser } = useAuth();
 
   if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
     window.history.pushState({}, '', '/');
@@ -946,17 +946,16 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
       if (uploadError) throw uploadError;
 
-      // Store the file path instead of full URL for better reliability
-      const { error: updateError } = await supabase
-        .from('user_accounts')
-        .update({ avatar_url: filePath })
-        .eq('id', user.id);
+      // Update profile using Edge Function (bypasses RLS)
+      const result = await updateUserProfileAPI(user.id, { avatar_url: filePath });
 
-      if (updateError) throw updateError;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update avatar');
+      }
 
-      // Update local state and AuthContext
+      // Refresh user data from database
+      await refreshUser();
       setProfileAvatarUrl(filePath);
-      updateUserProfile({ avatar_url: filePath });
       setMessage({ type: 'success', text: 'Profilbild erfolgreich hochgeladen' });
     } catch (error: any) {
       console.error('Error uploading avatar:', error);
@@ -982,19 +981,15 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         phone: profilePhone.trim() || null
       };
 
-      const { error } = await supabase
-        .from('user_accounts')
-        .update(updates)
-        .eq('id', user.id);
+      // Update profile using Edge Function (bypasses RLS)
+      const result = await updateUserProfileAPI(user.id, updates);
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update profile');
+      }
 
-      // Update AuthContext with new profile data
-      updateUserProfile({
-        username: updates.username,
-        full_name: updates.full_name,
-        phone: updates.phone,
-      });
+      // Refresh user data from database
+      await refreshUser();
 
       setMessage({ type: 'success', text: 'Profil erfolgreich aktualisiert' });
     } catch (error: any) {
