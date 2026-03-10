@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase, generateInviteToken, AccountInvite, Driver } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getPermissions } from '../lib/permissions';
-import { UserPlus, Copy, Check, Clock, XCircle, Search, Loader2, Link as LinkIcon } from 'lucide-react';
+import { UserPlus, Copy, Check, Clock, XCircle, Search, Loader2, Link as LinkIcon, User } from 'lucide-react';
+
+type InviteType = 'existing' | 'new';
 
 export function InviteManagement() {
   const { user } = useAuth();
@@ -14,10 +16,18 @@ export function InviteManagement() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const [selectedRole, setSelectedRole] = useState<'driver' | 'supervisor' | 'admin'>('driver');
+  const [inviteType, setInviteType] = useState<InviteType>('new');
   const [selectedDriverId, setSelectedDriverId] = useState<string>('');
   const [driverSearch, setDriverSearch] = useState('');
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
+
+  const [newDriverData, setNewDriverData] = useState({
+    code: '',
+    name: '',
+    license_letters: '',
+    license_numbers: ''
+  });
 
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -84,9 +94,28 @@ export function InviteManagement() {
       return;
     }
 
-    if (selectedRole === 'driver' && !selectedDriverId) {
-      setMessage({ type: 'error', text: 'Please select a driver' });
-      return;
+    if (selectedRole === 'driver') {
+      if (inviteType === 'existing' && !selectedDriverId) {
+        setMessage({ type: 'error', text: 'Please select a driver' });
+        return;
+      }
+
+      if (inviteType === 'new') {
+        if (!newDriverData.code.trim()) {
+          setMessage({ type: 'error', text: 'Driver code is required' });
+          return;
+        }
+        if (!newDriverData.name.trim()) {
+          setMessage({ type: 'error', text: 'Driver name is required' });
+          return;
+        }
+
+        const existingDriver = drivers.find(d => d.driver_code.toLowerCase() === newDriverData.code.toLowerCase());
+        if (existingDriver) {
+          setMessage({ type: 'error', text: 'Driver code already exists. Use "Link to Existing Driver" option instead.' });
+          return;
+        }
+      }
     }
 
     setGenerating(true);
@@ -95,7 +124,8 @@ export function InviteManagement() {
     const result = await generateInviteToken(
       selectedRole,
       user.id,
-      selectedRole === 'driver' ? selectedDriverId : undefined
+      selectedRole === 'driver' && inviteType === 'existing' ? selectedDriverId : undefined,
+      selectedRole === 'driver' && inviteType === 'new' ? newDriverData : undefined
     );
 
     if (result.success && result.token) {
@@ -103,6 +133,7 @@ export function InviteManagement() {
       await loadInvites();
       setSelectedDriverId('');
       setDriverSearch('');
+      setNewDriverData({ code: '', name: '', license_letters: '', license_numbers: '' });
     } else {
       setMessage({ type: 'error', text: result.error || 'Failed to create invite' });
     }
@@ -156,6 +187,7 @@ export function InviteManagement() {
               onChange={(e) => {
                 setSelectedRole(e.target.value as 'driver' | 'supervisor' | 'admin');
                 setSelectedDriverId('');
+                setNewDriverData({ code: '', name: '', license_letters: '', license_numbers: '' });
               }}
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
@@ -170,33 +202,145 @@ export function InviteManagement() {
           </div>
 
           {selectedRole === 'driver' && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Select Driver
-              </label>
-              <div className="relative mb-2">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="text"
-                  value={driverSearch}
-                  onChange={(e) => setDriverSearch(e.target.value)}
-                  placeholder="Search drivers..."
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                  Invite Type
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInviteType('new');
+                      setSelectedDriverId('');
+                    }}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      inviteType === 'new'
+                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <User className={`w-6 h-6 mx-auto mb-2 ${inviteType === 'new' ? 'text-blue-600' : 'text-slate-400'}`} />
+                    <div className={`font-medium ${inviteType === 'new' ? 'text-blue-900 dark:text-blue-100' : 'text-slate-700 dark:text-slate-300'}`}>
+                      New Driver
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Create account for new driver
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInviteType('existing');
+                      setNewDriverData({ code: '', name: '', license_letters: '', license_numbers: '' });
+                    }}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      inviteType === 'existing'
+                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <LinkIcon className={`w-6 h-6 mx-auto mb-2 ${inviteType === 'existing' ? 'text-blue-600' : 'text-slate-400'}`} />
+                    <div className={`font-medium ${inviteType === 'existing' ? 'text-blue-900 dark:text-blue-100' : 'text-slate-700 dark:text-slate-300'}`}>
+                      Existing Driver
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Link to existing driver record
+                    </div>
+                  </button>
+                </div>
               </div>
-              <select
-                value={selectedDriverId}
-                onChange={(e) => setSelectedDriverId(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select a driver...</option>
-                {filteredDrivers.map((driver) => (
-                  <option key={driver.id} value={driver.id}>
-                    {driver.driver_code} - {driver.driver_name}
-                  </option>
-                ))}
-              </select>
-            </div>
+
+              {inviteType === 'existing' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Select Driver
+                  </label>
+                  <div className="relative mb-2">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={driverSearch}
+                      onChange={(e) => setDriverSearch(e.target.value)}
+                      placeholder="Search drivers..."
+                      className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <select
+                    value={selectedDriverId}
+                    onChange={(e) => setSelectedDriverId(e.target.value)}
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select a driver...</option>
+                    {filteredDrivers.map((driver) => (
+                      <option key={driver.id} value={driver.id}>
+                        {driver.driver_code} - {driver.driver_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {inviteType === 'new' && (
+                <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    New Driver Information
+                  </p>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Driver Code *
+                    </label>
+                    <input
+                      type="text"
+                      value={newDriverData.code}
+                      onChange={(e) => setNewDriverData({ ...newDriverData, code: e.target.value })}
+                      placeholder="e.g., D001"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Driver Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={newDriverData.name}
+                      onChange={(e) => setNewDriverData({ ...newDriverData, name: e.target.value })}
+                      placeholder="Full name"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        License Letters
+                      </label>
+                      <input
+                        type="text"
+                        value={newDriverData.license_letters}
+                        onChange={(e) => setNewDriverData({ ...newDriverData, license_letters: e.target.value })}
+                        placeholder="e.g., ABC"
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        License Numbers
+                      </label>
+                      <input
+                        type="text"
+                        value={newDriverData.license_numbers}
+                        onChange={(e) => setNewDriverData({ ...newDriverData, license_numbers: e.target.value })}
+                        placeholder="e.g., 123456"
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {message && (
@@ -248,6 +392,7 @@ export function InviteManagement() {
           <div className="space-y-3">
             {invites.map((invite) => {
               const statusInfo = getInviteStatus(invite);
+              const isNewDriver = invite.new_driver_code != null;
               return (
                 <div
                   key={invite.id}
@@ -259,12 +404,22 @@ export function InviteManagement() {
                         <span className="text-sm font-semibold text-slate-900 dark:text-white capitalize">
                           {invite.role}
                         </span>
+                        {isNewDriver && (
+                          <span className="text-xs px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                            New Driver
+                          </span>
+                        )}
                         <span
                           className={`text-xs px-2 py-1 rounded-full ${statusInfo.bg} ${statusInfo.color}`}
                         >
                           {statusInfo.status}
                         </span>
                       </div>
+                      {isNewDriver && (
+                        <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
+                          {invite.new_driver_code} - {invite.new_driver_name}
+                        </p>
+                      )}
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate mb-1">
                         {invite.token}
                       </p>

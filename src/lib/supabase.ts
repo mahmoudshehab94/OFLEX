@@ -63,6 +63,10 @@ export interface AccountInvite {
   used_at: string | null;
   is_used: boolean;
   created_at: string;
+  new_driver_code?: string | null;
+  new_driver_name?: string | null;
+  new_driver_license_letters?: string | null;
+  new_driver_license_numbers?: string | null;
 }
 
 export async function testDatabaseConnection(): Promise<{
@@ -123,7 +127,8 @@ export function getConfigStatus() {
 export async function generateInviteToken(
   role: 'driver' | 'supervisor' | 'admin',
   createdBy: string,
-  driverId?: string
+  driverId?: string,
+  newDriverData?: { code: string; name: string; license_letters: string; license_numbers: string }
 ): Promise<{ success: boolean; token?: string; error?: string }> {
   if (!supabase) {
     return { success: false, error: 'Supabase not configured' };
@@ -134,16 +139,26 @@ export async function generateInviteToken(
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1);
 
+    const inviteData: any = {
+      token,
+      role,
+      created_by: createdBy,
+      expires_at: expiresAt.toISOString(),
+      is_used: false,
+    };
+
+    if (driverId) {
+      inviteData.driver_id = driverId;
+    } else if (newDriverData) {
+      inviteData.new_driver_code = newDriverData.code;
+      inviteData.new_driver_name = newDriverData.name;
+      inviteData.new_driver_license_letters = newDriverData.license_letters || null;
+      inviteData.new_driver_license_numbers = newDriverData.license_numbers || null;
+    }
+
     const { data, error } = await supabase
       .from('account_invites')
-      .insert({
-        token,
-        role,
-        created_by: createdBy,
-        driver_id: driverId || null,
-        expires_at: expiresAt.toISOString(),
-        is_used: false,
-      })
+      .insert(inviteData)
       .select()
       .single();
 

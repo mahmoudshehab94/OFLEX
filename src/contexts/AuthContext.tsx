@@ -123,6 +123,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'Email already registered' };
       }
 
+      let driverId = invite.driver_id;
+
+      if (invite.role === 'driver' && !driverId && invite.new_driver_code) {
+        const { data: newDriver, error: driverError } = await supabase
+          .from('drivers')
+          .insert({
+            driver_code: invite.new_driver_code,
+            driver_name: invite.new_driver_name || '',
+            license_letters: invite.new_driver_license_letters || null,
+            license_numbers: invite.new_driver_license_numbers || null,
+            is_active: true,
+          })
+          .select()
+          .single();
+
+        if (driverError) {
+          return { success: false, error: 'Failed to create driver record' };
+        }
+
+        driverId = newDriver.id;
+      }
+
       const { data: newUser, error: insertError } = await supabase
         .from('user_accounts')
         .insert({
@@ -130,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password_hash: password,
           username,
           role: invite.role,
-          driver_id: invite.driver_id,
+          driver_id: driverId,
           avatar_url: avatarUrl || null,
           is_active: true,
         })
