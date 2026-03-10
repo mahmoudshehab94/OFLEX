@@ -7,6 +7,13 @@ import { useAuth } from '../contexts/AuthContext';
 
 export function DriverSubmission() {
   const { user, logout } = useAuth();
+
+  if (!user || user.role !== 'driver') {
+    window.history.pushState({}, '', '/');
+    window.location.reload();
+    return null;
+  }
+
   const [showProfile, setShowProfile] = useState(false);
   const [workDate, setWorkDate] = useState(new Date().toISOString().split('T')[0]);
   const [licenseLetters, setLicenseLetters] = useState('');

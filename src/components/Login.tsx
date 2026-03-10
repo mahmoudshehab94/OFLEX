@@ -30,6 +30,8 @@ export function Login() {
     if (!result.success) {
       setError(result.error || 'Login failed');
       setLoading(false);
+    } else {
+      window.location.reload();
     }
   };
 

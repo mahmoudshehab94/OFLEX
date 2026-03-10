@@ -52,6 +52,13 @@ const STANDARD_HOURS = 8;
 
 export default function AdminDashboardV2({ onLogout }: { onLogout: () => void }) {
   const { user } = useAuth();
+
+  if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
+    window.history.pushState({}, '', '/');
+    window.location.reload();
+    return null;
+  }
+
   const permissions = getPermissions(user?.role as 'admin' | 'supervisor' | 'driver' | null);
   const { isDark, toggleDarkMode } = useDarkMode();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');

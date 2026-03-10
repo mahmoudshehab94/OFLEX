@@ -4,6 +4,12 @@ import { useAuth } from '../contexts/AuthContext';
 export function SupervisorDashboard() {
   const { user, logout } = useAuth();
 
+  if (!user || user.role !== 'supervisor') {
+    window.history.pushState({}, '', '/');
+    window.location.reload();
+    return null;
+  }
+
   const handleLogout = async () => {
     await logout();
   };
