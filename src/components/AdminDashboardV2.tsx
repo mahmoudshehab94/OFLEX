@@ -1183,6 +1183,51 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     setMessage({ type: 'success', text: 'In Zwischenablage kopiert' });
   };
 
+  const handleDeleteUserAccount = async (userId: string, username: string) => {
+    if (!user) return;
+
+    if (!permissions.canDeleteAccounts) {
+      setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Konten zu löschen' });
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Möchten Sie das Konto "${username}" wirklich DAUERHAFT löschen?\n\nWARNUNG: Diese Aktion kann nicht rückgängig gemacht werden.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const apiUrl = `${supabaseUrl}/functions/v1/delete-user-account`;
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          sessionUserId: user.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete account');
+      }
+
+      setMessage({ type: 'success', text: 'Konto erfolgreich gelöscht' });
+      await loadUserAccounts();
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      setMessage({ type: 'error', text: error.message || 'Fehler beim Löschen des Kontos' });
+    }
+  };
+
   const handleDeleteDriver = async (driver: Driver) => {
     if (!supabase) return;
 
@@ -2627,18 +2672,30 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                             {new Date(userAccount.created_at).toLocaleDateString('de-DE')}
                           </td>
                           <td className="py-3 px-4">
-                            <button
-                              onClick={() => {
-                                setResetPasswordUserId(userAccount.id);
-                                setGeneratedPassword(null);
-                              }}
-                              disabled={!permissions.canResetPasswords}
-                              className="btn-secondary text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                              title={permissions.canResetPasswords ? "Passwort zurücksetzen" : "Keine Berechtigung"}
-                            >
-                              <Key className="w-4 h-4" />
-                              Zurücksetzen
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setResetPasswordUserId(userAccount.id);
+                                  setGeneratedPassword(null);
+                                }}
+                                disabled={!permissions.canResetPasswords}
+                                className="btn-secondary text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={permissions.canResetPasswords ? "Passwort zurücksetzen" : "Keine Berechtigung"}
+                              >
+                                <Key className="w-4 h-4" />
+                                Zurücksetzen
+                              </button>
+                              {(userAccount.role === 'admin' || userAccount.role === 'supervisor') && userAccount.id !== user?.id && (
+                                <button
+                                  onClick={() => handleDeleteUserAccount(userAccount.id, userAccount.username)}
+                                  disabled={!permissions.canDeleteAccounts}
+                                  className="btn-danger text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title={permissions.canDeleteAccounts ? "Konto löschen" : "Keine Berechtigung"}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}

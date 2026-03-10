@@ -11,6 +11,7 @@ export interface Permissions {
   canCreateAdmins: boolean;
   canManageInvites: boolean;
   canResetPasswords: boolean;
+  canDeleteAccounts: boolean;
 }
 
 export function getPermissions(role: Role | null): Permissions {
@@ -26,6 +27,7 @@ export function getPermissions(role: Role | null): Permissions {
       canCreateAdmins: false,
       canManageInvites: false,
       canResetPasswords: false,
+      canDeleteAccounts: false,
     };
   }
 
@@ -41,6 +43,7 @@ export function getPermissions(role: Role | null): Permissions {
       canCreateAdmins: true,
       canManageInvites: true,
       canResetPasswords: true,
+      canDeleteAccounts: true,
     };
   }
 
@@ -56,6 +59,7 @@ export function getPermissions(role: Role | null): Permissions {
       canCreateAdmins: false,
       canManageInvites: true,
       canResetPasswords: false,
+      canDeleteAccounts: false,
     };
   }
 
@@ -70,6 +74,7 @@ export function getPermissions(role: Role | null): Permissions {
     canCreateAdmins: false,
     canManageInvites: false,
     canResetPasswords: false,
+    canDeleteAccounts: false,
   };
 }
 
