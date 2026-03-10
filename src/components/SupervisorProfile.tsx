@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { User, Camera, Lock, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { User, Camera, Lock, Save, AlertCircle, CheckCircle, Bell } from 'lucide-react';
 import { supabase, hashPassword } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { NotificationSettings } from './NotificationSettings';
 
 interface ProfileData {
   display_name: string;
@@ -396,6 +397,13 @@ export function SupervisorProfile() {
           </button>
         </form>
       </div>
+
+      {user && (
+        <NotificationSettings
+          userAccountId={user.id}
+          role={user.role as 'supervisor' | 'admin'}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { User, Lock, Camera, BarChart3, Calendar, Clock, Truck, ArrowLeft, LogOut, Eye, EyeOff, TrendingUp } from 'lucide-react';
+import { User, Lock, Camera, BarChart3, Calendar, Clock, Truck, ArrowLeft, LogOut, Eye, EyeOff, TrendingUp, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, hashPassword } from '../lib/supabase';
+import { NotificationSettings } from './NotificationSettings';
 
 interface DriverStats {
   currentMonthEntries: number;
@@ -66,7 +67,7 @@ const updateUserProfileAPI = async (userId: string, updates: {
 
 export function DriverProfile({ onBack }: DriverProfileProps) {
   const { user, logout, updateUserAvatar } = useAuth();
-  const [activeTab, setActiveTab] = useState<'stats' | 'settings'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'settings' | 'notifications'>('stats');
   const [stats, setStats] = useState<DriverStats | null>(null);
   const [driverInfo, setDriverInfo] = useState<DriverInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -438,6 +439,17 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
               <Lock className="w-4 h-4 inline mr-2" />
               Einstellungen
             </button>
+            <button
+              onClick={() => setActiveTab('notifications')}
+              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                activeTab === 'notifications'
+                  ? 'text-blue-400 border-b-2 border-blue-400 bg-gray-700/30'
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              <Bell className="w-4 h-4 inline mr-2" />
+              Benachrichtigungen
+            </button>
           </div>
 
           <div className="p-6">
@@ -696,6 +708,14 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
                   </div>
                 </form>
               </div>
+            )}
+
+            {activeTab === 'notifications' && user && (
+              <NotificationSettings
+                userAccountId={user.id}
+                role="driver"
+                driverId={user.driver_id}
+              />
             )}
           </div>
         </div>

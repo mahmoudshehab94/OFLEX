@@ -219,6 +219,9 @@ export function DriverSubmission() {
         return;
       }
 
+      // Work entry saved successfully - this will automatically stop daily reminders
+      // The Edge Function checks for today's work entries before sending reminders
+
       setMessage({
         type: 'success',
         text: 'Arbeitszeit erfolgreich gespeichert!'
