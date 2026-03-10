@@ -10,6 +10,8 @@ export function InviteManagement() {
   const { user } = useAuth();
   const permissions = getPermissions(user?.role as 'admin' | 'supervisor' | 'driver' | null);
 
+  const appUrl = import.meta.env.VITE_APP_URL;
+
   const [invites, setInvites] = useState<AccountInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -86,6 +88,11 @@ export function InviteManagement() {
   const handleGenerateInvite = async () => {
     if (!user) return;
 
+    if (!appUrl) {
+      setMessage({ type: 'error', text: 'Application URL is not configured. Please contact your administrator.' });
+      return;
+    }
+
     if (selectedRole === 'supervisor' && !permissions.canCreateSupervisors) {
       setMessage({ type: 'error', text: 'You do not have permission to create supervisor invites' });
       return;
@@ -131,7 +138,7 @@ export function InviteManagement() {
     );
 
     if (result.success && result.token) {
-      const inviteUrl = `${window.location.origin}/register?token=${result.token}`;
+      const inviteUrl = `${appUrl}/register?token=${result.token}`;
       setGeneratedInviteUrl(inviteUrl);
       setShowShareModal(true);
       await loadInvites();
@@ -478,7 +485,7 @@ export function InviteManagement() {
             {invites.map((invite) => {
               const statusInfo = getInviteStatus(invite);
               const isNewDriver = invite.new_driver_code != null;
-              const inviteUrl = `${window.location.origin}/register?token=${invite.token}`;
+              const inviteUrl = `${appUrl || ''}/register?token=${invite.token}`;
               return (
                 <div
                   key={invite.id}
