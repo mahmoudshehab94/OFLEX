@@ -7,7 +7,7 @@ import { AdminLogin } from './components/AdminLogin';
 import AdminDashboardV2 from './components/AdminDashboardV2';
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
 
   useEffect(() => {
     const path = window.location.pathname;
@@ -49,10 +49,7 @@ function AppContent() {
   }
 
   if (user.role === 'admin') {
-    return <AdminDashboardV2 onLogout={async () => {
-      const { logout } = useAuth();
-      await logout();
-    }} />;
+    return <AdminDashboardV2 onLogout={logout} />;
   }
 
   if (user.role === 'supervisor') {
