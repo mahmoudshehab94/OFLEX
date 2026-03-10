@@ -29,6 +29,9 @@ export interface Driver {
   license_numbers: string | null;
   is_active: boolean;
   created_at: string;
+  account_email?: string | null;
+  account_username?: string | null;
+  account_id?: string | null;
 }
 
 export interface WorkEntry {
@@ -351,6 +354,44 @@ export async function getAllUserAccounts(): Promise<{ success: boolean; users?: 
     }));
 
     return { success: true, users };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getDriversWithAccounts(): Promise<{ success: boolean; drivers?: Driver[]; error?: string }> {
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('drivers')
+      .select(`
+        *,
+        user_accounts!user_accounts_driver_id_fkey(id, email, username)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    const drivers = data?.map((driver: any) => {
+      const account = Array.isArray(driver.user_accounts) && driver.user_accounts.length > 0
+        ? driver.user_accounts[0]
+        : driver.user_accounts;
+
+      return {
+        ...driver,
+        account_id: account?.id || null,
+        account_email: account?.email || null,
+        account_username: account?.username || null,
+        user_accounts: undefined
+      };
+    });
+
+    return { success: true, drivers };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, Driver, WorkEntry, UserAccount, getAllUserAccounts, generatePassword, resetUserPassword } from '../lib/supabase';
+import { supabase, Driver, WorkEntry, UserAccount, getAllUserAccounts, generatePassword, resetUserPassword, getDriversWithAccounts } from '../lib/supabase';
 import {
   Users, FileText, BarChart3, Plus, Pencil, Trash2,
   Check, X, Search, Download, LogOut,
@@ -369,13 +369,12 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     if (!supabase) return;
 
     try {
-      const { data, error } = await supabase
-        .from('drivers')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setDrivers(data || []);
+      const result = await getDriversWithAccounts();
+      if (result.success && result.drivers) {
+        setDrivers(result.drivers);
+      } else {
+        throw new Error(result.error || 'Failed to load drivers');
+      }
     } catch (error) {
       console.error('Error loading drivers:', error);
       setMessage({ type: 'error', text: 'Fehler beim Laden der Fahrer' });
@@ -2064,6 +2063,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                       <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Code</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Name</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Status</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Konto</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Aktionen</th>
                     </tr>
                   </thead>
@@ -2108,6 +2108,27 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                           }`}>
                             {driver.is_active ? 'Aktiv' : 'Inaktiv'}
                           </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          {driver.account_email ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                  <Check className="w-3 h-3 mr-1" />
+                                  Verknüpft
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-600 dark:text-slate-400">
+                                <div className="font-medium">{driver.account_username}</div>
+                                <div className="text-xs">{driver.account_email}</div>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400">
+                              <X className="w-3 h-3 mr-1" />
+                              Kein Konto
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
