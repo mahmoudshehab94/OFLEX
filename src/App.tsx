@@ -1,62 +1,77 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Login } from './components/Login';
 import { DriverSubmission } from './components/DriverSubmission';
+import { SupervisorDashboard } from './components/SupervisorDashboard';
 import { AdminLogin } from './components/AdminLogin';
 import AdminDashboardV2 from './components/AdminDashboardV2';
 
-function App() {
-  const [page, setPage] = useState<'driver' | 'admin-login' | 'admin-dashboard'>('driver');
+function AppContent() {
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     const path = window.location.pathname;
-    if (path === '/admin') {
-      const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-      if (isLoggedIn) {
-        setPage('admin-dashboard');
-      } else {
-        setPage('admin-login');
-      }
-    } else {
-      setPage('driver');
+    if (path === '/admin' && user?.role !== 'admin') {
+      window.history.pushState({}, '', '/');
     }
+  }, [user]);
 
-    const handlePopState = () => {
-      const path = window.location.pathname;
-      if (path === '/admin') {
-        const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-        if (isLoggedIn) {
-          setPage('admin-dashboard');
-        } else {
-          setPage('admin-login');
-        }
-      } else {
-        setPage('driver');
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  const handleAdminLogin = () => {
-    setPage('admin-dashboard');
-    window.history.pushState({}, '', '/admin');
-  };
-
-  const handleAdminLogout = () => {
-    localStorage.removeItem('adminLoggedIn');
-    setPage('driver');
-    window.history.pushState({}, '', '/');
-  };
-
-  if (page === 'admin-login') {
-    return <AdminLogin onLogin={handleAdminLogin} />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (page === 'admin-dashboard') {
-    return <AdminDashboardV2 onLogout={handleAdminLogout} />;
+  const path = window.location.pathname;
+  if (path === '/admin') {
+    const isOldAdminLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+    if (isOldAdminLoggedIn) {
+      const handleOldAdminLogout = () => {
+        localStorage.removeItem('adminLoggedIn');
+        window.history.pushState({}, '', '/');
+        window.location.reload();
+      };
+      return <AdminDashboardV2 onLogout={handleOldAdminLogout} />;
+    }
+    return <AdminLogin onLogin={() => {
+      window.history.pushState({}, '', '/admin');
+      window.location.reload();
+    }} />;
   }
 
-  return <DriverSubmission />;
+  if (!user) {
+    return <Login />;
+  }
+
+  if (user.role === 'admin') {
+    return <AdminDashboardV2 onLogout={async () => {
+      const { logout } = useAuth();
+      await logout();
+    }} />;
+  }
+
+  if (user.role === 'supervisor') {
+    return <SupervisorDashboard />;
+  }
+
+  if (user.role === 'driver') {
+    return <DriverSubmission />;
+  }
+
+  return <Login />;
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
 }
 
 export default App;
