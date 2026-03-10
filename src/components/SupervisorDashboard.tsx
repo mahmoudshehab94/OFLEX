@@ -12,7 +12,10 @@ import {
   Moon,
   Sun,
   TrendingUp,
-  User
+  User,
+  Pencil,
+  Save,
+  X as XIcon
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../hooks/useDarkMode';
@@ -33,14 +36,21 @@ export function SupervisorDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const [newDriver, setNewDriver] = useState({
-    code: '',
-    name: '',
+  const [editingDriver, setEditingDriver] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<{
+    driver_code: string;
+    driver_name: string;
+    license_letters: string;
+    license_numbers: string;
+    email: string;
+  }>({
+    driver_code: '',
+    driver_name: '',
     license_letters: '',
-    license_numbers: ''
+    license_numbers: '',
+    email: ''
   });
-  const [addingDriver, setAddingDriver] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [savingDriver, setSavingDriver] = useState(false);
 
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -126,43 +136,77 @@ export function SupervisorDashboard() {
     setAttendanceLoading(false);
   };
 
-  const handleAddDriver = async () => {
+  const handleEditDriver = (driver: Driver) => {
+    setEditingDriver(driver.id);
+    setEditFormData({
+      driver_code: driver.driver_code,
+      driver_name: driver.driver_name,
+      license_letters: driver.license_letters || '',
+      license_numbers: driver.license_numbers || '',
+      email: driver.account_email || ''
+    });
+    setMessage(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingDriver(null);
+    setEditFormData({
+      driver_code: '',
+      driver_name: '',
+      license_letters: '',
+      license_numbers: '',
+      email: ''
+    });
+  };
+
+  const handleSaveDriver = async (driverId: string) => {
     if (!supabase) return;
 
-    if (!newDriver.code || !newDriver.name) {
+    if (!editFormData.driver_code || !editFormData.driver_name) {
       setMessage({ type: 'error', text: 'Driver code and name are required' });
       return;
     }
 
-    if (!hasPermission(user?.role || null, 'canCreateDrivers')) {
-      setMessage({ type: 'error', text: 'You do not have permission to create drivers' });
+    setSavingDriver(true);
+    setMessage(null);
+
+    const { error: driverError } = await supabase
+      .from('drivers')
+      .update({
+        driver_code: editFormData.driver_code,
+        driver_name: editFormData.driver_name,
+        license_letters: editFormData.license_letters || null,
+        license_numbers: editFormData.license_numbers || null
+      })
+      .eq('id', driverId);
+
+    if (driverError) {
+      setMessage({ type: 'error', text: driverError.message });
+      setSavingDriver(false);
       return;
     }
 
-    setAddingDriver(true);
-    setMessage(null);
+    const driver = drivers.find(d => d.id === driverId);
+    if (driver?.account_id && editFormData.email && editFormData.email !== driver.account_email) {
+      const { error: emailError } = await supabase
+        .from('user_accounts')
+        .update({ email: editFormData.email })
+        .eq('id', driver.account_id);
 
-    const { error } = await supabase
-      .from('drivers')
-      .insert({
-        driver_code: newDriver.code,
-        driver_name: newDriver.name,
-        license_letters: newDriver.license_letters || null,
-        license_numbers: newDriver.license_numbers || null,
-        is_active: true
-      });
-
-    if (error) {
-      setMessage({ type: 'error', text: error.message });
-    } else {
-      setMessage({ type: 'success', text: 'Driver added successfully' });
-      setNewDriver({ code: '', name: '', license_letters: '', license_numbers: '' });
-      setShowAddForm(false);
-      await loadDrivers();
-      await loadAttendance();
+      if (emailError) {
+        setMessage({ type: 'error', text: `Driver updated but email update failed: ${emailError.message}` });
+        setSavingDriver(false);
+        await loadDrivers();
+        setEditingDriver(null);
+        return;
+      }
     }
 
-    setAddingDriver(false);
+    setMessage({ type: 'success', text: 'Driver updated successfully' });
+    await loadDrivers();
+    await loadAttendance();
+    setEditingDriver(null);
+    setSavingDriver(false);
   };
 
   const handleToggleDriverStatus = async (driver: Driver) => {
@@ -310,7 +354,7 @@ export function SupervisorDashboard() {
           >
             <span className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              Manage Drivers
+              Drivers
             </span>
             {activeTab === 'drivers' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400" />
@@ -451,88 +495,8 @@ export function SupervisorDashboard() {
           <div className="space-y-6">
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Manage Drivers</h2>
-                {permissions && (
-                  <button
-                    onClick={() => setShowAddForm(!showAddForm)}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                  >
-                    <UserPlus className="w-5 h-5" />
-                    Add Driver
-                  </button>
-                )}
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Drivers</h2>
               </div>
-
-              {showAddForm && permissions && (
-                <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
-                  <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Add New Driver</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        Driver Code *
-                      </label>
-                      <input
-                        type="text"
-                        value={newDriver.code}
-                        onChange={(e) => setNewDriver({ ...newDriver, code: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="e.g., DRV001"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        Driver Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={newDriver.name}
-                        onChange={(e) => setNewDriver({ ...newDriver, name: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="e.g., John Doe"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        License Letters
-                      </label>
-                      <input
-                        type="text"
-                        value={newDriver.license_letters}
-                        onChange={(e) => setNewDriver({ ...newDriver, license_letters: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Optional"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        License Numbers
-                      </label>
-                      <input
-                        type="text"
-                        value={newDriver.license_numbers}
-                        onChange={(e) => setNewDriver({ ...newDriver, license_numbers: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500"
-                        placeholder="Optional"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    <button
-                      onClick={handleAddDriver}
-                      disabled={addingDriver}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      {addingDriver ? 'Adding...' : 'Add Driver'}
-                    </button>
-                    <button
-                      onClick={() => setShowAddForm(false)}
-                      className="px-4 py-2 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-900 dark:text-white rounded-lg transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <div className="mb-4">
                 <div className="relative">
@@ -568,51 +532,138 @@ export function SupervisorDashboard() {
                     <tbody>
                       {filteredDrivers.map((driver) => (
                         <tr key={driver.id} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                          <td className="py-3 px-4">
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              driver.is_active
-                                ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
-                                : 'bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300'
-                            }`}>
-                              {driver.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-slate-900 dark:text-white font-medium">{driver.driver_code}</td>
-                          <td className="py-3 px-4 text-slate-900 dark:text-white">{driver.driver_name}</td>
-                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                            {driver.account_email || '-'}
-                          </td>
-                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                            {driver.license_letters || driver.license_numbers
-                              ? `${driver.license_letters || ''} ${driver.license_numbers || ''}`.trim()
-                              : '-'}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center justify-end gap-2">
-                              {hasPermission(user?.role || null, 'canManageDriverStatus') && (
-                                <button
-                                  onClick={() => handleToggleDriverStatus(driver)}
-                                  className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                                  title={driver.is_active ? 'Deactivate Driver' : 'Activate Driver'}
-                                >
-                                  {driver.is_active ? (
-                                    <PowerOff className="w-4 h-4" />
-                                  ) : (
-                                    <Power className="w-4 h-4" />
+                          {editingDriver === driver.id ? (
+                            <>
+                              <td className="py-3 px-4">
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  driver.is_active
+                                    ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                                    : 'bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300'
+                                }`}>
+                                  {driver.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <input
+                                  type="text"
+                                  value={editFormData.driver_code}
+                                  onChange={(e) => setEditFormData({ ...editFormData, driver_code: e.target.value })}
+                                  className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded focus:ring-2 focus:ring-green-500"
+                                />
+                              </td>
+                              <td className="py-3 px-4">
+                                <input
+                                  type="text"
+                                  value={editFormData.driver_name}
+                                  onChange={(e) => setEditFormData({ ...editFormData, driver_name: e.target.value })}
+                                  className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded focus:ring-2 focus:ring-green-500"
+                                />
+                              </td>
+                              <td className="py-3 px-4">
+                                <input
+                                  type="email"
+                                  value={editFormData.email}
+                                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                                  className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded focus:ring-2 focus:ring-green-500"
+                                  placeholder={driver.account_email ? undefined : 'No account'}
+                                  disabled={!driver.account_id}
+                                />
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex gap-1">
+                                  <input
+                                    type="text"
+                                    value={editFormData.license_letters}
+                                    onChange={(e) => setEditFormData({ ...editFormData, license_letters: e.target.value })}
+                                    className="w-16 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded focus:ring-2 focus:ring-green-500"
+                                    placeholder="ABC"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={editFormData.license_numbers}
+                                    onChange={(e) => setEditFormData({ ...editFormData, license_numbers: e.target.value })}
+                                    className="w-20 px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded focus:ring-2 focus:ring-green-500"
+                                    placeholder="123456"
+                                  />
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleSaveDriver(driver.id)}
+                                    disabled={savingDriver}
+                                    className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50"
+                                    title="Save"
+                                  >
+                                    <Save className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    disabled={savingDriver}
+                                    className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                                    title="Cancel"
+                                  >
+                                    <XIcon className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="py-3 px-4">
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  driver.is_active
+                                    ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                                    : 'bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300'
+                                }`}>
+                                  {driver.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-slate-900 dark:text-white font-medium">{driver.driver_code}</td>
+                              <td className="py-3 px-4 text-slate-900 dark:text-white">{driver.driver_name}</td>
+                              <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                                {driver.account_email || '-'}
+                              </td>
+                              <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                                {driver.license_letters || driver.license_numbers
+                                  ? `${driver.license_letters || ''} ${driver.license_numbers || ''}`.trim()
+                                  : '-'}
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleEditDriver(driver)}
+                                    className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                    title="Edit Driver"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </button>
+                                  {hasPermission(user?.role || null, 'canManageDriverStatus') && (
+                                    <button
+                                      onClick={() => handleToggleDriverStatus(driver)}
+                                      className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                      title={driver.is_active ? 'Deactivate Driver' : 'Activate Driver'}
+                                    >
+                                      {driver.is_active ? (
+                                        <PowerOff className="w-4 h-4" />
+                                      ) : (
+                                        <Power className="w-4 h-4" />
+                                      )}
+                                    </button>
                                   )}
-                                </button>
-                              )}
-                              {hasPermission(user?.role || null, 'canDeleteDrivers') && (
-                                <button
-                                  onClick={() => handleDeleteDriver(driver.id, driver.driver_name)}
-                                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                  title="Delete Driver"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                          </td>
+                                  {hasPermission(user?.role || null, 'canDeleteDrivers') && (
+                                    <button
+                                      onClick={() => handleDeleteDriver(driver.id, driver.driver_name)}
+                                      className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                      title="Delete Driver"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </>
+                          )}
                         </tr>
                       ))}
                     </tbody>
