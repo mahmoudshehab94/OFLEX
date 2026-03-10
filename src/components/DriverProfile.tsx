@@ -24,7 +24,7 @@ interface DriverProfileProps {
 }
 
 export function DriverProfile({ onBack }: DriverProfileProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUserAvatar } = useAuth();
   const [activeTab, setActiveTab] = useState<'stats' | 'info' | 'settings'>('stats');
   const [stats, setStats] = useState<DriverStats | null>(null);
   const [driverInfo, setDriverInfo] = useState<DriverInfo | null>(null);
@@ -203,6 +203,14 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
       if (accountError) throw accountError;
 
       setMessage({ type: 'success', text: 'Name erfolgreich aktualisiert' });
+
+      const sessionData = localStorage.getItem('userSession');
+      if (sessionData) {
+        const session = JSON.parse(sessionData);
+        session.user.username = newDisplayName.trim();
+        localStorage.setItem('userSession', JSON.stringify(session));
+      }
+
       loadDriverData();
     } catch (error) {
       console.error('Error updating name:', error);
@@ -230,29 +238,53 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
     setMessage(null);
 
     try {
-      if (!supabase) {
+      if (!supabase || !user) {
         setMessage({ type: 'error', text: 'Datenbankfehler' });
         setUploadingPhoto(false);
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
+      if (user.avatar_url) {
+        const oldPath = user.avatar_url.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('avatars')
+            .remove([`${user.id}/${oldPath}`]);
+        }
+      }
 
-        if (!supabase) return;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
 
-        const { error } = await supabase
-          .from('user_accounts')
-          .update({ avatar_url: base64String })
-          .eq('id', user?.id);
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-        if (error) throw error;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
 
-        setMessage({ type: 'success', text: 'Profilbild erfolgreich hochgeladen' });
-        window.location.reload();
-      };
-      reader.readAsDataURL(file);
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('user_accounts')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      if (updateUserAvatar) {
+        updateUserAvatar(publicUrl);
+      }
+
+      setMessage({ type: 'success', text: 'Profilbild erfolgreich hochgeladen' });
     } catch (error) {
       console.error('Error uploading photo:', error);
       setMessage({ type: 'error', text: 'Fehler beim Hochladen des Profilbilds' });
@@ -477,10 +509,13 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
                             file:text-sm file:font-semibold
                             file:bg-blue-600 file:text-white
                             hover:file:bg-blue-700
-                            file:cursor-pointer file:transition"
+                            file:cursor-pointer file:transition
+                            disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </label>
-                      <p className="mt-2 text-xs text-gray-400">PNG, JPG bis zu 5MB</p>
+                      <p className="mt-2 text-xs text-gray-400">
+                        {uploadingPhoto ? 'Wird hochgeladen...' : 'PNG, JPG bis zu 5MB'}
+                      </p>
                     </div>
                   </div>
                 </div>
