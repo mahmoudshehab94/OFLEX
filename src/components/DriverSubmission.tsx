@@ -272,19 +272,20 @@ export function DriverSubmission() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowProfile(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-colors"
+              className="p-1 hover:opacity-80 transition-opacity rounded-full"
               title="Profil"
             >
               {user?.avatar_url ? (
                 <img
                   src={user.avatar_url}
                   alt="Profile"
-                  className="w-5 h-5 rounded-full object-cover"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-600 hover:border-blue-500 transition-colors"
                 />
               ) : (
-                <User className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600 hover:border-blue-500 transition-colors">
+                  <User className="w-6 h-6 text-gray-300" />
+                </div>
               )}
-              <span className="text-sm">Profil</span>
             </button>
             <button
               onClick={logout}
@@ -535,13 +536,8 @@ export function DriverSubmission() {
         </div>
 
         <div className="mt-6 text-center text-xs text-gray-500">
-          <a
-            href="/admin"
-            className="hover:text-gray-300 transition cursor-pointer"
-          >
-            <p>Created by Mahmoud Shehab</p>
-            <p className="mt-0.5">v2.1.0</p>
-          </a>
+          <p>Created by Mahmoud Shehab</p>
+          <p className="mt-0.5">v2.2.0</p>
         </div>
       </div>
 

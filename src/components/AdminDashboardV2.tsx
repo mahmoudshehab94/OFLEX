@@ -2910,7 +2910,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
       <footer className="border-t border-gray-200 dark:border-slate-800 mt-auto">
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-4 text-center text-xs text-gray-500 dark:text-slate-400">
-          <p>Created by Mahmoud Shehab — V2.1.0</p>
+          <p>Created by Mahmoud Shehab — V2.2.0</p>
         </div>
       </footer>
     </div>

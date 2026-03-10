@@ -338,15 +338,22 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
         throw uploadError;
       }
 
+      // Get public URL for the uploaded file
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const publicUrl = publicUrlData.publicUrl;
+
       // Update profile using Edge Function (bypasses RLS)
-      const result = await updateUserProfileAPI(user.id, { avatar_url: filePath });
+      const result = await updateUserProfileAPI(user.id, { avatar_url: publicUrl });
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to update avatar');
       }
 
       if (updateUserAvatar) {
-        updateUserAvatar(filePath);
+        updateUserAvatar(publicUrl);
       }
 
       setMessage({ type: 'success', text: 'Profilbild erfolgreich hochgeladen' });
