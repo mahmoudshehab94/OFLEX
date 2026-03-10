@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase, generateInviteToken, AccountInvite, Driver } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { getPermissions } from '../lib/permissions';
 import { UserPlus, Copy, Check, Clock, XCircle, Search, Loader2, Link as LinkIcon } from 'lucide-react';
 
 export function InviteManagement() {
   const { user } = useAuth();
+  const permissions = getPermissions(user?.role as 'admin' | 'supervisor' | 'driver' | null);
+
   const [invites, setInvites] = useState<AccountInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -70,6 +73,16 @@ export function InviteManagement() {
 
   const handleGenerateInvite = async () => {
     if (!user) return;
+
+    if (selectedRole === 'supervisor' && !permissions.canCreateSupervisors) {
+      setMessage({ type: 'error', text: 'You do not have permission to create supervisor invites' });
+      return;
+    }
+
+    if (selectedRole === 'admin' && !permissions.canCreateAdmins) {
+      setMessage({ type: 'error', text: 'You do not have permission to create admin invites' });
+      return;
+    }
 
     if (selectedRole === 'driver' && !selectedDriverId) {
       setMessage({ type: 'error', text: 'Please select a driver' });
@@ -147,8 +160,12 @@ export function InviteManagement() {
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="driver">Driver</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="admin">Admin</option>
+              <option value="supervisor" disabled={!permissions.canCreateSupervisors}>
+                Supervisor {!permissions.canCreateSupervisors ? '(No Permission)' : ''}
+              </option>
+              <option value="admin" disabled={!permissions.canCreateAdmins}>
+                Admin {!permissions.canCreateAdmins ? '(No Permission)' : ''}
+              </option>
             </select>
           </div>
 

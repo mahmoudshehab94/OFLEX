@@ -11,6 +11,8 @@ import * as XLSX from 'xlsx';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useDebounce } from '../hooks/useDebounce';
 import { InviteManagement } from './InviteManagement';
+import { useAuth } from '../contexts/AuthContext';
+import { getPermissions } from '../lib/permissions';
 
 interface Message {
   type: 'success' | 'error';
@@ -49,6 +51,8 @@ type PeriodType = 'diese_woche' | 'letzte_woche' | 'dieser_monat' | 'letzter_mon
 const STANDARD_HOURS = 8;
 
 export default function AdminDashboardV2({ onLogout }: { onLogout: () => void }) {
+  const { user } = useAuth();
+  const permissions = getPermissions(user?.role as 'admin' | 'supervisor' | 'driver' | null);
   const { isDark, toggleDarkMode } = useDarkMode();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [message, setMessage] = useState<Message | null>(null);
@@ -472,6 +476,11 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   const handleUpdateEntry = async () => {
     if (!supabase || !editingEntry) return;
 
+    if (!permissions.canModifyWorkEntries) {
+      setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Einträge zu ändern' });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('work_entries')
@@ -517,6 +526,12 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
   const handleDeleteEntry = async (id: string) => {
     if (!supabase) return;
+
+    if (!permissions.canModifyWorkEntries) {
+      setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Einträge zu ändern' });
+      return;
+    }
+
     if (!confirm('Eintrag wirklich löschen?')) return;
 
     try {
@@ -539,6 +554,12 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
   const handleBulkDelete = async () => {
     if (!supabase) return;
+
+    if (!permissions.canModifyWorkEntries) {
+      setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Einträge zu ändern' });
+      return;
+    }
+
     if (selectedEntries.size === 0) {
       setMessage({ type: 'error', text: 'Keine Einträge ausgewählt' });
       return;
@@ -935,28 +956,30 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
           <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-              { id: 'reports', label: 'Berichte', icon: FileText },
+              { id: 'reports', label: 'Berichte', icon: FileText, requiresPermission: 'canViewReports' },
               { id: 'entries', label: 'Einträge', icon: Clock },
               { id: 'drivers', label: 'Fahrer', icon: Users },
               { id: 'invites', label: 'Einladungen', icon: Plus },
               { id: 'settings', label: 'Einstellungen', icon: Settings }
-            ].map(tab => {
-              const IconComponent = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors flex items-center gap-2 ${
-                    activeTab === tab.id
-                      ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <IconComponent className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              );
-            })}
+            ]
+              .filter(tab => !tab.requiresPermission || permissions[tab.requiresPermission as keyof typeof permissions])
+              .map(tab => {
+                const IconComponent = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as TabType)}
+                    className={`px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors flex items-center gap-2 ${
+                      activeTab === tab.id
+                        ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                        : 'border-transparent text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <IconComponent className="w-4 h-4" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                );
+              })}
           </div>
         </div>
       </nav>
@@ -1202,24 +1225,32 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                             <td className="py-3 px-4">
                               <div className="flex gap-2">
                                 <button
-                                  onClick={() => setEditingEntry({
-                                    id: entry.id,
-                                    driver_id: entry.driver_id,
-                                    vehicle: entry.vehicle || '',
-                                    date: entry.date,
-                                    start_time: entry.start_time,
-                                    end_time: entry.end_time,
-                                    notes: entry.notes || ''
-                                  })}
-                                  className="p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
-                                  title="Bearbeiten"
+                                  onClick={() => {
+                                    if (!permissions.canModifyWorkEntries) {
+                                      setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Einträge zu ändern' });
+                                      return;
+                                    }
+                                    setEditingEntry({
+                                      id: entry.id,
+                                      driver_id: entry.driver_id,
+                                      vehicle: entry.vehicle || '',
+                                      date: entry.date,
+                                      start_time: entry.start_time,
+                                      end_time: entry.end_time,
+                                      notes: entry.notes || ''
+                                    });
+                                  }}
+                                  className="p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title={permissions.canModifyWorkEntries ? "Bearbeiten" : "Keine Berechtigung"}
+                                  disabled={!permissions.canModifyWorkEntries}
                                 >
                                   <Pencil className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteEntry(entry.id)}
-                                  className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                  title="Löschen"
+                                  className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title={permissions.canModifyWorkEntries ? "Löschen" : "Keine Berechtigung"}
+                                  disabled={!permissions.canModifyWorkEntries}
                                 >
                                   <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                                 </button>
@@ -1624,7 +1655,9 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                 </span>
                 <button
                   onClick={handleBulkDelete}
-                  className="btn-secondary text-sm flex items-center gap-2"
+                  className="btn-secondary text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!permissions.canModifyWorkEntries}
+                  title={permissions.canModifyWorkEntries ? "" : "Keine Berechtigung"}
                 >
                   <Trash2 className="w-4 h-4" />
                   Löschen
@@ -1770,24 +1803,32 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                           <td className="py-3 px-4">
                             <div className="flex gap-2">
                               <button
-                                onClick={() => setEditingEntry({
-                                  id: entry.id,
-                                  driver_id: entry.driver_id,
-                                  vehicle: entry.vehicle || '',
-                                  date: entry.date,
-                                  start_time: entry.start_time,
-                                  end_time: entry.end_time,
-                                  notes: entry.notes || ''
-                                })}
-                                className="p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
-                                title="Bearbeiten"
+                                onClick={() => {
+                                  if (!permissions.canModifyWorkEntries) {
+                                    setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Einträge zu ändern' });
+                                    return;
+                                  }
+                                  setEditingEntry({
+                                    id: entry.id,
+                                    driver_id: entry.driver_id,
+                                    vehicle: entry.vehicle || '',
+                                    date: entry.date,
+                                    start_time: entry.start_time,
+                                    end_time: entry.end_time,
+                                    notes: entry.notes || ''
+                                  });
+                                }}
+                                className="p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={permissions.canModifyWorkEntries ? "Bearbeiten" : "Keine Berechtigung"}
+                                disabled={!permissions.canModifyWorkEntries}
                               >
                                 <Pencil className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                               </button>
                               <button
                                 onClick={() => handleDeleteEntry(entry.id)}
-                                className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                title="Löschen"
+                                className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={permissions.canModifyWorkEntries ? "Löschen" : "Keine Berechtigung"}
+                                disabled={!permissions.canModifyWorkEntries}
                               >
                                 <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                               </button>

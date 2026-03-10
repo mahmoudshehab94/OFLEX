@@ -54,12 +54,8 @@ function AppContent() {
     return <Login />;
   }
 
-  if (user.role === 'admin') {
+  if (user.role === 'admin' || user.role === 'supervisor') {
     return <AdminDashboardV2 onLogout={logout} />;
-  }
-
-  if (user.role === 'supervisor') {
-    return <SupervisorDashboard />;
   }
 
   if (user.role === 'driver') {
