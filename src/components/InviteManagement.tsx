@@ -180,7 +180,7 @@ export function InviteManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <>
       {showShareModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-700">
@@ -442,10 +442,183 @@ export function InviteManagement() {
           </button>
         </div>
       </div>
+    </>
+  );
+}
+
+export function InviteHistory() {
+  const [invites, setInvites] = useState<AccountInvite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [generatedInviteUrl, setGeneratedInviteUrl] = useState('');
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const appUrl = import.meta.env.VITE_APP_URL;
+
+  useEffect(() => {
+    loadInvites();
+  }, []);
+
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
+  const loadInvites = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('account_invites')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setInvites(data || []);
+    } catch (error) {
+      console.error('Error loading invites:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInviteStatus = (invite: AccountInvite) => {
+    if (invite.is_used) {
+      return { status: 'Used', color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' };
+    }
+    if (new Date(invite.expires_at) < new Date()) {
+      return { status: 'Expired', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20' };
+    }
+    return { status: 'Active', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' };
+  };
+
+  const formatExpiresAt = (expiresAt: string) => {
+    const now = new Date();
+    const expires = new Date(expiresAt);
+    const diffMs = expires.getTime() - now.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 0) return 'Expired';
+    if (diffMins < 60) return `${diffMins}m remaining`;
+    return `${Math.floor(diffMins / 60)}h ${diffMins % 60}m remaining`;
+  };
+
+  const deleteInvite = async (inviteId: string) => {
+    if (!confirm('Sind Sie sicher, dass Sie diese Einladung löschen möchten?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('account_invites')
+        .delete()
+        .eq('id', inviteId);
+
+      if (error) throw error;
+
+      setMessage({ type: 'success', text: 'Einladung erfolgreich gelöscht' });
+      await loadInvites();
+    } catch (error) {
+      console.error('Error deleting invite:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Löschen der Einladung' });
+    }
+  };
+
+  const shareViaWhatsApp = (url: string) => {
+    const message = encodeURIComponent(`Join our platform! Use this link to create your account: ${url}`);
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+  };
+
+  const shareViaEmail = (url: string) => {
+    const subject = encodeURIComponent('Account Invitation');
+    const body = encodeURIComponent(`You have been invited to join our platform.\n\nPlease use the following link to create your account:\n\n${url}\n\nThis link will expire in 1 hour.`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
+  return (
+    <>
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Share2 className="w-6 h-6 text-blue-600" />
+                Einladung teilen
+              </h3>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-2 font-medium">
+                  Einladungslink:
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-white dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white overflow-x-auto">
+                    {generatedInviteUrl}
+                  </code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedInviteUrl);
+                      setMessage({ type: 'success', text: 'Link kopiert!' });
+                    }}
+                    className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition"
+                    title="Kopieren"
+                  >
+                    <Copy className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  onClick={() => shareViaWhatsApp(generatedInviteUrl)}
+                  className="flex items-center justify-center gap-3 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium w-full"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                  </svg>
+                  Über WhatsApp teilen
+                </button>
+
+                <button
+                  onClick={() => shareViaEmail(generatedInviteUrl)}
+                  className="flex items-center justify-center gap-3 px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition font-medium w-full"
+                >
+                  <Mail className="w-5 h-5" />
+                  Über E-Mail teilen
+                </button>
+              </div>
+
+              <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-4">
+                Dieser Einladungslink läuft in 1 Stunde ab
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {message && (
+        <div
+          className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+            message.type === 'success'
+              ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-900 dark:text-green-200'
+              : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-200'
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-          Invite History
+          Einladungsverlauf
         </h2>
 
         {loading ? (
@@ -505,7 +678,7 @@ export function InviteManagement() {
                         )}
                       </div>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-2">
                       {!invite.is_used && new Date(invite.expires_at) > new Date() && (
                         <button
                           onClick={() => {
@@ -513,11 +686,18 @@ export function InviteManagement() {
                             setShowShareModal(true);
                           }}
                           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-lg transition"
-                          title="Share invite link"
+                          title="Einladung teilen"
                         >
                           <Share2 className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                         </button>
                       )}
+                      <button
+                        onClick={() => deleteInvite(invite.id)}
+                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                        title="Einladung löschen"
+                      >
+                        <X className="w-5 h-5 text-red-600 dark:text-red-400" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -526,6 +706,6 @@ export function InviteManagement() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
