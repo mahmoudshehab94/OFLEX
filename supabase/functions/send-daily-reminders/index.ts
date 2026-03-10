@@ -82,7 +82,7 @@ Deno.serve(async (req: Request) => {
     const { data: todayEntries, error: entriesError } = await supabase
       .from("work_entries")
       .select("driver_id")
-      .eq("work_date", today);
+      .eq("date", today);
 
     if (entriesError) throw entriesError;
 
