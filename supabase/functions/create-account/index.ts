@@ -76,6 +76,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const body: CreateAccountRequest = await req.json();
+    const { fullName, username, emailLocalPart, password, role, driverId, newDriverData } = body;
+
     if (requestingUser.role === 'supervisor' && role !== 'driver') {
       return new Response(
         JSON.stringify({ success: false, error: 'Supervisors can only create driver accounts' }),
@@ -85,9 +88,6 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
-
-    const body: CreateAccountRequest = await req.json();
-    const { fullName, username, emailLocalPart, password, role, driverId, newDriverData } = body;
 
     if (!fullName || !username || !emailLocalPart || !password || !role) {
       return new Response(

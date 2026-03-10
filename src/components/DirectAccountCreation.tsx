@@ -183,7 +183,6 @@ export function DirectAccountCreation() {
             onChange={(e) => {
               setFormData({ ...formData, role: e.target.value as 'driver' | 'supervisor' });
               setSelectedFahrerId('');
-              setNewFahrerData({ code: '', name: '', license_letters: '', license_numbers: '' });
             }}
             className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
@@ -299,7 +298,6 @@ export function DirectAccountCreation() {
                   type="button"
                   onClick={() => {
                     setAccountType('existing');
-                    setNewFahrerData({ code: '', name: '', license_letters: '', license_numbers: '' });
                   }}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     accountType === 'existing'
