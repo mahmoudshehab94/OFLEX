@@ -566,7 +566,12 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
   const handleGenerateMonthlyReport = async () => {
     if (!supabase) return;
-    if (!monthlyDriver) {
+
+    // Resolve driver ID from search text to avoid stale state
+    const suggestions = getDriverSuggestions(monthlyDriverSearch);
+    const resolvedDriverId = suggestions.length > 0 ? suggestions[0].id : monthlyDriver;
+
+    if (!resolvedDriverId) {
       setMessage({ type: 'error', text: 'Bitte Fahrer auswählen' });
       return;
     }
@@ -579,13 +584,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       const { data: driver } = await supabase
         .from('drivers')
         .select('*')
-        .eq('id', monthlyDriver)
+        .eq('id', resolvedDriverId)
         .single();
 
       const { data: entries } = await supabase
         .from('work_entries')
         .select('*')
-        .eq('driver_id', monthlyDriver)
+        .eq('driver_id', resolvedDriverId)
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date', { ascending: true });
@@ -605,7 +610,12 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
   const handleGenerateCustomReport = async () => {
     if (!supabase) return;
-    if (!customDriver || !customDateFrom || !customDateTo) {
+
+    // Resolve driver ID from search text to avoid stale state
+    const suggestions = getDriverSuggestions(customDriverSearch);
+    const resolvedDriverId = suggestions.length > 0 ? suggestions[0].id : customDriver;
+
+    if (!resolvedDriverId || !customDateFrom || !customDateTo) {
       setMessage({ type: 'error', text: 'Bitte alle Felder ausfüllen' });
       return;
     }
@@ -614,13 +624,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       const { data: driver } = await supabase
         .from('drivers')
         .select('*')
-        .eq('id', customDriver)
+        .eq('id', resolvedDriverId)
         .single();
 
       const { data: entries } = await supabase
         .from('work_entries')
         .select('*')
-        .eq('driver_id', customDriver)
+        .eq('driver_id', resolvedDriverId)
         .gte('date', customDateFrom)
         .lte('date', customDateTo)
         .order('date', { ascending: true });
@@ -640,7 +650,15 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
   const handleCompareDrivers = async () => {
     if (!supabase) return;
-    if (!compareDriver1 || !compareDriver2) {
+
+    // Resolve driver IDs from search text to avoid stale state
+    const suggestions1 = getDriverSuggestions(compareDriver1Search);
+    const resolvedDriver1Id = suggestions1.length > 0 ? suggestions1[0].id : compareDriver1;
+
+    const suggestions2 = getDriverSuggestions(compareDriver2Search);
+    const resolvedDriver2Id = suggestions2.length > 0 ? suggestions2[0].id : compareDriver2;
+
+    if (!resolvedDriver1Id || !resolvedDriver2Id) {
       setMessage({ type: 'error', text: 'Bitte beide Fahrer auswählen' });
       return;
     }
@@ -648,7 +666,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     const { from, to } = getDateRange(comparePeriod);
 
     try {
-      const results = await Promise.all([compareDriver1, compareDriver2].map(async (driverId) => {
+      const results = await Promise.all([resolvedDriver1Id, resolvedDriver2Id].map(async (driverId) => {
         const { data: driver } = await supabase
           .from('drivers')
           .select('*')
