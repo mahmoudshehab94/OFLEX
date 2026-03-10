@@ -10,14 +10,16 @@ import {
   Search,
   Moon,
   Sun,
-  TrendingUp
+  TrendingUp,
+  User
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { supabase, Driver } from '../lib/supabase';
 import { InviteManagement } from './InviteManagement';
+import { SupervisorProfile } from './SupervisorProfile';
 
-type Tab = 'drivers' | 'attendance' | 'invites';
+type Tab = 'drivers' | 'attendance' | 'invites' | 'profile';
 
 export function SupervisorDashboard() {
   const { user, logout } = useAuth();
@@ -309,6 +311,22 @@ export function SupervisorDashboard() {
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400" />
             )}
           </button>
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`pb-3 px-1 font-medium transition-colors relative ${
+              activeTab === 'profile'
+                ? 'text-green-600 dark:text-green-400'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Profile
+            </span>
+            {activeTab === 'profile' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400" />
+            )}
+          </button>
         </div>
 
         {activeTab === 'attendance' && (
@@ -568,6 +586,10 @@ export function SupervisorDashboard() {
 
         {activeTab === 'invites' && (
           <InviteManagement />
+        )}
+
+        {activeTab === 'profile' && (
+          <SupervisorProfile />
         )}
       </main>
     </div>
