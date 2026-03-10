@@ -42,7 +42,7 @@ interface ReportSummary {
 
 type PeriodType = 'diese_woche' | 'letzte_woche' | 'dieser_monat' | 'letzter_monat' | 'dieses_jahr' | 'letztes_jahr';
 
-const STANDARD_HOURS = 9;
+const STANDARD_HOURS = 8;
 
 interface DashboardStats {
   driversSubmittedToday: number;

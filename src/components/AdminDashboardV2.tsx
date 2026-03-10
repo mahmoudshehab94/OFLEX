@@ -45,7 +45,7 @@ interface EditingEntry {
 
 type PeriodType = 'diese_woche' | 'letzte_woche' | 'dieser_monat' | 'letzter_monat' | 'dieses_jahr' | 'letztes_jahr';
 
-const STANDARD_HOURS = 9;
+const STANDARD_HOURS = 8;
 
 export default function AdminDashboardV2({ onLogout }: { onLogout: () => void }) {
   const { isDark, toggleDarkMode } = useDarkMode();
