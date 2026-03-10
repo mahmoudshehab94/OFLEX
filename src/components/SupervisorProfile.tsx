@@ -22,6 +22,32 @@ const getAvatarUrl = (avatarPath: string | null): string | null => {
   return publicUrl;
 };
 
+const updateUserProfileAPI = async (userId: string, updates: {
+  username?: string;
+  full_name?: string | null;
+  phone?: string | null;
+  avatar_url?: string;
+  password_hash?: string;
+}) => {
+  try {
+    const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-profile`;
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, ...updates }),
+    });
+
+    const result = await response.json();
+    return result;
+  } catch (error: any) {
+    console.error('Error calling update-profile API:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export function SupervisorProfile() {
   const { user, updateUserProfile, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);

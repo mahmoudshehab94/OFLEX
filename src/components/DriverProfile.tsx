@@ -38,6 +38,32 @@ const getAvatarUrl = (avatarPath: string | null): string | null => {
   return publicUrl;
 };
 
+const updateUserProfileAPI = async (userId: string, updates: {
+  username?: string;
+  full_name?: string | null;
+  phone?: string | null;
+  avatar_url?: string;
+  password_hash?: string;
+}) => {
+  try {
+    const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-profile`;
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, ...updates }),
+    });
+
+    const result = await response.json();
+    return result;
+  } catch (error: any) {
+    console.error('Error calling update-profile API:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export function DriverProfile({ onBack }: DriverProfileProps) {
   const { user, logout, updateUserAvatar } = useAuth();
   const [activeTab, setActiveTab] = useState<'stats' | 'settings'>('stats');
@@ -193,14 +219,13 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
         return;
       }
 
-      // Hash the new password before storing
+      // Hash the new password and update using Edge Function (bypasses RLS)
       const newPasswordHash = await hashPassword(newPassword);
-      const { error } = await supabase
-        .from('user_accounts')
-        .update({ password_hash: newPasswordHash })
-        .eq('id', user?.id);
+      const result = await updateUserProfileAPI(user?.id || '', { password_hash: newPasswordHash });
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update password');
+      }
 
       setMessage({ type: 'success', text: 'Passwort erfolgreich geändert' });
       setCurrentPassword('');
@@ -239,12 +264,12 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
 
       if (driverError) throw driverError;
 
-      const { error: accountError } = await supabase
-        .from('user_accounts')
-        .update({ username: newDisplayName.trim() })
-        .eq('id', user?.id);
+      // Update account using Edge Function (bypasses RLS)
+      const result = await updateUserProfileAPI(user?.id || '', { username: newDisplayName.trim() });
 
-      if (accountError) throw accountError;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update username');
+      }
 
       setMessage({ type: 'success', text: 'Name erfolgreich aktualisiert' });
 
@@ -313,13 +338,12 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
         throw uploadError;
       }
 
-      // Store the file path instead of full URL for better reliability
-      const { error: updateError } = await supabase
-        .from('user_accounts')
-        .update({ avatar_url: filePath })
-        .eq('id', user.id);
+      // Update profile using Edge Function (bypasses RLS)
+      const result = await updateUserProfileAPI(user.id, { avatar_url: filePath });
 
-      if (updateError) throw updateError;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update avatar');
+      }
 
       if (updateUserAvatar) {
         updateUserAvatar(filePath);
