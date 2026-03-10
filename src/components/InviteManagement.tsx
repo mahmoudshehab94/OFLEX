@@ -89,33 +89,33 @@ export function InviteManagement() {
     if (!user) return;
 
     if (!appUrl) {
-      setMessage({ type: 'error', text: 'Application URL is not configured. Please contact your administrator.' });
+      setMessage({ type: 'error', text: 'Anwendungs-URL ist nicht konfiguriert. Bitte wenden Sie sich an Ihren Administrator.' });
       return;
     }
 
     if (selectedRole === 'supervisor' && !permissions.canCreateSupervisors) {
-      setMessage({ type: 'error', text: 'You do not have permission to create supervisor invites' });
+      setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Supervisor-Einladungen zu erstellen' });
       return;
     }
 
     if (selectedRole === 'admin' && !permissions.canCreateAdmins) {
-      setMessage({ type: 'error', text: 'You do not have permission to create admin invites' });
+      setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Admin-Einladungen zu erstellen' });
       return;
     }
 
     if (selectedRole === 'driver') {
       if (inviteType === 'existing' && !selectedDriverId) {
-        setMessage({ type: 'error', text: 'Please select a driver' });
+        setMessage({ type: 'error', text: 'Bitte wählen Sie einen Fahrer aus' });
         return;
       }
 
       if (inviteType === 'new') {
         if (!newDriverData.code.trim()) {
-          setMessage({ type: 'error', text: 'Driver code is required' });
+          setMessage({ type: 'error', text: 'Fahrer-Code ist erforderlich' });
           return;
         }
         if (!newDriverData.name.trim()) {
-          setMessage({ type: 'error', text: 'Driver name is required' });
+          setMessage({ type: 'error', text: 'Fahrername ist erforderlich' });
           return;
         }
       }
@@ -140,7 +140,7 @@ export function InviteManagement() {
       setDriverSearch('');
       setNewDriverData({ code: '', name: '', license_letters: '', license_numbers: '' });
     } else {
-      setMessage({ type: 'error', text: result.error || 'Failed to create invite' });
+      setMessage({ type: 'error', text: result.error || 'Fehler beim Erstellen der Einladung' });
     }
 
     setGenerating(false);
@@ -153,24 +153,24 @@ export function InviteManagement() {
   };
 
   const shareViaWhatsApp = (url: string) => {
-    const message = encodeURIComponent(`Join our platform! Use this link to create your account: ${url}`);
+    const message = encodeURIComponent(`Tritt unserer Plattform bei! Verwende diesen Link, um dein Konto zu erstellen: ${url}`);
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };
 
   const shareViaEmail = (url: string) => {
-    const subject = encodeURIComponent('Account Invitation');
-    const body = encodeURIComponent(`You have been invited to join our platform.\n\nPlease use the following link to create your account:\n\n${url}\n\nThis link will expire in 1 hour.`);
+    const subject = encodeURIComponent('Kontoeinladung');
+    const body = encodeURIComponent(`Sie wurden eingeladen, unserer Plattform beizutreten.\n\nBitte verwenden Sie den folgenden Link, um Ihr Konto zu erstellen:\n\n${url}\n\nDieser Link läuft in 1 Stunde ab.`);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
 
   const getInviteStatus = (invite: AccountInvite) => {
     if (invite.is_used) {
-      return { status: 'Used', color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' };
+      return { status: 'Verwendet', color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' };
     }
     if (new Date(invite.expires_at) < new Date()) {
-      return { status: 'Expired', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20' };
+      return { status: 'Abgelaufen', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20' };
     }
-    return { status: 'Active', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' };
+    return { status: 'Aktiv', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' };
   };
 
   const formatExpiresAt = (expiresAt: string) => {
@@ -179,9 +179,9 @@ export function InviteManagement() {
     const diffMs = expires.getTime() - now.getTime();
     const diffMins = Math.floor(diffMs / 60000);
 
-    if (diffMins < 0) return 'Expired';
-    if (diffMins < 60) return `${diffMins}m remaining`;
-    return `${Math.floor(diffMins / 60)}h ${diffMins % 60}m remaining`;
+    if (diffMins < 0) return 'Abgelaufen';
+    if (diffMins < 60) return `${diffMins}m verbleibend`;
+    return `${Math.floor(diffMins / 60)}h ${diffMins % 60}m verbleibend`;
   };
 
   return (
@@ -357,7 +357,7 @@ export function InviteManagement() {
                     onChange={(e) => setSelectedDriverId(e.target.value)}
                     className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">Select a driver...</option>
+                    <option value="">Fahrer auswählen...</option>
                     {filteredDrivers.map((driver) => (
                       <option key={driver.id} value={driver.id}>
                         {driver.driver_code} - {driver.driver_name}
@@ -393,7 +393,7 @@ export function InviteManagement() {
                       type="text"
                       value={newDriverData.name}
                       onChange={(e) => setNewDriverData({ ...newDriverData, name: e.target.value })}
-                      placeholder="Full name"
+                      placeholder="Vollständiger Name"
                       className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                       required
                     />
@@ -449,7 +449,7 @@ export function InviteManagement() {
             {generating ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Generating...
+                Wird generiert...
               </>
             ) : (
               <>
@@ -503,12 +503,12 @@ export function InviteHistory() {
 
   const getInviteStatus = (invite: AccountInvite) => {
     if (invite.is_used) {
-      return { status: 'Used', color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' };
+      return { status: 'Verwendet', color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' };
     }
     if (new Date(invite.expires_at) < new Date()) {
-      return { status: 'Expired', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20' };
+      return { status: 'Abgelaufen', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20' };
     }
-    return { status: 'Active', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' };
+    return { status: 'Aktiv', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' };
   };
 
   const formatExpiresAt = (expiresAt: string) => {
@@ -517,9 +517,9 @@ export function InviteHistory() {
     const diffMs = expires.getTime() - now.getTime();
     const diffMins = Math.floor(diffMs / 60000);
 
-    if (diffMins < 0) return 'Expired';
-    if (diffMins < 60) return `${diffMins}m remaining`;
-    return `${Math.floor(diffMins / 60)}h ${diffMins % 60}m remaining`;
+    if (diffMins < 0) return 'Abgelaufen';
+    if (diffMins < 60) return `${diffMins}m verbleibend`;
+    return `${Math.floor(diffMins / 60)}h ${diffMins % 60}m verbleibend`;
   };
 
   const deleteInvite = async (inviteId: string) => {
@@ -544,13 +544,13 @@ export function InviteHistory() {
   };
 
   const shareViaWhatsApp = (url: string) => {
-    const message = encodeURIComponent(`Join our platform! Use this link to create your account: ${url}`);
+    const message = encodeURIComponent(`Tritt unserer Plattform bei! Verwende diesen Link, um dein Konto zu erstellen: ${url}`);
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };
 
   const shareViaEmail = (url: string) => {
-    const subject = encodeURIComponent('Account Invitation');
-    const body = encodeURIComponent(`You have been invited to join our platform.\n\nPlease use the following link to create your account:\n\n${url}\n\nThis link will expire in 1 hour.`);
+    const subject = encodeURIComponent('Kontoeinladung');
+    const body = encodeURIComponent(`Sie wurden eingeladen, unserer Plattform beizutreten.\n\nBitte verwenden Sie den folgenden Link, um Ihr Konto zu erstellen:\n\n${url}\n\nDieser Link läuft in 1 Stunde ab.`);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
 
@@ -691,7 +691,7 @@ export function InviteHistory() {
                         {invite.used_at && (
                           <span className="flex items-center gap-1">
                             <Check className="w-3 h-3" />
-                            Used {new Date(invite.used_at).toLocaleString()}
+                            Verwendet am {new Date(invite.used_at).toLocaleString()}
                           </span>
                         )}
                       </div>

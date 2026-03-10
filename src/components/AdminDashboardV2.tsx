@@ -1225,7 +1225,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
             </div>
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-                Admin Dashboard
+                Admin-Dashboard
               </h1>
               <p className="text-xs text-gray-500 dark:text-slate-400 hidden sm:block">
                 Trans Oflex Verwaltung
@@ -1246,7 +1246,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
               className="btn-secondary flex items-center gap-2"
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Logout</span>
+              <span className="hidden sm:inline">Abmelden</span>
             </button>
           </div>
         </div>
@@ -2494,8 +2494,8 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                       className="input-field w-full"
                     >
                       <option value="all">Alle Rollen</option>
-                      <option value="admin">Admin</option>
-                      <option value="supervisor">Supervisor</option>
+                      <option value="admin">Administrator</option>
+                      <option value="supervisor">Vorgesetzter</option>
                       <option value="driver">Fahrer</option>
                     </select>
                   </div>
@@ -2896,7 +2896,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                     Über die Anwendung
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
-                    Trans Oflex Admin Dashboard
+                    Trans Oflex Admin-Dashboard
                   </p>
                   <p className="text-sm text-gray-600 dark:text-slate-400">
                     Version 2.1.0

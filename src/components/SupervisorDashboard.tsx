@@ -163,7 +163,7 @@ export function SupervisorDashboard() {
     if (!supabase) return;
 
     if (!editFormData.driver_code || !editFormData.driver_name) {
-      setMessage({ type: 'error', text: 'Driver code and name are required' });
+      setMessage({ type: 'error', text: 'Fahrer-Code und Name sind erforderlich' });
       return;
     }
 
@@ -195,7 +195,7 @@ export function SupervisorDashboard() {
       );
 
       if (!result.success) {
-        setMessage({ type: 'error', text: `Driver updated but email update failed: ${result.error}` });
+        setMessage({ type: 'error', text: `Fahrer aktualisiert, aber E-Mail-Aktualisierung fehlgeschlagen: ${result.error}` });
         setSavingDriver(false);
         await loadDrivers();
         setEditingDriver(null);
@@ -203,7 +203,7 @@ export function SupervisorDashboard() {
       }
     }
 
-    setMessage({ type: 'success', text: 'Driver updated successfully' });
+    setMessage({ type: 'success', text: 'Fahrer erfolgreich aktualisiert' });
     await loadDrivers();
     await loadAttendance();
     setEditingDriver(null);
@@ -214,12 +214,12 @@ export function SupervisorDashboard() {
     if (!supabase) return;
 
     if (!hasPermission(user?.role || null, 'canManageDriverStatus')) {
-      setMessage({ type: 'error', text: 'You do not have permission to manage driver status' });
+      setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, den Fahrerstatus zu verwalten' });
       return;
     }
 
-    const action = driver.is_active ? 'deactivate' : 'activate';
-    if (!confirm(`Are you sure you want to ${action} ${driver.driver_name}?`)) {
+    const action = driver.is_active ? 'deaktivieren' : 'aktivieren';
+    if (!confirm(`Sind Sie sicher, dass Sie ${driver.driver_name} ${action} möchten?`)) {
       return;
     }
 
@@ -231,7 +231,7 @@ export function SupervisorDashboard() {
     if (error) {
       setMessage({ type: 'error', text: error.message });
     } else {
-      setMessage({ type: 'success', text: `Driver ${action}d successfully` });
+      setMessage({ type: 'success', text: `Fahrer erfolgreich ${action === 'aktivieren' ? 'aktiviert' : 'deaktiviert'}` });
       await loadDrivers();
       await loadAttendance();
     }
@@ -241,11 +241,11 @@ export function SupervisorDashboard() {
     if (!supabase) return;
 
     if (!hasPermission(user?.role || null, 'canDeleteDrivers')) {
-      setMessage({ type: 'error', text: 'You do not have permission to delete drivers' });
+      setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Fahrer zu löschen' });
       return;
     }
 
-    if (!confirm(`Are you sure you want to permanently delete ${driverName}? Their user account will also be deleted. This action cannot be undone.`)) {
+    if (!confirm(`Sind Sie sicher, dass Sie ${driverName} dauerhaft löschen möchten? Ihr Benutzerkonto wird ebenfalls gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`)) {
       return;
     }
 
@@ -257,7 +257,7 @@ export function SupervisorDashboard() {
     if (error) {
       setMessage({ type: 'error', text: error.message });
     } else {
-      setMessage({ type: 'success', text: 'Driver deleted successfully' });
+      setMessage({ type: 'success', text: 'Fahrer erfolgreich gelöscht' });
       await loadDrivers();
       await loadAttendance();
     }
@@ -293,7 +293,7 @@ export function SupervisorDashboard() {
                 <Users className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Supervisor Dashboard</h1>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Supervisor-Dashboard</h1>
                 <p className="text-sm text-slate-600 dark:text-slate-400">{user.username}</p>
               </div>
             </div>
@@ -310,7 +310,7 @@ export function SupervisorDashboard() {
                 className="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
                 <LogOut className="w-5 h-5" />
-                <span>Logout</span>
+                <span>Abmelden</span>
               </button>
             </div>
           </div>
@@ -339,7 +339,7 @@ export function SupervisorDashboard() {
           >
             <span className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
-              Attendance Tracking
+              Anwesenheitserfassung
             </span>
             {activeTab === 'attendance' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400" />
@@ -355,7 +355,7 @@ export function SupervisorDashboard() {
           >
             <span className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              Drivers
+              Fahrer
             </span>
             {activeTab === 'drivers' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400" />
@@ -371,7 +371,7 @@ export function SupervisorDashboard() {
           >
             <span className="flex items-center gap-2">
               <UserPlus className="w-5 h-5" />
-              Invite Drivers
+              Fahrer einladen
             </span>
             {activeTab === 'invites' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400" />
@@ -387,7 +387,7 @@ export function SupervisorDashboard() {
           >
             <span className="flex items-center gap-2">
               <User className="w-5 h-5" />
-              Profile
+              Profil
             </span>
             {activeTab === 'profile' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400" />
@@ -399,12 +399,12 @@ export function SupervisorDashboard() {
           <div className="space-y-6">
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Today's Attendance</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Heutige Anwesenheit</h2>
                 <button
                   onClick={loadAttendance}
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                 >
-                  Refresh
+                  Aktualisieren
                 </button>
               </div>
 
@@ -415,7 +415,7 @@ export function SupervisorDashboard() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search drivers..."
+                    placeholder="Fahrer suchen..."
                     className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500"
                   />
                 </div>
@@ -424,7 +424,7 @@ export function SupervisorDashboard() {
               {attendanceLoading ? (
                 <div className="text-center py-12">
                   <div className="inline-block w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mb-4" />
-                  <p className="text-slate-600 dark:text-slate-400">Loading attendance...</p>
+                  <p className="text-slate-600 dark:text-slate-400">Anwesenheit wird geladen...</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -449,7 +449,7 @@ export function SupervisorDashboard() {
                           </p>
                           {att.has_entry && att.last_entry && (
                             <p className="text-sm text-slate-600 dark:text-slate-400">
-                              Submitted at {new Date(att.last_entry).toLocaleTimeString()}
+                              Eingereicht um {new Date(att.last_entry).toLocaleTimeString()}
                             </p>
                           )}
                         </div>
@@ -459,14 +459,14 @@ export function SupervisorDashboard() {
                           ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
                           : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
                       }`}>
-                        {att.has_entry ? 'Submitted' : 'Not Submitted'}
+                        {att.has_entry ? 'Eingereicht' : 'Nicht eingereicht'}
                       </span>
                     </div>
                   ))}
 
                   {filteredAttendance.length === 0 && (
                     <div className="text-center py-12">
-                      <p className="text-slate-600 dark:text-slate-400">No drivers found</p>
+                      <p className="text-slate-600 dark:text-slate-400">Keine Fahrer gefunden</p>
                     </div>
                   )}
                 </div>
@@ -475,13 +475,13 @@ export function SupervisorDashboard() {
               <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                    <p className="text-sm text-green-700 dark:text-green-300 mb-1">Submitted</p>
+                    <p className="text-sm text-green-700 dark:text-green-300 mb-1">Eingereicht</p>
                     <p className="text-2xl font-bold text-green-900 dark:text-green-100">
                       {attendanceData.filter(a => a.has_entry).length}
                     </p>
                   </div>
                   <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
-                    <p className="text-sm text-red-700 dark:text-red-300 mb-1">Not Submitted</p>
+                    <p className="text-sm text-red-700 dark:text-red-300 mb-1">Nicht eingereicht</p>
                     <p className="text-2xl font-bold text-red-900 dark:text-red-100">
                       {attendanceData.filter(a => !a.has_entry).length}
                     </p>
@@ -496,7 +496,7 @@ export function SupervisorDashboard() {
           <div className="space-y-6">
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Drivers</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Fahrer</h2>
               </div>
 
               <div className="mb-4">
@@ -506,7 +506,7 @@ export function SupervisorDashboard() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search drivers..."
+                    placeholder="Fahrer suchen..."
                     className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500"
                   />
                 </div>
@@ -515,7 +515,7 @@ export function SupervisorDashboard() {
               {loading ? (
                 <div className="text-center py-12">
                   <div className="inline-block w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mb-4" />
-                  <p className="text-slate-600 dark:text-slate-400">Loading drivers...</p>
+                  <p className="text-slate-600 dark:text-slate-400">Fahrer werden geladen...</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -525,9 +525,9 @@ export function SupervisorDashboard() {
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Status</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Code</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Name</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Email</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">License</th>
-                        <th className="text-right py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Actions</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">E-Mail</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Führerschein</th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Aktionen</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -541,7 +541,7 @@ export function SupervisorDashboard() {
                                     ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
                                     : 'bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300'
                                 }`}>
-                                  {driver.is_active ? 'Active' : 'Inactive'}
+                                  {driver.is_active ? 'Aktiv' : 'Inaktiv'}
                                 </span>
                               </td>
                               <td className="py-3 px-4">
@@ -566,7 +566,7 @@ export function SupervisorDashboard() {
                                   value={editFormData.email}
                                   onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
                                   className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded focus:ring-2 focus:ring-green-500"
-                                  placeholder={driver.account_email ? undefined : 'No account'}
+                                  placeholder={driver.account_email ? undefined : 'Kein Konto'}
                                   disabled={!driver.account_id}
                                 />
                               </td>
@@ -594,7 +594,7 @@ export function SupervisorDashboard() {
                                     onClick={() => handleSaveDriver(driver.id)}
                                     disabled={savingDriver}
                                     className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50"
-                                    title="Save"
+                                    title="Speichern"
                                   >
                                     <Save className="w-4 h-4" />
                                   </button>
@@ -602,7 +602,7 @@ export function SupervisorDashboard() {
                                     onClick={handleCancelEdit}
                                     disabled={savingDriver}
                                     className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
-                                    title="Cancel"
+                                    title="Abbrechen"
                                   >
                                     <XIcon className="w-4 h-4" />
                                   </button>
@@ -617,7 +617,7 @@ export function SupervisorDashboard() {
                                     ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
                                     : 'bg-gray-100 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300'
                                 }`}>
-                                  {driver.is_active ? 'Active' : 'Inactive'}
+                                  {driver.is_active ? 'Aktiv' : 'Inaktiv'}
                                 </span>
                               </td>
                               <td className="py-3 px-4 text-slate-900 dark:text-white font-medium">{driver.driver_code}</td>
@@ -635,7 +635,7 @@ export function SupervisorDashboard() {
                                   <button
                                     onClick={() => handleEditDriver(driver)}
                                     className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                    title="Edit Driver"
+                                    title="Fahrer bearbeiten"
                                   >
                                     <Pencil className="w-4 h-4" />
                                   </button>
@@ -643,7 +643,7 @@ export function SupervisorDashboard() {
                                     <button
                                       onClick={() => handleToggleDriverStatus(driver)}
                                       className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                                      title={driver.is_active ? 'Deactivate Driver' : 'Activate Driver'}
+                                      title={driver.is_active ? 'Fahrer deaktivieren' : 'Fahrer aktivieren'}
                                     >
                                       {driver.is_active ? (
                                         <PowerOff className="w-4 h-4" />
@@ -656,7 +656,7 @@ export function SupervisorDashboard() {
                                     <button
                                       onClick={() => handleDeleteDriver(driver.id, driver.driver_name)}
                                       className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                      title="Delete Driver"
+                                      title="Fahrer löschen"
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
@@ -672,7 +672,7 @@ export function SupervisorDashboard() {
 
                   {filteredDrivers.length === 0 && (
                     <div className="text-center py-12">
-                      <p className="text-slate-600 dark:text-slate-400">No drivers found</p>
+                      <p className="text-slate-600 dark:text-slate-400">Keine Fahrer gefunden</p>
                     </div>
                   )}
                 </div>

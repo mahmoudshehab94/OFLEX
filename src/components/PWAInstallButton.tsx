@@ -102,11 +102,8 @@ export function PWAInstallButton() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Schritt 1</h3>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">
-                    <strong>Deutsch:</strong> Tippen Sie unten auf das Teilen-Symbol.
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>English:</strong> Tap the Share icon at the bottom.
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Tippen Sie unten auf das Teilen-Symbol.
                   </p>
                 </div>
               </div>
@@ -119,11 +116,8 @@ export function PWAInstallButton() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Schritt 2</h3>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">
-                    <strong>Deutsch:</strong> Wählen Sie "Zum Home-Bildschirm".
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>English:</strong> Select "Add to Home Screen".
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Wählen Sie "Zum Home-Bildschirm".
                   </p>
                 </div>
               </div>
@@ -136,21 +130,15 @@ export function PWAInstallButton() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Schritt 3</h3>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">
-                    <strong>Deutsch:</strong> Tippen Sie auf "Hinzufügen". Die App wird installiert.
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>English:</strong> Tap "Add". The app will be installed.
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Tippen Sie auf "Hinzufügen". Die App wird installiert.
                   </p>
                 </div>
               </div>
 
               <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                  <strong>Deutsch:</strong> Danach können Sie die App wie eine normale App öffnen.
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  <strong>English:</strong> After that, you can open the app like a normal app.
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Danach können Sie die App wie eine normale App öffnen.
                 </p>
               </div>
 

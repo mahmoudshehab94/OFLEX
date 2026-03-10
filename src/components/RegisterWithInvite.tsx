@@ -28,7 +28,7 @@ export function RegisterWithInvite() {
       validateInvite(token);
     } else {
       setValidatingInvite(false);
-      setError('No invite token provided');
+      setError('Kein Einladungstoken bereitgestellt');
     }
   }, []);
 
@@ -41,7 +41,7 @@ export function RegisterWithInvite() {
       setInviteRole(result.invite.role);
     } else {
       setInviteValid(false);
-      setError(result.error || 'Invalid invite');
+      setError(result.error || 'Ungültige Einladung');
     }
     setValidatingInvite(false);
   };
@@ -50,12 +50,12 @@ export function RegisterWithInvite() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        setError('Avatar image must be less than 2MB');
+        setError('Avatar-Bild muss kleiner als 2 MB sein');
         return;
       }
 
       if (!file.type.startsWith('image/')) {
-        setError('Please select an image file');
+        setError('Bitte wählen Sie eine Bilddatei');
         return;
       }
 
@@ -82,17 +82,17 @@ export function RegisterWithInvite() {
     setError('');
 
     if (!inviteValid) {
-      setError('Invalid invite token');
+      setError('Ungültiger Einladungstoken');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwörter stimmen nicht überein');
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError('Passwort muss mindestens 6 Zeichen lang sein');
       return;
     }
 
@@ -108,7 +108,7 @@ export function RegisterWithInvite() {
         if (uploadResult.success && uploadResult.url) {
           avatarUrl = uploadResult.url;
         } else {
-          setError('Failed to upload avatar. Continuing without it.');
+          setError('Avatar-Upload fehlgeschlagen. Fahre ohne fort.');
         }
       }
 
@@ -117,10 +117,10 @@ export function RegisterWithInvite() {
       if (result.success) {
         window.location.href = '/';
       } else {
-        setError(result.error || 'Registration failed');
+        setError(result.error || 'Registrierung fehlgeschlagen');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('Ein unerwarteter Fehler ist aufgetreten');
     } finally {
       setLoading(false);
     }
@@ -132,7 +132,7 @@ export function RegisterWithInvite() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md p-8 border border-slate-200 dark:border-slate-700">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-            <p className="text-slate-600 dark:text-slate-300">Validating invite...</p>
+            <p className="text-slate-600 dark:text-slate-300">Einladung wird validiert...</p>
           </div>
         </div>
       </div>
@@ -148,7 +148,7 @@ export function RegisterWithInvite() {
               <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
             <h1 className="text-2xl font-bold text-center text-slate-900 dark:text-white">
-              Invalid Invite
+              Ungültige Einladung
             </h1>
             <p className="text-center text-slate-600 dark:text-slate-300">
               {error}
@@ -157,7 +157,7 @@ export function RegisterWithInvite() {
               href="/"
               className="text-blue-600 dark:text-blue-400 hover:underline"
             >
-              Go to Login
+              Zur Anmeldung
             </a>
           </div>
         </div>
@@ -175,13 +175,13 @@ export function RegisterWithInvite() {
         </div>
 
         <h1 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-2">
-          Create Account
+          Erstellen Sie Ihr Konto
         </h1>
         <p className="text-center text-slate-600 dark:text-slate-300 mb-2">
-          You've been invited as a <span className="font-semibold capitalize">{inviteRole}</span>
+          Sie wurden als <span className="font-semibold capitalize">{inviteRole}</span> eingeladen
         </p>
         <p className="text-center text-sm text-slate-500 dark:text-slate-400 mb-8">
-          Complete the form below to create your account
+          Vervollständigen Sie Ihre Registrierung
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -208,7 +208,7 @@ export function RegisterWithInvite() {
 
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
-              Username
+              Benutzername
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -229,7 +229,7 @@ export function RegisterWithInvite() {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
-              Avatar (Optional)
+              Avatar hochladen (Optional)
             </label>
             <div className="flex items-center gap-4">
               {avatarPreview ? (
@@ -269,10 +269,10 @@ export function RegisterWithInvite() {
                   className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center gap-2 disabled:opacity-50"
                 >
                   <Upload className="w-4 h-4" />
-                  Choose Image
+                  Bild auswählen
                 </button>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Max 2MB. JPG, PNG, GIF, or WebP
+                  Max. 2 MB. JPG, PNG, GIF oder WebP
                 </p>
               </div>
             </div>
@@ -280,7 +280,7 @@ export function RegisterWithInvite() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
-              Password
+              Passwort
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -302,7 +302,7 @@ export function RegisterWithInvite() {
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
-              Confirm Password
+              Passwort bestätigen
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -336,12 +336,12 @@ export function RegisterWithInvite() {
             {loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Creating Account...
+                Registrierung läuft...
               </>
             ) : (
               <>
                 <UserPlus className="w-5 h-5" />
-                Create Account
+                Registrieren
               </>
             )}
           </button>
@@ -352,7 +352,7 @@ export function RegisterWithInvite() {
             href="/"
             className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition"
           >
-            Already have an account? Login
+            Haben Sie bereits ein Konto? Anmelden
           </a>
         </div>
       </div>

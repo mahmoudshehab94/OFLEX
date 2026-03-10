@@ -89,43 +89,43 @@ export function DirectAccountCreation() {
     setMessage(null);
 
     if (formData.role === 'supervisor' && !permissions.canCreateSupervisors) {
-      setMessage({ type: 'error', text: 'You do not have permission to create supervisor accounts' });
+      setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Supervisor-Konten zu erstellen' });
       setLoading(false);
       return;
     }
 
     if (!formData.fullName.trim()) {
-      setMessage({ type: 'error', text: 'Full name is required' });
+      setMessage({ type: 'error', text: 'Vollständiger Name ist erforderlich' });
       setLoading(false);
       return;
     }
 
     if (!formData.username.trim()) {
-      setMessage({ type: 'error', text: 'Benutzername is required' });
+      setMessage({ type: 'error', text: 'Benutzername ist erforderlich' });
       setLoading(false);
       return;
     }
 
     if (!formData.emailLocalPart.trim()) {
-      setMessage({ type: 'error', text: 'Email is required' });
+      setMessage({ type: 'error', text: 'E-Mail ist erforderlich' });
       setLoading(false);
       return;
     }
 
     if (!formData.password.trim()) {
-      setMessage({ type: 'error', text: 'Passwort is required' });
+      setMessage({ type: 'error', text: 'Passwort ist erforderlich' });
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
-      setMessage({ type: 'error', text: 'Passwort must be at least 6 characters' });
+      setMessage({ type: 'error', text: 'Passwort muss mindestens 6 Zeichen lang sein' });
       setLoading(false);
       return;
     }
 
     if (formData.role === 'driver' && accountType === 'existing' && !selectedFahrerId) {
-      setMessage({ type: 'error', text: 'Please select a driver' });
+      setMessage({ type: 'error', text: 'Bitte wählen Sie einen Fahrer aus' });
       setLoading(false);
       return;
     }
@@ -146,7 +146,7 @@ export function DirectAccountCreation() {
     if (result.success) {
       setMessage({
         type: 'success',
-        text: `Account created successfully for ${formData.fullName}`
+        text: `Konto erfolgreich erstellt für ${formData.fullName}`
       });
       setFormData({
         fullName: '',
@@ -160,7 +160,7 @@ export function DirectAccountCreation() {
       setAccountType('new');
       await loadFahrers();
     } else {
-      setMessage({ type: 'error', text: result.error || 'Failed to create account' });
+      setMessage({ type: 'error', text: result.error || 'Fehler beim Erstellen des Kontos' });
     }
 
     setLoading(false);
@@ -230,14 +230,14 @@ export function DirectAccountCreation() {
               type="text"
               value={formData.emailLocalPart}
               onChange={(e) => setFormData({ ...formData, emailLocalPart: e.target.value.replace(/[^a-zA-Z0-9]/g, '') })}
-              placeholder="username"
+              placeholder="benutzername"
               className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             />
             <span className="text-slate-600 dark:text-slate-400 font-medium">@malek.com</span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Only English letters and numbers allowed
+            Nur englische Buchstaben und Zahlen erlaubt
           </p>
         </div>
 
@@ -250,7 +250,7 @@ export function DirectAccountCreation() {
               type={showPasswort ? 'text' : 'password'}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              placeholder="Enter password"
+              placeholder="Passwort eingeben"
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -263,7 +263,7 @@ export function DirectAccountCreation() {
             </button>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Minimum 6 characters
+            Mindestens 6 Zeichen
           </p>
         </div>
 
@@ -288,10 +288,10 @@ export function DirectAccountCreation() {
                 >
                   <User className={`w-6 h-6 mx-auto mb-2 ${accountType === 'new' ? 'text-blue-600' : 'text-slate-400'}`} />
                   <div className={`font-medium ${accountType === 'new' ? 'text-blue-900 dark:text-blue-100' : 'text-slate-700 dark:text-slate-300'}`}>
-                    New Fahrer
+                    Neuer Fahrer
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Create new driver record
+                    Neuen Fahrerdatensatz erstellen
                   </div>
                 </button>
                 <button
@@ -307,10 +307,10 @@ export function DirectAccountCreation() {
                 >
                   <LinkIcon className={`w-6 h-6 mx-auto mb-2 ${accountType === 'existing' ? 'text-blue-600' : 'text-slate-400'}`} />
                   <div className={`font-medium ${accountType === 'existing' ? 'text-blue-900 dark:text-blue-100' : 'text-slate-700 dark:text-slate-300'}`}>
-                    Existing Fahrer
+                    Vorhandener Fahrer
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Link to existing driver
+                    Mit vorhandenem Fahrer verknüpfen
                   </div>
                 </button>
               </div>
@@ -319,7 +319,7 @@ export function DirectAccountCreation() {
             {accountType === 'existing' && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Select Fahrer (without account)
+                  Fahrer auswählen (ohne Konto)
                 </label>
                 <div className="relative mb-2">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -327,7 +327,7 @@ export function DirectAccountCreation() {
                     type="text"
                     value={driverSearch}
                     onChange={(e) => setFahrerSearch(e.target.value)}
-                    placeholder="Search drivers..."
+                    placeholder="Fahrer suchen..."
                     className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -336,7 +336,7 @@ export function DirectAccountCreation() {
                   onChange={(e) => setSelectedFahrerId(e.target.value)}
                   className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="">Select a driver...</option>
+                  <option value="">Fahrer auswählen...</option>
                   {filteredFahrers.map((driver) => (
                     <option key={driver.id} value={driver.id}>
                       {driver.driver_code} - {driver.driver_name}
@@ -345,7 +345,7 @@ export function DirectAccountCreation() {
                 </select>
                 {filteredFahrers.length === 0 && (
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    No drivers without accounts found
+                    Keine Fahrer ohne Konto gefunden
                   </p>
                 )}
               </div>
@@ -379,7 +379,7 @@ export function DirectAccountCreation() {
           {loading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Creating Account...
+              Konto wird erstellt...
             </>
           ) : (
             <>
