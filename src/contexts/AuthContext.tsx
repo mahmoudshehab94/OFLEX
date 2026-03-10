@@ -14,7 +14,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (email: string, password: string, username: string, inviteToken: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, username: string, inviteToken: string, avatarUrl?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (email: string, password: string, username: string, inviteToken: string): Promise<{ success: boolean; error?: string }> => {
+  const register = async (email: string, password: string, username: string, inviteToken: string, avatarUrl?: string): Promise<{ success: boolean; error?: string }> => {
     try {
       if (!supabase) {
         return { success: false, error: 'Database connection error' };
@@ -131,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           username,
           role: invite.role,
           driver_id: invite.driver_id,
+          avatar_url: avatarUrl || null,
           is_active: true,
         })
         .select()

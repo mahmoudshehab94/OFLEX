@@ -215,3 +215,36 @@ export async function markInviteAsUsed(
     return { success: false, error: error.message };
   }
 }
+
+export async function uploadAvatar(
+  file: File,
+  userId: string
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}/avatar.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      return { success: false, error: uploadError.message };
+    }
+
+    const { data } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName);
+
+    return { success: true, url: data.publicUrl };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { validateInviteToken } from '../lib/supabase';
-import { UserPlus, Lock, Mail, User, Loader2 } from 'lucide-react';
+import { validateInviteToken, uploadAvatar } from '../lib/supabase';
+import { UserPlus, Lock, Mail, User, Loader2, Upload, X } from 'lucide-react';
 
 export function RegisterWithInvite() {
   const { register } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [inviteToken, setInviteToken] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [validatingInvite, setValidatingInvite] = useState(true);
@@ -43,6 +46,37 @@ export function RegisterWithInvite() {
     setValidatingInvite(false);
   };
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setError('Avatar image must be less than 2MB');
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file');
+        return;
+      }
+
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      setError('');
+    }
+  };
+
+  const removeAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -65,7 +99,20 @@ export function RegisterWithInvite() {
     setLoading(true);
 
     try {
-      const result = await register(email, password, username, inviteToken);
+      let avatarUrl: string | undefined;
+
+      if (avatarFile) {
+        const tempUserId = crypto.randomUUID();
+        const uploadResult = await uploadAvatar(avatarFile, tempUserId);
+
+        if (uploadResult.success && uploadResult.url) {
+          avatarUrl = uploadResult.url;
+        } else {
+          setError('Failed to upload avatar. Continuing without it.');
+        }
+      }
+
+      const result = await register(email, password, username, inviteToken, avatarUrl);
 
       if (result.success) {
         window.location.href = '/';
@@ -177,6 +224,57 @@ export function RegisterWithInvite() {
                 required
                 disabled={loading}
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+              Avatar (Optional)
+            </label>
+            <div className="flex items-center gap-4">
+              {avatarPreview ? (
+                <div className="relative">
+                  <img
+                    src={avatarPreview}
+                    alt="Avatar preview"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-slate-300 dark:border-slate-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeAvatar}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-600">
+                  <User className="w-8 h-8 text-slate-400" />
+                </div>
+              )}
+              <div className="flex-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  id="avatar"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Upload className="w-4 h-4" />
+                  Choose Image
+                </button>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Max 2MB. JPG, PNG, GIF, or WebP
+                </p>
+              </div>
             </div>
           </div>
 
