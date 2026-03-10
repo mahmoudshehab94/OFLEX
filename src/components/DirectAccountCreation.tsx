@@ -374,12 +374,9 @@ export function DirectAccountCreation() {
             )}
 
             {accountType === 'new' && (
-              <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  New Driver Information
-                </p>
+              <>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Driver Code *
                   </label>
                   <input
@@ -387,12 +384,12 @@ export function DirectAccountCreation() {
                     value={newDriverData.code}
                     onChange={(e) => setNewDriverData({ ...newDriverData, code: e.target.value })}
                     placeholder="e.g., D001"
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Driver Name *
                   </label>
                   <input
@@ -400,11 +397,11 @@ export function DirectAccountCreation() {
                     value={newDriverData.name}
                     onChange={(e) => setNewDriverData({ ...newDriverData, name: e.target.value })}
                     placeholder="Full name"
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
-              </div>
+              </>
             )}
           </>
         )}
