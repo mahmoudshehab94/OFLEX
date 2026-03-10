@@ -369,7 +369,7 @@ export async function getDriversWithAccounts(): Promise<{ success: boolean; driv
       .from('drivers')
       .select(`
         *,
-        user_accounts!user_accounts_driver_id_fkey(id, email, username)
+        user_accounts!fk_driver(id, email, username)
       `)
       .order('created_at', { ascending: false });
 
