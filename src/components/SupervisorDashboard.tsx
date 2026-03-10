@@ -245,9 +245,14 @@ export function SupervisorDashboard() {
       return;
     }
 
-    if (!confirm(`Are you sure you want to permanently delete ${driverName}? This action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to permanently delete ${driverName}? Their user account will also be deleted. This action cannot be undone.`)) {
       return;
     }
+
+    await supabase
+      .from('user_accounts')
+      .delete()
+      .eq('driver_id', driverId);
 
     const { error } = await supabase
       .from('drivers')

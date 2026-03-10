@@ -1187,7 +1187,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     if (!supabase) return;
 
     const confirmDelete = window.confirm(
-      `Möchten Sie den Fahrer "${driver.driver_name}" (${driver.driver_code}) wirklich DAUERHAFT löschen?\n\nWARNUNG: Alle zugehörigen Arbeitseinträge werden ebenfalls gelöscht! Diese Aktion kann nicht rückgängig gemacht werden.`
+      `Möchten Sie den Fahrer "${driver.driver_name}" (${driver.driver_code}) wirklich DAUERHAFT löschen?\n\nWARNUNG: Alle zugehörigen Arbeitseinträge und das zugehörige Benutzerkonto werden ebenfalls gelöscht! Diese Aktion kann nicht rückgängig gemacht werden.`
     );
 
     if (!confirmDelete) return;
@@ -1199,6 +1199,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         .eq('driver_id', driver.id);
 
       if (entriesError) throw entriesError;
+
+      const { error: accountError } = await supabase
+        .from('user_accounts')
+        .delete()
+        .eq('driver_id', driver.id);
+
+      if (accountError) throw accountError;
 
       const { error: driverError } = await supabase
         .from('drivers')
