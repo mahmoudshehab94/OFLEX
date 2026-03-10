@@ -320,6 +320,30 @@ export async function resetUserPassword(
   }
 }
 
+export async function updateUserEmail(
+  userId: string,
+  newEmail: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
+  try {
+    const { error } = await supabase
+      .from('user_accounts')
+      .update({ email: newEmail })
+      .eq('id', userId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export interface UserAccount {
   id: string;
   email: string;

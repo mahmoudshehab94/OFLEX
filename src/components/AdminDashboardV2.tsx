@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, Driver, WorkEntry, UserAccount, getAllUserAccounts, generatePassword, resetUserPassword, getDriversWithAccounts } from '../lib/supabase';
+import { supabase, Driver, WorkEntry, UserAccount, getAllUserAccounts, generatePassword, resetUserPassword, updateUserEmail, getDriversWithAccounts } from '../lib/supabase';
 import {
   Users, FileText, BarChart3, Plus, Pencil, Trash2,
   Check, X, Search, Download, LogOut,
@@ -126,6 +126,8 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   const [userSearchText, setUserSearchText] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'admin' | 'supervisor' | 'driver'>('all');
   const [filteredUserAccounts, setFilteredUserAccounts] = useState<UserAccount[]>([]);
+  const [editingUserEmail, setEditingUserEmail] = useState<{ id: string; email: string } | null>(null);
+  const [updatingEmail, setUpdatingEmail] = useState(false);
 
   useEffect(() => {
     if (message) {
@@ -927,6 +929,30 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   const handleGeneratePassword = () => {
     const password = generatePassword(12);
     setGeneratedPassword(password);
+  };
+
+  const handleUpdateEmail = async (userId: string, newEmail: string) => {
+    if (!newEmail || !newEmail.includes('@')) {
+      setMessage({ type: 'error', text: 'Bitte geben Sie eine gültige E-Mail-Adresse ein' });
+      return;
+    }
+
+    setUpdatingEmail(true);
+    try {
+      const result = await updateUserEmail(userId, newEmail);
+      if (result.success) {
+        setMessage({ type: 'success', text: 'E-Mail erfolgreich aktualisiert' });
+        setEditingUserEmail(null);
+        await loadUserAccounts();
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Fehler beim Aktualisieren der E-Mail' });
+      }
+    } catch (error) {
+      console.error('Error updating email:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Aktualisieren der E-Mail' });
+    } finally {
+      setUpdatingEmail(false);
+    }
   };
 
   const handleResetPassword = async (userId: string) => {
@@ -2306,13 +2332,50 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                       {filteredUserAccounts.map((userAccount) => (
                         <tr
                           key={userAccount.id}
-                          className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                          className="group border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
                         >
                           <td className="py-3 px-4 text-slate-900 dark:text-white">
                             {userAccount.username}
                           </td>
-                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                            {userAccount.email}
+                          <td className="py-3 px-4">
+                            {editingUserEmail?.id === userAccount.id ? (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="email"
+                                  value={editingUserEmail.email}
+                                  onChange={(e) => setEditingUserEmail({ ...editingUserEmail, email: e.target.value })}
+                                  className="px-2 py-1 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded text-sm"
+                                  disabled={updatingEmail}
+                                />
+                                <button
+                                  onClick={() => handleUpdateEmail(userAccount.id, editingUserEmail.email)}
+                                  disabled={updatingEmail}
+                                  className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded disabled:opacity-50"
+                                  title="Speichern"
+                                >
+                                  {updatingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                                </button>
+                                <button
+                                  onClick={() => setEditingUserEmail(null)}
+                                  disabled={updatingEmail}
+                                  className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-50"
+                                  title="Abbrechen"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-slate-600 dark:text-slate-400">{userAccount.email}</span>
+                                <button
+                                  onClick={() => setEditingUserEmail({ id: userAccount.id, email: userAccount.email })}
+                                  className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="E-Mail bearbeiten"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
                           </td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, createAccountDirect, Driver } from '../lib/supabase';
+import { supabase, createAccountDirect, Fahrer } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getPermissions } from '../lib/permissions';
 import { UserPlus, Eye, EyeOff, Check, AlertCircle, Search, User, Link as LinkIcon, Loader2 } from 'lucide-react';
@@ -11,7 +11,7 @@ export function DirectAccountCreation() {
   const permissions = getPermissions(user?.role as 'admin' | 'supervisor' | 'driver' | null);
 
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswort, setShowPasswort] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [formData, setFormData] = useState({
@@ -23,22 +23,22 @@ export function DirectAccountCreation() {
   });
 
   const [accountType, setAccountType] = useState<AccountType>('new');
-  const [selectedDriverId, setSelectedDriverId] = useState<string>('');
-  const [driverSearch, setDriverSearch] = useState('');
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
+  const [selectedFahrerId, setSelectedFahrerId] = useState<string>('');
+  const [driverSearch, setFahrerSearch] = useState('');
+  const [drivers, setFahrers] = useState<Fahrer[]>([]);
+  const [filteredFahrers, setFilteredFahrers] = useState<Fahrer[]>([]);
 
 
   useEffect(() => {
-    loadDrivers();
+    loadFahrers();
   }, []);
 
   useEffect(() => {
     if (driverSearch.trim() === '') {
-      setFilteredDrivers(drivers.filter(d => !d.account_id));
+      setFilteredFahrers(drivers.filter(d => !d.account_id));
     } else {
       const search = driverSearch.toLowerCase();
-      setFilteredDrivers(
+      setFilteredFahrers(
         drivers
           .filter(d => !d.account_id)
           .filter(
@@ -50,7 +50,7 @@ export function DirectAccountCreation() {
     }
   }, [driverSearch, drivers]);
 
-  const loadDrivers = async () => {
+  const loadFahrers = async () => {
     if (!supabase) return;
 
     const { data, error } = await supabase
@@ -76,8 +76,8 @@ export function DirectAccountCreation() {
           user_accounts: undefined
         };
       });
-      setDrivers(driversWithAccountInfo);
-      setFilteredDrivers(driversWithAccountInfo.filter(d => !d.account_id));
+      setFahrers(driversWithAccountInfo);
+      setFilteredFahrers(driversWithAccountInfo.filter(d => !d.account_id));
     }
   };
 
@@ -101,7 +101,7 @@ export function DirectAccountCreation() {
     }
 
     if (!formData.username.trim()) {
-      setMessage({ type: 'error', text: 'Username is required' });
+      setMessage({ type: 'error', text: 'Benutzername is required' });
       setLoading(false);
       return;
     }
@@ -113,18 +113,18 @@ export function DirectAccountCreation() {
     }
 
     if (!formData.password.trim()) {
-      setMessage({ type: 'error', text: 'Password is required' });
+      setMessage({ type: 'error', text: 'Passwort is required' });
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
-      setMessage({ type: 'error', text: 'Password must be at least 6 characters' });
+      setMessage({ type: 'error', text: 'Passwort must be at least 6 characters' });
       setLoading(false);
       return;
     }
 
-    if (formData.role === 'driver' && accountType === 'existing' && !selectedDriverId) {
+    if (formData.role === 'driver' && accountType === 'existing' && !selectedFahrerId) {
       setMessage({ type: 'error', text: 'Please select a driver' });
       setLoading(false);
       return;
@@ -137,8 +137,8 @@ export function DirectAccountCreation() {
         emailLocalPart: formData.emailLocalPart,
         password: formData.password,
         role: formData.role,
-        driverId: formData.role === 'driver' && accountType === 'existing' ? selectedDriverId : undefined,
-        newDriverData: formData.role === 'driver' && accountType === 'new' ? { code: formData.username } : undefined,
+        driverId: formData.role === 'driver' && accountType === 'existing' ? selectedFahrerId : undefined,
+        newFahrerData: formData.role === 'driver' && accountType === 'new' ? { code: formData.username } : undefined,
       },
       user.id
     );
@@ -155,10 +155,10 @@ export function DirectAccountCreation() {
         password: '',
         role: 'driver',
       });
-      setSelectedDriverId('');
-      setDriverSearch('');
+      setSelectedFahrerId('');
+      setFahrerSearch('');
       setAccountType('new');
-      await loadDrivers();
+      await loadFahrers();
     } else {
       setMessage({ type: 'error', text: result.error || 'Failed to create account' });
     }
@@ -176,18 +176,18 @@ export function DirectAccountCreation() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Role
+            Rolle
           </label>
           <select
             value={formData.role}
             onChange={(e) => {
               setFormData({ ...formData, role: e.target.value as 'driver' | 'supervisor' });
-              setSelectedDriverId('');
-              setNewDriverData({ code: '', name: '', license_letters: '', license_numbers: '' });
+              setSelectedFahrerId('');
+              setNewFahrerData({ code: '', name: '', license_letters: '', license_numbers: '' });
             }}
             className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="driver">Driver</option>
+            <option value="driver">Fahrer</option>
             {permissions.canCreateSupervisors && (
               <option value="supervisor">Supervisor</option>
             )}
@@ -196,13 +196,13 @@ export function DirectAccountCreation() {
 
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Full Name
+            Vollständiger Name
           </label>
           <input
             type="text"
             value={formData.fullName}
             onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-            placeholder="Enter full name"
+            placeholder="Vollständigen Namen eingeben"
             className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           />
@@ -210,13 +210,13 @@ export function DirectAccountCreation() {
 
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Username
+            Benutzername
           </label>
           <input
             type="text"
             value={formData.username}
             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-            placeholder="Enter username"
+            placeholder="Benutzernamen eingeben"
             className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           />
@@ -244,11 +244,11 @@ export function DirectAccountCreation() {
 
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Password
+            Passwort
           </label>
           <div className="relative">
             <input
-              type={showPassword ? 'text' : 'password'}
+              type={showPasswort ? 'text' : 'password'}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               placeholder="Enter password"
@@ -257,10 +257,10 @@ export function DirectAccountCreation() {
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={() => setShowPasswort(!showPasswort)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPasswort ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -272,14 +272,14 @@ export function DirectAccountCreation() {
           <>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-                Driver Account Type
+                Fahrer Account Type
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     setAccountType('new');
-                    setSelectedDriverId('');
+                    setSelectedFahrerId('');
                   }}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     accountType === 'new'
@@ -289,7 +289,7 @@ export function DirectAccountCreation() {
                 >
                   <User className={`w-6 h-6 mx-auto mb-2 ${accountType === 'new' ? 'text-blue-600' : 'text-slate-400'}`} />
                   <div className={`font-medium ${accountType === 'new' ? 'text-blue-900 dark:text-blue-100' : 'text-slate-700 dark:text-slate-300'}`}>
-                    New Driver
+                    New Fahrer
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Create new driver record
@@ -299,7 +299,7 @@ export function DirectAccountCreation() {
                   type="button"
                   onClick={() => {
                     setAccountType('existing');
-                    setNewDriverData({ code: '', name: '', license_letters: '', license_numbers: '' });
+                    setNewFahrerData({ code: '', name: '', license_letters: '', license_numbers: '' });
                   }}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     accountType === 'existing'
@@ -309,7 +309,7 @@ export function DirectAccountCreation() {
                 >
                   <LinkIcon className={`w-6 h-6 mx-auto mb-2 ${accountType === 'existing' ? 'text-blue-600' : 'text-slate-400'}`} />
                   <div className={`font-medium ${accountType === 'existing' ? 'text-blue-900 dark:text-blue-100' : 'text-slate-700 dark:text-slate-300'}`}>
-                    Existing Driver
+                    Existing Fahrer
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Link to existing driver
@@ -321,31 +321,31 @@ export function DirectAccountCreation() {
             {accountType === 'existing' && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Select Driver (without account)
+                  Select Fahrer (without account)
                 </label>
                 <div className="relative mb-2">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
                     type="text"
                     value={driverSearch}
-                    onChange={(e) => setDriverSearch(e.target.value)}
+                    onChange={(e) => setFahrerSearch(e.target.value)}
                     placeholder="Search drivers..."
                     className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <select
-                  value={selectedDriverId}
-                  onChange={(e) => setSelectedDriverId(e.target.value)}
+                  value={selectedFahrerId}
+                  onChange={(e) => setSelectedFahrerId(e.target.value)}
                   className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Select a driver...</option>
-                  {filteredDrivers.map((driver) => (
+                  {filteredFahrers.map((driver) => (
                     <option key={driver.id} value={driver.id}>
                       {driver.driver_code} - {driver.driver_name}
                     </option>
                   ))}
                 </select>
-                {filteredDrivers.length === 0 && (
+                {filteredFahrers.length === 0 && (
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                     No drivers without accounts found
                   </p>
@@ -386,7 +386,7 @@ export function DirectAccountCreation() {
           ) : (
             <>
               <UserPlus className="w-5 h-5" />
-              Create Account
+              Konto erstellen
             </>
           )}
         </button>
