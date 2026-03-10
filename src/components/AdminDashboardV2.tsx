@@ -3,7 +3,7 @@ import { supabase, Driver, WorkEntry, UserAccount, getAllUserAccounts, generateP
 import {
   Users, FileText, BarChart3, Plus, Pencil, Trash2,
   Check, X, Search, Download, LogOut,
-  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet, Settings, Clock, Moon, Sun, Loader2, Save, Scale, Key, Copy, ShieldAlert
+  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet, Settings, Clock, Moon, Sun, Loader2, Save, Scale, Key, Copy, ShieldAlert, User, Camera
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -118,6 +118,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
 
+  const [profileFullName, setProfileFullName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState('');
+  const [profileUsername, setProfileUsername] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(null);
@@ -148,6 +155,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     if (activeTab === 'drivers') loadDrivers();
     if (activeTab === 'entries') { loadDrivers(); loadEntries(); }
     if (activeTab === 'users') loadUserAccounts();
+    if (activeTab === 'settings') loadUserProfile();
   }, [activeTab]);
 
   useEffect(() => {
@@ -870,6 +878,106 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       setVehicleResult(null);
     } finally {
       setLookingUpVehicle(false);
+    }
+  };
+
+  const loadUserProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_accounts')
+        .select('username, full_name, phone, avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setProfileUsername(data.username || '');
+        setProfileFullName(data.full_name || '');
+        setProfilePhone(data.phone || '');
+        setProfileAvatarUrl(data.avatar_url || '');
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Bitte wählen Sie eine Bilddatei' });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Datei zu groß (max. 2MB)' });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('user_accounts')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      setProfileAvatarUrl(publicUrl);
+      setMessage({ type: 'success', text: 'Profilbild erfolgreich hochgeladen' });
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Hochladen des Profilbilds' });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!user) return;
+
+    if (!profileUsername.trim()) {
+      setMessage({ type: 'error', text: 'Benutzername ist erforderlich' });
+      return;
+    }
+
+    setUpdatingProfile(true);
+    try {
+      const { error } = await supabase
+        .from('user_accounts')
+        .update({
+          username: profileUsername.trim(),
+          full_name: profileFullName.trim() || null,
+          phone: profilePhone.trim() || null
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setMessage({ type: 'success', text: 'Profil erfolgreich aktualisiert' });
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Aktualisieren des Profils' });
+    } finally {
+      setUpdatingProfile(false);
     }
   };
 
@@ -2566,10 +2674,114 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         )}
 
         {activeTab === 'settings' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="card p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Admin-Passwort ändern
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <User className="w-6 h-6" />
+                Profil
+              </h2>
+
+              <div className="space-y-6">
+                {/* Avatar Section */}
+                <div className="flex items-start gap-6">
+                  <div className="flex-shrink-0">
+                    <div className="relative">
+                      {profileAvatarUrl ? (
+                        <img
+                          src={profileAvatarUrl}
+                          alt="Profilbild"
+                          className="w-32 h-32 rounded-full object-cover border-4 border-slate-200 dark:border-slate-700"
+                        />
+                      ) : (
+                        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center border-4 border-slate-200 dark:border-slate-700">
+                          <User className="w-16 h-16 text-white" />
+                        </div>
+                      )}
+                      <label
+                        htmlFor="avatar-upload"
+                        className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full cursor-pointer shadow-lg transition-colors"
+                      >
+                        <Camera className="w-5 h-5" />
+                        <input
+                          id="avatar-upload"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          disabled={uploadingAvatar}
+                          className="hidden"
+                        />
+                      </label>
+                      {uploadingAvatar && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                          <Loader2 className="w-8 h-8 text-white animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center">
+                      Max. 2MB
+                    </p>
+                  </div>
+
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <label className="label-text">Benutzername *</label>
+                      <input
+                        type="text"
+                        value={profileUsername}
+                        onChange={(e) => setProfileUsername(e.target.value)}
+                        placeholder="Benutzername"
+                        className="input-field"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="label-text">Vollständiger Name</label>
+                      <input
+                        type="text"
+                        value={profileFullName}
+                        onChange={(e) => setProfileFullName(e.target.value)}
+                        placeholder="Max Mustermann"
+                        className="input-field"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="label-text">Telefonnummer</label>
+                      <input
+                        type="tel"
+                        value={profilePhone}
+                        onChange={(e) => setProfilePhone(e.target.value)}
+                        placeholder="+49 123 456789"
+                        className="input-field"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleUpdateProfile}
+                      disabled={updatingProfile}
+                      className="btn-primary flex items-center gap-2"
+                    >
+                      {updatingProfile ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Wird gespeichert...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Profil aktualisieren
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <Key className="w-6 h-6" />
+                Passwort ändern
               </h2>
               <div className="space-y-4 max-w-md">
                 <div>
@@ -2613,7 +2825,8 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
             </div>
 
             <div className="card p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <Settings className="w-6 h-6" />
                 Einstellungen
               </h2>
               <div className="space-y-4">
@@ -2629,18 +2842,18 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                 </div>
 
                 <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2">
-                  Über die Anwendung
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
-                  Trans Oflex Admin Dashboard
-                </p>
-                <p className="text-sm text-gray-600 dark:text-slate-400">
-                  Version 2.1.0
-                </p>
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-2">
+                    Über die Anwendung
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
+                    Trans Oflex Admin Dashboard
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">
+                    Version 2.1.0
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
           </div>
         )}
       </main>
