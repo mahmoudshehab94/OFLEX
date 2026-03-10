@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { LogOut, Users, CreditCard as Edit2, Trash2, Save, X, Search, Power, FileText } from 'lucide-react';
-import { supabase, Driver, hasSupabaseConfig } from '../lib/supabase';
+import { supabase, Driver, hasSupabaseConfig, updateUserEmail } from '../lib/supabase';
 import { ReportsTab } from './ReportsTab';
+import { useAuth } from '../contexts/AuthContext';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -14,6 +15,7 @@ interface DriverWithEntries extends Driver {
 type TabType = 'drivers' | 'reports';
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('drivers');
   const [drivers, setDrivers] = useState<DriverWithEntries[]>([]);
   const [filteredDrivers, setFilteredDrivers] = useState<DriverWithEntries[]>([]);
@@ -203,14 +205,15 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       }
 
       // Update email if driver has a user account and email was changed
-      if (editingDriver.user_account_id && editEmail.trim()) {
-        const { error: emailError } = await supabase
-          .from('user_accounts')
-          .update({ email: editEmail.trim() })
-          .eq('id', editingDriver.user_account_id);
+      if (editingDriver.user_account_id && editEmail.trim() && user) {
+        const result = await updateUserEmail(
+          editingDriver.user_account_id,
+          editEmail.trim(),
+          user.id
+        );
 
-        if (emailError) {
-          setMessage({ type: 'error', text: `Fahrer aktualisiert, aber E-Mail-Update fehlgeschlagen: ${emailError.message}` });
+        if (!result.success) {
+          setMessage({ type: 'error', text: `Fahrer aktualisiert, aber E-Mail-Update fehlgeschlagen: ${result.error}` });
           loadDrivers();
           return;
         }

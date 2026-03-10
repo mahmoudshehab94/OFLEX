@@ -323,20 +323,32 @@ export async function resetUserPassword(
 
 export async function updateUserEmail(
   userId: string,
-  newEmail: string
+  newEmail: string,
+  sessionUserId: string
 ): Promise<{ success: boolean; error?: string }> {
   if (!supabase) {
     return { success: false, error: 'Supabase not configured' };
   }
 
   try {
-    const { error } = await supabase
-      .from('user_accounts')
-      .update({ email: newEmail })
-      .eq('id', userId);
+    const apiUrl = `${supabaseUrl}/functions/v1/admin-update-user`;
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        email: newEmail,
+        sessionUserId,
+      }),
+    });
 
-    if (error) {
-      return { success: false, error: error.message };
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      return { success: false, error: result.error || 'Failed to update email' };
     }
 
     return { success: true };

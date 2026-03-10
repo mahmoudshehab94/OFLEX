@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDarkMode } from '../hooks/useDarkMode';
-import { supabase, Driver, getDriversWithAccounts } from '../lib/supabase';
+import { supabase, Driver, getDriversWithAccounts, updateUserEmail } from '../lib/supabase';
 import { InviteManagement } from './InviteManagement';
 import { DirectAccountCreation } from './DirectAccountCreation';
 import { SupervisorProfile } from './SupervisorProfile';
@@ -187,14 +187,15 @@ export function SupervisorDashboard() {
     }
 
     const driver = drivers.find(d => d.id === driverId);
-    if (driver?.account_id && editFormData.email && editFormData.email !== driver.account_email) {
-      const { error: emailError } = await supabase
-        .from('user_accounts')
-        .update({ email: editFormData.email })
-        .eq('id', driver.account_id);
+    if (driver?.account_id && editFormData.email && editFormData.email !== driver.account_email && user) {
+      const result = await updateUserEmail(
+        driver.account_id,
+        editFormData.email,
+        user.id
+      );
 
-      if (emailError) {
-        setMessage({ type: 'error', text: `Driver updated but email update failed: ${emailError.message}` });
+      if (!result.success) {
+        setMessage({ type: 'error', text: `Driver updated but email update failed: ${result.error}` });
         setSavingDriver(false);
         await loadDrivers();
         setEditingDriver(null);
