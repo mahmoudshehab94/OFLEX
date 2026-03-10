@@ -50,15 +50,35 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: adminUser, error: adminError } = await supabase
+    const { data: requestingUser, error: userError } = await supabase
       .from('user_accounts')
       .select('role, is_active')
       .eq('id', adminUserId)
       .maybeSingle();
 
-    if (adminError || !adminUser || adminUser.role !== 'admin' || !adminUser.is_active) {
+    if (userError || !requestingUser || !requestingUser.is_active) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized: Admin access required' }),
+        JSON.stringify({ success: false, error: 'Unauthorized: Valid user required' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (requestingUser.role !== 'admin' && requestingUser.role !== 'supervisor') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized: Admin or supervisor access required' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (requestingUser.role === 'supervisor' && role !== 'driver') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Supervisors can only create driver accounts' }),
         {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

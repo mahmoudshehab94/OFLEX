@@ -138,7 +138,7 @@ export function DirectAccountCreation() {
         password: formData.password,
         role: formData.role,
         driverId: formData.role === 'driver' && accountType === 'existing' ? selectedFahrerId : undefined,
-        newFahrerData: formData.role === 'driver' && accountType === 'new' ? { code: formData.username } : undefined,
+        newDriverData: formData.role === 'driver' && accountType === 'new' ? { code: formData.username } : undefined,
       },
       user.id
     );
