@@ -682,8 +682,8 @@ export function SupervisorDashboard() {
 
         {activeTab === 'invites' && (
           <div className="space-y-6">
-            <DirectAccountCreation />
             <InviteManagement />
+            <DirectAccountCreation />
           </div>
         )}
 

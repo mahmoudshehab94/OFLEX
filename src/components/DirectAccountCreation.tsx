@@ -30,9 +30,7 @@ export function DirectAccountCreation() {
 
   const [newDriverData, setNewDriverData] = useState({
     code: '',
-    name: '',
-    license_letters: '',
-    license_numbers: ''
+    name: ''
   });
 
   useEffect(() => {
@@ -178,7 +176,7 @@ export function DirectAccountCreation() {
       });
       setSelectedDriverId('');
       setDriverSearch('');
-      setNewDriverData({ code: '', name: '', license_letters: '', license_numbers: '' });
+      setNewDriverData({ code: '', name: '' });
       setAccountType('new');
       await loadDrivers();
     } else {
@@ -405,32 +403,6 @@ export function DirectAccountCreation() {
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                     required
                   />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      License Letters
-                    </label>
-                    <input
-                      type="text"
-                      value={newDriverData.license_letters}
-                      onChange={(e) => setNewDriverData({ ...newDriverData, license_letters: e.target.value })}
-                      placeholder="e.g., ABC"
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      License Numbers
-                    </label>
-                    <input
-                      type="text"
-                      value={newDriverData.license_numbers}
-                      onChange={(e) => setNewDriverData({ ...newDriverData, license_numbers: e.target.value })}
-                      placeholder="e.g., 123456"
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-                  </div>
                 </div>
               </div>
             )}
