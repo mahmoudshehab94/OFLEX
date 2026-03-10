@@ -14,6 +14,9 @@ export function DriverSubmission() {
     return null;
   }
 
+  // Debug avatar URL
+  console.log('DriverSubmission - User avatar_url:', user?.avatar_url);
+
   const [showProfile, setShowProfile] = useState(false);
   const [workDate, setWorkDate] = useState(new Date().toISOString().split('T')[0]);
   const [licenseLetters, setLicenseLetters] = useState('');
@@ -261,50 +264,59 @@ export function DriverSubmission() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 flex items-center justify-center p-4">
-      <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-700">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-3 rounded-full shadow-lg">
-              <Truck className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 md:p-8 border border-gray-700">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="bg-blue-600 p-2 sm:p-3 rounded-full shadow-lg">
+              <Truck className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowProfile(true)}
-              className="p-1 hover:opacity-80 transition-opacity rounded-full"
+              className="p-1 hover:opacity-80 transition-opacity rounded-full flex-shrink-0"
               title="Profil"
             >
               {user?.avatar_url ? (
                 <img
                   src={user.avatar_url}
                   alt="Profile"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-600 hover:border-blue-500 transition-colors"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-gray-600 hover:border-blue-500 transition-colors"
+                  onError={(e) => {
+                    console.error('Avatar load error:', user.avatar_url);
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      parent.innerHTML = `<div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600"><svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div>`;
+                    }
+                  }}
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600 hover:border-blue-500 transition-colors">
-                  <User className="w-6 h-6 text-gray-300" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600 hover:border-blue-500 transition-colors">
+                  <User className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
                 </div>
               )}
             </button>
             <button
               onClick={logout}
-              className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-colors"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-colors text-sm sm:text-base"
               title="Abmelden"
             >
               <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Abmelden</span>
             </button>
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-center text-white mb-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-center text-white mb-1 sm:mb-2">
           Trans Oflex
         </h1>
-        <p className="text-center text-gray-300 mb-8">
+        <p className="text-center text-gray-300 mb-6 sm:mb-8 text-sm sm:text-base">
           Arbeitszeit erfassen
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div>
             <label htmlFor="workDate" className="block text-sm font-medium text-gray-200 mb-2">
               <Calendar className="w-4 h-4 inline mr-1" />
@@ -315,7 +327,7 @@ export function DriverSubmission() {
               id="workDate"
               value={workDate}
               onChange={(e) => setWorkDate(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className="w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm sm:text-base"
               required
             />
           </div>
@@ -333,7 +345,7 @@ export function DriverSubmission() {
                   onChange={(e) => handleLicenseLettersChange(e.target.value)}
                   onFocus={() => setShowVehicleSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowVehicleSuggestions(false), 200)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg uppercase text-white placeholder-gray-400"
+                  className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-base sm:text-lg uppercase text-white placeholder-gray-400"
                   placeholder="MI"
                   maxLength={2}
                   required
@@ -350,7 +362,7 @@ export function DriverSubmission() {
                   onKeyDown={handleLicenseNumbersKeyDown}
                   onFocus={() => setShowVehicleSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowVehicleSuggestions(false), 200)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-lg text-white placeholder-gray-400"
+                  className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-base sm:text-lg text-white placeholder-gray-400"
                   placeholder="299"
                   maxLength={4}
                   required
@@ -388,7 +400,7 @@ export function DriverSubmission() {
                   <select
                     value={startHour}
                     onChange={(e) => setStartHour(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
+                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-base sm:text-lg"
                     required
                   >
                     {hours.map(h => (
@@ -401,7 +413,7 @@ export function DriverSubmission() {
                   <select
                     value={startMinute}
                     onChange={(e) => setStartMinute(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
+                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-base sm:text-lg"
                     required
                   >
                     {minutes.map(m => (
@@ -423,7 +435,7 @@ export function DriverSubmission() {
                   <select
                     value={endHour}
                     onChange={(e) => setEndHour(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
+                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-base sm:text-lg"
                     required
                   >
                     <option value="">--</option>
@@ -437,7 +449,7 @@ export function DriverSubmission() {
                   <select
                     value={endMinute}
                     onChange={(e) => setEndMinute(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-lg"
+                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-base sm:text-lg"
                     required
                   >
                     <option value="">--</option>
@@ -459,7 +471,7 @@ export function DriverSubmission() {
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 resize-none"
+              className="w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 resize-none text-sm sm:text-base"
               placeholder="Optionale Notizen..."
               rows={3}
             />
@@ -505,7 +517,7 @@ export function DriverSubmission() {
 
           {message && (
             <div
-              className={`p-4 rounded-lg ${
+              className={`p-3 sm:p-4 rounded-lg text-sm sm:text-base ${
                 message.type === 'success'
                   ? 'bg-green-900/50 text-green-200 border border-green-700'
                   : 'bg-red-900/50 text-red-200 border border-red-700'
@@ -518,24 +530,24 @@ export function DriverSubmission() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            className="w-full bg-blue-600 text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm sm:text-base"
           >
             {loading ? 'Wird gespeichert...' : vehicleConflict ? 'Trotzdem speichern' : 'Arbeitszeit speichern'}
           </button>
         </form>
 
-        <div className="mt-6 border-t border-gray-700 pt-6">
+        <div className="mt-4 sm:mt-6 border-t border-gray-700 pt-4 sm:pt-6">
           <button
             type="button"
             onClick={() => setShowInstallTour(true)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 border border-gray-600 hover:border-gray-500 text-gray-200 rounded-lg transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3 bg-gray-700 hover:bg-gray-600 border border-gray-600 hover:border-gray-500 text-gray-200 rounded-lg transition-colors text-sm sm:text-base"
           >
             <Download className="w-4 h-4" />
             <span className="font-medium">App installieren</span>
           </button>
         </div>
 
-        <div className="mt-6 text-center text-xs text-gray-500">
+        <div className="mt-4 sm:mt-6 text-center text-xs text-gray-500">
           <p>Created by Mahmoud Shehab</p>
           <p className="mt-0.5">v2.2.0</p>
         </div>
