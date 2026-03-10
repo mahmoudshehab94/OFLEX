@@ -4,10 +4,11 @@ import { Login } from './components/Login';
 import { DriverSubmission } from './components/DriverSubmission';
 import { AdminLogin } from './components/AdminLogin';
 import AdminDashboardV2 from './components/AdminDashboardV2';
+import { SupervisorDashboard } from './components/SupervisorDashboard';
 import { RegisterWithInvite } from './components/RegisterWithInvite';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
-type RouteType = 'login' | 'register' | 'admin-login' | 'driver' | 'dashboard';
+type RouteType = 'login' | 'register' | 'admin-login' | 'driver' | 'admin-dashboard' | 'supervisor-dashboard';
 
 function AppContent() {
   const { user, loading, logout } = useAuth();
@@ -53,13 +54,20 @@ function AppContent() {
         return;
       }
       setCurrentRoute('driver');
-    } else if (user.role === 'admin' || user.role === 'supervisor') {
+    } else if (user.role === 'admin') {
       if (path !== '/dashboard' && path !== '/' && path !== '/admin') {
         window.history.pushState({}, '', '/dashboard');
         window.location.reload();
         return;
       }
-      setCurrentRoute('dashboard');
+      setCurrentRoute('admin-dashboard');
+    } else if (user.role === 'supervisor') {
+      if (path !== '/dashboard' && path !== '/' && path !== '/admin') {
+        window.history.pushState({}, '', '/dashboard');
+        window.location.reload();
+        return;
+      }
+      setCurrentRoute('supervisor-dashboard');
     }
   }, [user, loading]);
 
@@ -110,10 +118,18 @@ function AppContent() {
     );
   }
 
-  if (currentRoute === 'dashboard') {
+  if (currentRoute === 'admin-dashboard') {
     return (
-      <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+      <ProtectedRoute allowedRoles={['admin']}>
         <AdminDashboardV2 onLogout={logout} />
+      </ProtectedRoute>
+    );
+  }
+
+  if (currentRoute === 'supervisor-dashboard') {
+    return (
+      <ProtectedRoute allowedRoles={['supervisor']}>
+        <SupervisorDashboard />
       </ProtectedRoute>
     );
   }
