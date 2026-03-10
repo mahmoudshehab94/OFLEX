@@ -160,12 +160,12 @@ export function InviteManagement() {
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="driver">Driver</option>
-              <option value="supervisor" disabled={!permissions.canCreateSupervisors}>
-                Supervisor {!permissions.canCreateSupervisors ? '(No Permission)' : ''}
-              </option>
-              <option value="admin" disabled={!permissions.canCreateAdmins}>
-                Admin {!permissions.canCreateAdmins ? '(No Permission)' : ''}
-              </option>
+              {permissions.canCreateSupervisors && (
+                <option value="supervisor">Supervisor</option>
+              )}
+              {permissions.canCreateAdmins && (
+                <option value="admin">Admin</option>
+              )}
             </select>
           </div>
 
