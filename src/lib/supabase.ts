@@ -287,7 +287,8 @@ export function generatePassword(length: number = 12): string {
   return password.split('').sort(() => Math.random() - 0.5).join('');
 }
 
-async function hashPassword(password: string): Promise<string> {
+// Export hashPassword so it can be used in other components
+export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);

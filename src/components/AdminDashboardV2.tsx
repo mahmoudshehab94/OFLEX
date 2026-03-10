@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, Driver, WorkEntry, UserAccount, getAllUserAccounts, generatePassword, resetUserPassword, updateUserEmail, getDriversWithAccounts } from '../lib/supabase';
+import { supabase, Driver, WorkEntry, UserAccount, getAllUserAccounts, generatePassword, resetUserPassword, updateUserEmail, getDriversWithAccounts, hashPassword } from '../lib/supabase';
 import {
   Users, FileText, BarChart3, Plus, Pencil, Trash2,
   Check, X, Search, Download, LogOut,
@@ -995,7 +995,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   };
 
   const handleChangePassword = async () => {
-    if (!supabase) return;
+    if (!supabase || !user) return;
 
     if (!newPassword || !confirmPassword) {
       setMessage({ type: 'error', text: 'Bitte alle Felder ausfüllen' });
@@ -1015,9 +1015,14 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     setChangingPassword(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      // Hash the new password before storing
+      const passwordHash = await hashPassword(newPassword);
+
+      // Update password in user_accounts table (custom auth system)
+      const { error } = await supabase
+        .from('user_accounts')
+        .update({ password_hash: passwordHash })
+        .eq('id', user.id);
 
       if (error) throw error;
 

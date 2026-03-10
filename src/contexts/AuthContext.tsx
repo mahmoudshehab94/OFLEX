@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase, validateInviteToken, markInviteAsUsed } from '../lib/supabase';
+import { supabase, validateInviteToken, markInviteAsUsed, hashPassword } from '../lib/supabase';
 
 interface User {
   id: string;
@@ -71,7 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'Invalid email or password' };
       }
 
-      if (users.password_hash !== password) {
+      // Hash the password to compare with stored hash
+      const passwordHash = await hashPassword(password);
+      if (users.password_hash !== passwordHash) {
         return { success: false, error: 'Invalid email or password' };
       }
 
@@ -146,11 +148,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         driverId = newDriver.id;
       }
 
+      // Hash the password before storing
+      const passwordHash = await hashPassword(password);
+
       const { data: newUser, error: insertError } = await supabase
         .from('user_accounts')
         .insert({
           email,
-          password_hash: password,
+          password_hash: passwordHash,
           username,
           role: invite.role,
           driver_id: driverId,

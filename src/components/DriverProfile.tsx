@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Lock, Camera, BarChart3, Calendar, Clock, Truck, ArrowLeft, LogOut, Eye, EyeOff, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase, hashPassword } from '../lib/supabase';
 
 interface DriverStats {
   currentMonthEntries: number;
@@ -185,15 +185,19 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
         .eq('id', user?.id)
         .single();
 
-      if (!account || account.password_hash !== currentPassword) {
+      // Hash the current password to compare with stored hash
+      const currentPasswordHash = await hashPassword(currentPassword);
+      if (!account || account.password_hash !== currentPasswordHash) {
         setMessage({ type: 'error', text: 'Aktuelles Passwort ist falsch' });
         setChangingPassword(false);
         return;
       }
 
+      // Hash the new password before storing
+      const newPasswordHash = await hashPassword(newPassword);
       const { error } = await supabase
         .from('user_accounts')
-        .update({ password_hash: newPassword })
+        .update({ password_hash: newPasswordHash })
         .eq('id', user?.id);
 
       if (error) throw error;
