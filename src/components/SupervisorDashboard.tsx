@@ -38,13 +38,11 @@ export function SupervisorDashboard() {
 
   const [editingDriver, setEditingDriver] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<{
-    driver_code: string;
     driver_name: string;
     license_letters: string;
     license_numbers: string;
     email: string;
   }>({
-    driver_code: '',
     driver_name: '',
     license_letters: '',
     license_numbers: '',
@@ -56,7 +54,6 @@ export function SupervisorDashboard() {
 
   const [attendanceData, setAttendanceData] = useState<{
     driver_id: string;
-    driver_code: string;
     driver_name: string;
     has_entry: boolean;
     last_entry?: string;
@@ -97,7 +94,7 @@ export function SupervisorDashboard() {
 
     const { data: driversData, error: driversError } = await supabase
       .from('drivers')
-      .select('id, driver_code, driver_name')
+      .select('id, driver_name')
       .eq('is_active', true)
       .order('driver_name');
 
@@ -126,7 +123,6 @@ export function SupervisorDashboard() {
 
     const attendance = driversData.map(driver => ({
       driver_id: driver.id,
-      driver_code: driver.driver_code,
       driver_name: driver.driver_name,
       has_entry: attendanceMap.has(driver.id),
       last_entry: attendanceMap.get(driver.id)
@@ -139,7 +135,6 @@ export function SupervisorDashboard() {
   const handleEditDriver = (driver: Driver) => {
     setEditingDriver(driver.id);
     setEditFormData({
-      driver_code: driver.driver_code,
       driver_name: driver.driver_name,
       license_letters: driver.license_letters || '',
       license_numbers: driver.license_numbers || '',
@@ -151,7 +146,6 @@ export function SupervisorDashboard() {
   const handleCancelEdit = () => {
     setEditingDriver(null);
     setEditFormData({
-      driver_code: '',
       driver_name: '',
       license_letters: '',
       license_numbers: '',
@@ -162,8 +156,8 @@ export function SupervisorDashboard() {
   const handleSaveDriver = async (driverId: string) => {
     if (!supabase) return;
 
-    if (!editFormData.driver_code || !editFormData.driver_name) {
-      setMessage({ type: 'error', text: 'Fahrer-Code und Name sind erforderlich' });
+    if (!editFormData.driver_name) {
+      setMessage({ type: 'error', text: 'Fahrername ist erforderlich' });
       return;
     }
 
@@ -173,7 +167,6 @@ export function SupervisorDashboard() {
     const { error: driverError } = await supabase
       .from('drivers')
       .update({
-        driver_code: editFormData.driver_code,
         driver_name: editFormData.driver_name,
         license_letters: editFormData.license_letters || null,
         license_numbers: editFormData.license_numbers || null
@@ -268,12 +261,10 @@ export function SupervisorDashboard() {
   };
 
   const filteredDrivers = drivers.filter(driver =>
-    driver.driver_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
     driver.driver_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredAttendance = attendanceData.filter(att =>
-    att.driver_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
     att.driver_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -445,7 +436,7 @@ export function SupervisorDashboard() {
                         )}
                         <div>
                           <p className="font-medium text-slate-900 dark:text-white">
-                            {att.driver_code} - {att.driver_name}
+                            {att.driver_name}
                           </p>
                           {att.has_entry && att.last_entry && (
                             <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -523,7 +514,6 @@ export function SupervisorDashboard() {
                     <thead>
                       <tr className="border-b border-slate-200 dark:border-slate-700">
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Status</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Code</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Name</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">E-Mail</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900 dark:text-white">Führerschein</th>
@@ -543,14 +533,6 @@ export function SupervisorDashboard() {
                                 }`}>
                                   {driver.is_active ? 'Aktiv' : 'Inaktiv'}
                                 </span>
-                              </td>
-                              <td className="py-3 px-4">
-                                <input
-                                  type="text"
-                                  value={editFormData.driver_code}
-                                  onChange={(e) => setEditFormData({ ...editFormData, driver_code: e.target.value })}
-                                  className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded focus:ring-2 focus:ring-green-500"
-                                />
                               </td>
                               <td className="py-3 px-4">
                                 <input
@@ -620,8 +602,7 @@ export function SupervisorDashboard() {
                                   {driver.is_active ? 'Aktiv' : 'Inaktiv'}
                                 </span>
                               </td>
-                              <td className="py-3 px-4 text-slate-900 dark:text-white font-medium">{driver.driver_code}</td>
-                              <td className="py-3 px-4 text-slate-900 dark:text-white">{driver.driver_name}</td>
+                              <td className="py-3 px-4 text-slate-900 dark:text-white font-medium">{driver.driver_name}</td>
                               <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
                                 {driver.account_email || '-'}
                               </td>
