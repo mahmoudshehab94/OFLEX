@@ -9,6 +9,11 @@ declare global {
 
 const ONESIGNAL_APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID || '';
 
+console.log('🔧 OneSignal Configuration Check:');
+console.log('  - App ID:', ONESIGNAL_APP_ID ? `${ONESIGNAL_APP_ID.substring(0, 8)}...` : '❌ NOT SET');
+console.log('  - Domain:', window.location.hostname);
+console.log('  - Protocol:', window.location.protocol);
+
 export interface NotificationSubscription {
   id: string;
   user_account_id: string;
@@ -28,7 +33,17 @@ export class OneSignalService {
   private static initialized = false;
 
   static async initialize(): Promise<void> {
-    if (this.initialized || !ONESIGNAL_APP_ID) {
+    if (this.initialized) {
+      console.log('✅ OneSignal already initialized');
+      return;
+    }
+
+    if (!ONESIGNAL_APP_ID) {
+      console.error('❌ CRITICAL: VITE_ONESIGNAL_APP_ID is not set!');
+      console.error('📋 To fix this:');
+      console.error('   1. Go to Netlify Dashboard → Site settings → Environment variables');
+      console.error('   2. Add: VITE_ONESIGNAL_APP_ID = 1db29131-1f03-4188-8b3b-af2ae9c43717');
+      console.error('   3. Redeploy the site');
       return;
     }
 
@@ -37,7 +52,8 @@ export class OneSignalService {
     const allowedDomains = ['transoflex.netlify.app', 'localhost', '127.0.0.1'];
 
     if (!allowedDomains.includes(currentDomain)) {
-      console.warn('OneSignal: Not running on allowed domain. Skipping initialization.');
+      console.warn('⚠️ OneSignal: Not running on allowed domain:', currentDomain);
+      console.warn('   Allowed domains:', allowedDomains.join(', '));
       return;
     }
 
@@ -49,9 +65,11 @@ export class OneSignalService {
     }
 
     try {
+      console.log('🚀 Initializing OneSignal...');
       window.OneSignalDeferred = window.OneSignalDeferred || [];
 
       window.OneSignalDeferred.push(async function(OneSignal: any) {
+        console.log('⚙️ Configuring OneSignal with App ID:', ONESIGNAL_APP_ID.substring(0, 8) + '...');
         await OneSignal.init({
           appId: ONESIGNAL_APP_ID,
           safari_web_id: undefined,
@@ -60,16 +78,19 @@ export class OneSignalService {
           },
           allowLocalhostAsSecureOrigin: true,
         });
+        console.log('✅ OneSignal initialized successfully');
       });
 
       const script = document.createElement('script');
       script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
       script.defer = true;
+      script.onload = () => console.log('✅ OneSignal SDK loaded');
+      script.onerror = () => console.error('❌ Failed to load OneSignal SDK');
       document.head.appendChild(script);
 
       this.initialized = true;
     } catch (error) {
-      console.error('Failed to initialize OneSignal:', error);
+      console.error('❌ Failed to initialize OneSignal:', error);
     }
   }
 
