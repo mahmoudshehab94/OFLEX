@@ -16,7 +16,6 @@ interface DriverStats {
 
 interface DriverInfo {
   driver_name: string;
-  driver_code: string;
 }
 
 interface DriverProfileProps {
@@ -116,7 +115,7 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
     try {
       const { data: driver } = await supabase
         .from('drivers')
-        .select('driver_name, driver_code')
+        .select('driver_name')
         .eq('id', user.driver_id)
         .single();
 
@@ -411,7 +410,6 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
               </div>
               <div className="flex-1">
                 <h1 className="text-2xl font-bold text-white">{user?.username}</h1>
-                <p className="text-blue-100">Code: {driverInfo?.driver_code}</p>
               </div>
             </div>
           </div>

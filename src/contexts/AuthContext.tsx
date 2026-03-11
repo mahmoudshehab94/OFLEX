@@ -138,7 +138,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: newDriver, error: driverError } = await supabase
           .from('drivers')
           .insert({
-            driver_code: username,
             driver_name: invite.new_driver_name || '',
             license_letters: invite.new_driver_license_letters || null,
             license_numbers: invite.new_driver_license_numbers || null,

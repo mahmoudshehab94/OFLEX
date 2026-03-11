@@ -15,7 +15,6 @@ const corsHeaders = {
 interface Driver {
   id: string;
   driver_name: string;
-  driver_code: string;
   is_active: boolean;
 }
 
@@ -63,7 +62,7 @@ Deno.serve(async (req: Request) => {
     // Get all active drivers
     const { data: drivers, error: driversError } = await supabase
       .from("drivers")
-      .select("id, driver_name, driver_code, is_active")
+      .select("id, driver_name, is_active")
       .eq("is_active", true);
 
     if (driversError) throw driversError;
@@ -299,7 +298,6 @@ Deno.serve(async (req: Request) => {
         driverNotificationsSent,
         driversReminded: driversToRemind.map((d: Driver) => ({
           name: d.driver_name,
-          code: d.driver_code,
         })),
       }),
       {

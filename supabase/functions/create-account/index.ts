@@ -148,27 +148,10 @@ Deno.serve(async (req: Request) => {
 
     let finalDriverId = driverId;
 
-    if (role === 'driver' && !driverId && newDriverData) {
-      const { data: existingDriver } = await supabase
-        .from('drivers')
-        .select('id')
-        .eq('driver_code', newDriverData.code)
-        .maybeSingle();
-
-      if (existingDriver) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Driver code already exists' }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
+    if (role === 'driver' && !driverId) {
       const { data: newDriver, error: driverError } = await supabase
         .from('drivers')
         .insert({
-          driver_code: newDriverData.code,
           driver_name: fullName,
           license_letters: null,
           license_numbers: null,

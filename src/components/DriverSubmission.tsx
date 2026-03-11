@@ -496,7 +496,7 @@ export function DriverSubmission() {
                   {showConflictDetails && (
                     <div className="mt-3 p-3 bg-gray-800 rounded border border-amber-700">
                       <p className="text-sm text-gray-200 mb-1">
-                        <strong>Fahrer:</strong> {vehicleConflict.driver.driver_name} ({vehicleConflict.driver.driver_code})
+                        <strong>Fahrer:</strong> {vehicleConflict.driver.driver_name}
                       </p>
                       <p className="text-sm text-gray-200 mb-1">
                         <strong>Fahrzeug:</strong> {vehicleConflict.entry.vehicle}

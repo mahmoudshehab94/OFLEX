@@ -4,7 +4,6 @@ import { supabase, Driver, WorkEntry } from '../lib/supabase';
 
 interface WorkEntryWithDriver extends WorkEntry {
   driver_name: string;
-  driver_code: string;
 }
 
 interface DriverStats {
@@ -99,7 +98,6 @@ export function ReportsTab() {
         .select(`
           *,
           drivers:driver_id (
-            driver_code,
             driver_name
           )
         `)
@@ -115,8 +113,7 @@ export function ReportsTab() {
 
       const entriesWithDriver = (data || []).map(entry => ({
         ...entry,
-        driver_name: (entry.drivers as any)?.driver_name || 'Unbekannt',
-        driver_code: (entry.drivers as any)?.driver_code || 'N/A'
+        driver_name: (entry.drivers as any)?.driver_name || 'Unbekannt'
       }));
 
       setTodayEntries(entriesWithDriver);
@@ -236,7 +233,6 @@ export function ReportsTab() {
         .select(`
           *,
           drivers:driver_id (
-            driver_code,
             driver_name
           )
         `)
@@ -254,8 +250,7 @@ export function ReportsTab() {
 
       const entriesWithDriver = (data || []).map(entry => ({
         ...entry,
-        driver_name: (entry.drivers as any)?.driver_name || 'Unbekannt',
-        driver_code: (entry.drivers as any)?.driver_code || 'N/A'
+        driver_name: (entry.drivers as any)?.driver_name || 'Unbekannt'
       }));
 
       const totalHours = entriesWithDriver.reduce((sum, entry) => {
@@ -292,7 +287,6 @@ export function ReportsTab() {
           .select(`
             *,
             drivers:driver_id (
-              driver_code,
               driver_name
             )
           `)
@@ -304,7 +298,6 @@ export function ReportsTab() {
           .select(`
             *,
             drivers:driver_id (
-              driver_code,
               driver_name
             )
           `)
@@ -323,8 +316,7 @@ export function ReportsTab() {
       const processStats = (data: any[]): DriverStats => {
         const entriesWithDriver = data.map(entry => ({
           ...entry,
-          driver_name: (entry.drivers as any)?.driver_name || 'Unbekannt',
-          driver_code: (entry.drivers as any)?.driver_code || 'N/A'
+          driver_name: (entry.drivers as any)?.driver_name || 'Unbekannt'
         }));
 
         const totalHours = entriesWithDriver.reduce((sum, entry) => {
@@ -350,8 +342,7 @@ export function ReportsTab() {
   };
 
   const filteredDrivers = drivers.filter(driver =>
-    driver.driver_name.toLowerCase().includes(driverSearchQuery.toLowerCase()) ||
-    driver.driver_code.toLowerCase().includes(driverSearchQuery.toLowerCase())
+    driver.driver_name.toLowerCase().includes(driverSearchQuery.toLowerCase())
   );
 
   const selectDriver = (driver: Driver) => {
@@ -393,7 +384,6 @@ export function ReportsTab() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Fahrer Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Code</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Datum</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Von</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Bis</th>
@@ -409,7 +399,6 @@ export function ReportsTab() {
                   return (
                     <tr key={entry.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm text-gray-900">{entry.driver_name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{entry.driver_code}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{entry.date}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{entry.start_time}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{entry.end_time}</td>
@@ -448,7 +437,7 @@ export function ReportsTab() {
         {/* Driver Search */}
         <div className="mb-6">
           <label className="block text-gray-700 font-medium mb-2">
-            Fahrer suchen (Name oder Code)
+            Fahrer suchen
           </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -472,7 +461,6 @@ export function ReportsTab() {
                     className="w-full px-4 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                   >
                     <p className="font-medium text-gray-900">{driver.driver_name}</p>
-                    <p className="text-sm text-gray-600">Code: {driver.driver_code}</p>
                   </button>
                 ))}
               </div>
@@ -672,7 +660,7 @@ export function ReportsTab() {
               <option value="">Fahrer auswählen...</option>
               {drivers.map(driver => (
                 <option key={driver.id} value={driver.id}>
-                  {driver.driver_name} ({driver.driver_code})
+                  {driver.driver_name}
                 </option>
               ))}
             </select>
@@ -692,7 +680,7 @@ export function ReportsTab() {
               <option value="">Fahrer auswählen...</option>
               {drivers.map(driver => (
                 <option key={driver.id} value={driver.id}>
-                  {driver.driver_name} ({driver.driver_code})
+                  {driver.driver_name}
                 </option>
               ))}
             </select>

@@ -29,7 +29,6 @@ export function InviteManagement() {
   const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
 
   const [newDriverData, setNewDriverData] = useState({
-    code: '',
     name: '',
     license_letters: '',
     license_numbers: ''
@@ -50,7 +49,6 @@ export function InviteManagement() {
       setFilteredDrivers(
         drivers.filter(
           (d) =>
-            d.driver_code.toLowerCase().includes(search) ||
             d.driver_name.toLowerCase().includes(search)
         )
       );
@@ -109,10 +107,6 @@ export function InviteManagement() {
       }
 
       if (inviteType === 'new') {
-        if (!newDriverData.code.trim()) {
-          setMessage({ type: 'error', text: 'Fahrer-Code ist erforderlich' });
-          return;
-        }
         if (!newDriverData.name.trim()) {
           setMessage({ type: 'error', text: 'Fahrername ist erforderlich' });
           return;
@@ -359,7 +353,7 @@ export function InviteManagement() {
                     <option value="">Fahrer auswählen...</option>
                     {filteredDrivers.map((driver) => (
                       <option key={driver.id} value={driver.id}>
-                        {driver.driver_code} - {driver.driver_name}
+                        {driver.driver_name}
                       </option>
                     ))}
                   </select>
@@ -371,19 +365,6 @@ export function InviteManagement() {
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Neuer Fahrer Information
                   </p>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                      Fahrer-Code *
-                    </label>
-                    <input
-                      type="text"
-                      value={newDriverData.code}
-                      onChange={(e) => setNewDriverData({ ...newDriverData, code: e.target.value.toUpperCase() })}
-                      placeholder="z.B. F001"
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                      required
-                    />
-                  </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                       Fahrername *

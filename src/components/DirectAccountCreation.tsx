@@ -43,7 +43,6 @@ export function DirectAccountCreation() {
           .filter(d => !d.account_id)
           .filter(
             (d) =>
-              d.driver_code.toLowerCase().includes(search) ||
               d.driver_name.toLowerCase().includes(search)
           )
       );
@@ -138,7 +137,7 @@ export function DirectAccountCreation() {
         password: formData.password,
         role: formData.role,
         driverId: formData.role === 'driver' && accountType === 'existing' ? selectedFahrerId : undefined,
-        newDriverData: formData.role === 'driver' && accountType === 'new' ? { code: formData.username } : undefined,
+        newDriverData: formData.role === 'driver' && accountType === 'new' ? {} : undefined,
       },
       user.id
     );
@@ -339,7 +338,7 @@ export function DirectAccountCreation() {
                   <option value="">Fahrer auswählen...</option>
                   {filteredFahrers.map((driver) => (
                     <option key={driver.id} value={driver.id}>
-                      {driver.driver_code} - {driver.driver_name}
+                      {driver.driver_name}
                     </option>
                   ))}
                 </select>
