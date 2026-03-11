@@ -55,22 +55,42 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
     setMessage(null);
 
     try {
+      console.log('🎯 Enabling notifications for user:', userAccountId);
+
       const subscription = await OneSignalService.subscribeUser(userAccountId, role, driverId);
 
       if (subscription) {
         setIsSubscribed(true);
+        setPreferences({
+          reminder_start_hour: subscription.reminder_start_hour || 18,
+          reminder_interval_minutes: subscription.reminder_interval_minutes || 30,
+          skip_weekends: subscription.skip_weekends !== false,
+        });
         setMessage({
           type: 'success',
           text: 'تم تفعيل الإشعارات بنجاح! ستتلقى تذكيرات يومية بعد الساعة المحددة.'
         });
       } else {
-        throw new Error('Failed to subscribe');
+        throw new Error('فشل في حفظ البيانات');
       }
-    } catch (error) {
-      console.error('Failed to enable notifications:', error);
+    } catch (error: any) {
+      console.error('❌ Failed to enable notifications:', error);
+
+      let errorMessage = 'فشل تفعيل الإشعارات. ';
+
+      if (error?.message?.includes('يرجى السماح')) {
+        errorMessage = error.message;
+      } else if (error?.message?.includes('not configured')) {
+        errorMessage += 'OneSignal غير مفعّل. يرجى التواصل مع الإدارة.';
+      } else if (error?.message?.includes('Database')) {
+        errorMessage += 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى.';
+      } else {
+        errorMessage += 'يرجى التأكد من السماح بالإشعارات في المتصفح والمحاولة مرة أخرى.';
+      }
+
       setMessage({
         type: 'error',
-        text: 'فشل تفعيل الإشعارات. يرجى التأكد من السماح بالإشعارات في المتصفح.'
+        text: errorMessage
       });
     } finally {
       setIsLoading(false);

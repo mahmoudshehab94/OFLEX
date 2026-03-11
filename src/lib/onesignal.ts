@@ -81,44 +81,94 @@ export class OneSignalService {
     role: 'driver' | 'supervisor' | 'admin',
     driverId?: string
   ): Promise<NotificationSubscription | null> {
+    console.log('🔔 Starting subscription process...', { userAccountId, role, driverId });
+
+    if (!ONESIGNAL_APP_ID) {
+      console.error('❌ OneSignal App ID not configured');
+      throw new Error('OneSignal not configured');
+    }
+
     if (!window.OneSignal) {
+      console.log('⏳ Waiting for OneSignal to load...');
       await this.waitForOneSignal();
     }
 
     if (!supabase) {
-      console.error('Supabase client not initialized');
-      return null;
+      console.error('❌ Supabase client not initialized');
+      throw new Error('Database not available');
     }
 
     try {
+      console.log('📱 Requesting notification permission...');
       const hasPermission = await this.requestPermission();
       if (!hasPermission) {
-        throw new Error('Notification permission denied');
+        console.error('❌ Notification permission denied');
+        throw new Error('يرجى السماح بالإشعارات في المتصفح');
       }
 
+      console.log('✅ Permission granted, logging in to OneSignal...');
       const externalId = `user_${userAccountId}`;
       await window.OneSignal.login(externalId);
 
+      console.log('🔑 Getting player ID...');
       const playerId = await window.OneSignal.User.PushSubscription.id;
+      console.log('✅ Player ID:', playerId);
 
-      const { data, error } = await supabase
+      console.log('💾 Saving to database...');
+      const { data: existingData } = await supabase
         .from('notification_subscriptions')
-        .upsert({
-          user_account_id: userAccountId,
-          onesignal_player_id: playerId || null,
-          onesignal_external_id: externalId,
-          enabled: true,
-          role,
-          driver_id: driverId || null,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_account_id'
-        })
-        .select()
-        .single();
+        .select('*')
+        .eq('user_account_id', userAccountId)
+        .maybeSingle();
 
-      if (error) throw error;
+      let data, error;
 
+      if (existingData) {
+        console.log('🔄 Updating existing subscription...');
+        const result = await supabase
+          .from('notification_subscriptions')
+          .update({
+            onesignal_player_id: playerId || null,
+            onesignal_external_id: externalId,
+            enabled: true,
+            role,
+            driver_id: driverId || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_account_id', userAccountId)
+          .select()
+          .single();
+
+        data = result.data;
+        error = result.error;
+      } else {
+        console.log('➕ Creating new subscription...');
+        const result = await supabase
+          .from('notification_subscriptions')
+          .insert({
+            user_account_id: userAccountId,
+            onesignal_player_id: playerId || null,
+            onesignal_external_id: externalId,
+            enabled: true,
+            role,
+            driver_id: driverId || null,
+            reminder_start_hour: 18,
+            reminder_interval_minutes: 30,
+            skip_weekends: true,
+          })
+          .select()
+          .single();
+
+        data = result.data;
+        error = result.error;
+      }
+
+      if (error) {
+        console.error('❌ Database error:', error);
+        throw error;
+      }
+
+      console.log('✅ Subscription saved successfully!', data);
       return data;
     } catch (error) {
       console.error('Failed to subscribe user to notifications:', error);
