@@ -10,7 +10,9 @@ export function InviteManagement() {
   const { user } = useAuth();
   const permissions = getPermissions(user?.role as 'admin' | 'supervisor' | 'driver' | null);
 
-  const appUrl = import.meta.env.VITE_APP_URL;
+  const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+
+  console.log('🔗 App URL for invites:', appUrl);
 
   const [invites, setInvites] = useState<AccountInvite[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,10 +90,7 @@ export function InviteManagement() {
   const handleGenerateInvite = async () => {
     if (!user) return;
 
-    if (!appUrl) {
-      setMessage({ type: 'error', text: 'Anwendungs-URL ist nicht konfiguriert. Bitte wenden Sie sich an Ihren Administrator.' });
-      return;
-    }
+    console.log('🎯 Generating invite with URL:', appUrl);
 
     if (selectedRole === 'supervisor' && !permissions.canCreateSupervisors) {
       setMessage({ type: 'error', text: 'Sie haben keine Berechtigung, Supervisor-Einladungen zu erstellen' });
