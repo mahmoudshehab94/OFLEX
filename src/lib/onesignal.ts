@@ -17,6 +17,9 @@ export interface NotificationSubscription {
   enabled: boolean;
   role: 'driver' | 'supervisor' | 'admin';
   driver_id: string | null;
+  reminder_start_hour?: number;
+  reminder_interval_minutes?: number;
+  skip_weekends?: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -41,14 +41,16 @@ Deno.serve(async (req: Request) => {
 
     const now = new Date();
     const currentHour = now.getHours();
+    const dayOfWeek = now.getDay();
 
-    // Only run after 18:00 (6 PM)
-    if (currentHour < 18) {
+    // Check if today is Saturday (6) or Sunday (0)
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Too early - reminders only sent after 18:00",
+          message: "Weekend - no reminders on Saturday and Sunday",
           time: now.toISOString(),
+          dayOfWeek,
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -140,6 +142,38 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (subscription && subscription.onesignal_external_id) {
+        // Check user-specific settings
+        const userStartHour = subscription.reminder_start_hour || 18;
+        const userSkipWeekends = subscription.skip_weekends !== false;
+        const userIntervalMinutes = subscription.reminder_interval_minutes || 30;
+
+        // Skip if user wants to skip weekends
+        if (userSkipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
+          continue;
+        }
+
+        // Skip if before user's start hour
+        if (currentHour < userStartHour) {
+          continue;
+        }
+
+        // Check cooldown based on user's interval preference
+        const userIntervalMs = userIntervalMinutes * 60 * 1000;
+        const userCooldownTime = new Date(now.getTime() - userIntervalMs).toISOString();
+
+        const { data: userRecentReminder } = await supabase
+          .from("notification_reminders_log")
+          .select("sent_at")
+          .eq("driver_id", driver.id)
+          .eq("reminder_date", today)
+          .eq("reminder_type", "driver")
+          .gte("sent_at", userCooldownTime)
+          .maybeSingle();
+
+        if (userRecentReminder) {
+          continue;
+        }
+
         try {
           const message = {
             app_id: ONESIGNAL_APP_ID,
