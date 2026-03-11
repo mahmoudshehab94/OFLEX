@@ -88,9 +88,14 @@ export class OneSignalService {
       throw new Error('OneSignal not configured');
     }
 
-    if (!window.OneSignal) {
-      console.log('⏳ Waiting for OneSignal to load...');
-      await this.waitForOneSignal();
+    try {
+      if (!window.OneSignal) {
+        console.log('⏳ Waiting for OneSignal to load...');
+        await this.waitForOneSignal();
+      }
+    } catch (error) {
+      console.error('❌ OneSignal failed to load:', error);
+      throw new Error('OneSignal failed to load');
     }
 
     if (!supabase) {
@@ -170,9 +175,9 @@ export class OneSignalService {
 
       console.log('✅ Subscription saved successfully!', data);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to subscribe user to notifications:', error);
-      return null;
+      throw error;
     }
   }
 

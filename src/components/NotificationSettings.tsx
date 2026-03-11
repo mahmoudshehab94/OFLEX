@@ -81,11 +81,13 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
       if (error?.message?.includes('يرجى السماح')) {
         errorMessage = error.message;
       } else if (error?.message?.includes('not configured')) {
-        errorMessage += 'OneSignal غير مفعّل. يرجى التواصل مع الإدارة.';
+        errorMessage = 'نظام الإشعارات غير مُهيأ. تواصل مع الإدارة لتفعيل OneSignal.';
+      } else if (error?.message?.includes('failed to load')) {
+        errorMessage = 'فشل تحميل نظام الإشعارات. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.';
       } else if (error?.message?.includes('Database')) {
-        errorMessage += 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى.';
+        errorMessage = 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى.';
       } else {
-        errorMessage += 'يرجى التأكد من السماح بالإشعارات في المتصفح والمحاولة مرة أخرى.';
+        errorMessage = 'حدث خطأ غير متوقع. تأكد من السماح بالإشعارات وحاول مرة أخرى.';
       }
 
       setMessage({
