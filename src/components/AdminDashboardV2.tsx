@@ -118,7 +118,6 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchAbortControllerRef = useRef<AbortController | null>(null);
 
-  const [newDriverCode, setNewDriverCode] = useState('');
   const [newDriverName, setNewDriverName] = useState('');
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
 
@@ -245,7 +244,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       const { data, error } = await supabase
         .from('drivers')
         .select('*')
-        .or(`driver_code.ilike.%${query}%,driver_name.ilike.%${query}%`)
+        .ilike('driver_name', `%${query}%`)
         .eq('is_active', true)
         .limit(15);
 
@@ -270,14 +269,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     if (!search) return [];
     const lowerSearch = search.toLowerCase();
     return drivers.filter(d =>
-      d.driver_code.toLowerCase().includes(lowerSearch) ||
       d.driver_name.toLowerCase().includes(lowerSearch)
     );
   };
 
   const handleSelectDriver = (driver: Driver) => {
     setSelectedDriver(driver);
-    setSearchText(driver.driver_name || driver.driver_code);
+    setSearchText(driver.driver_name);
     setShowSearchResults(false);
     setFilterDriverId(driver.id);
   };
@@ -438,8 +436,8 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
   const handleAddDriver = async () => {
     if (!supabase) return;
-    if (!newDriverCode.trim() || !newDriverName.trim()) {
-      setMessage({ type: 'error', text: 'Bitte Fahrercode und Namen eingeben' });
+    if (!newDriverName.trim()) {
+      setMessage({ type: 'error', text: 'Bitte Namen eingeben' });
       return;
     }
 
@@ -447,7 +445,6 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       const { error } = await supabase
         .from('drivers')
         .insert({
-          driver_code: newDriverCode.trim().toUpperCase(),
           driver_name: newDriverName.trim(),
           is_active: true
         });
@@ -455,7 +452,6 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       if (error) throw error;
 
       setMessage({ type: 'success', text: 'Fahrer erfolgreich hinzugefügt' });
-      setNewDriverCode('');
       setNewDriverName('');
       loadDrivers();
     } catch (error: any) {
@@ -494,7 +490,6 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       const { error } = await supabase
         .from('drivers')
         .update({
-          driver_code: driver.driver_code.trim().toUpperCase(),
           driver_name: driver.driver_name.trim()
         })
         .eq('id', driver.id);
@@ -520,7 +515,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     try {
       let query = supabase
         .from('work_entries')
-        .select('*, drivers(driver_code, driver_name)');
+        .select('*, drivers(driver_name)');
 
       if (filterDateFrom) {
         query = query.gte('date', filterDateFrom);
@@ -550,7 +545,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     try {
       const { data, error } = await supabase
         .from('work_entries')
-        .select('*, drivers(driver_code, driver_name)')
+        .select('*, drivers(driver_name)')
         .eq('date', today)
         .order('start_time', { ascending: true });
 
@@ -825,7 +820,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     doc.text('Arbeitszeitbericht', 14, 20);
 
     doc.setFontSize(12);
-    doc.text(`Fahrer: ${driver.driver_name} (${driver.driver_code})`, 14, 30);
+    doc.text(`Fahrer: ${driver.driver_name}`, 14, 30);
     doc.text(`Zeitraum: ${startDate} bis ${endDate}`, 14, 37);
     doc.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, 14, 44);
 
@@ -858,7 +853,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       });
     }
 
-    doc.save(`Bericht_${driver.driver_code}_${startDate}_${endDate}.pdf`);
+    doc.save(`Bericht_${driver.driver_name.replace(/\s+/g, '_')}_${startDate}_${endDate}.pdf`);
     setMessage({ type: 'success', text: 'PDF erfolgreich exportiert' });
   };
 
@@ -881,7 +876,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     const ws = XLSX.utils.json_to_sheet(excelData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Bericht');
-    XLSX.writeFile(wb, `Bericht_${driver.driver_code}_${startDate}_${endDate}.xlsx`);
+    XLSX.writeFile(wb, `Bericht_${driver.driver_name.replace(/\s+/g, '_')}_${startDate}_${endDate}.xlsx`);
     setMessage({ type: 'success', text: 'Excel erfolgreich exportiert' });
   };
 
@@ -1232,7 +1227,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     if (!supabase) return;
 
     const confirmDelete = window.confirm(
-      `Möchten Sie den Fahrer "${driver.driver_name}" (${driver.driver_code}) wirklich DAUERHAFT löschen?\n\nWARNUNG: Alle zugehörigen Arbeitseinträge und das zugehörige Benutzerkonto werden ebenfalls gelöscht! Diese Aktion kann nicht rückgängig gemacht werden.`
+      `Möchten Sie den Fahrer "${driver.driver_name}" wirklich DAUERHAFT löschen?\n\nWARNUNG: Alle zugehörigen Arbeitseinträge und das zugehörige Benutzerkonto werden ebenfalls gelöscht! Diese Aktion kann nicht rückgängig gemacht werden.`
     );
 
     if (!confirmDelete) return;
@@ -1436,9 +1431,6 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                               {driver.driver_name || 'Unbekannt'}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-slate-400">
-                              {driver.driver_code}
                             </p>
                           </div>
                         </div>
@@ -1645,7 +1637,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                       const suggestions = getDriverSuggestions(monthlyDriverSearch);
                       if (suggestions.length > 0) {
                         setMonthlyDriver(suggestions[0].id);
-                        setMonthlyDriverSearch(`${suggestions[0].driver_code} - ${suggestions[0].driver_name}`);
+                        setMonthlyDriverSearch(suggestions[0].driver_name);
                       }
                     }}
                     placeholder="Code oder Name eingeben"
@@ -1714,7 +1706,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
               {monthlyReport && (
                 <div className="mt-6 border-t border-gray-200 dark:border-slate-700 pt-6">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-                    {monthlyReport.driver.driver_name} ({monthlyReport.driver.driver_code})
+                    {monthlyReport.driver.driver_name}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                     <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
@@ -1755,7 +1747,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                       const suggestions = getDriverSuggestions(customDriverSearch);
                       if (suggestions.length > 0) {
                         setCustomDriver(suggestions[0].id);
-                        setCustomDriverSearch(`${suggestions[0].driver_code} - ${suggestions[0].driver_name}`);
+                        setCustomDriverSearch(suggestions[0].driver_name);
                       }
                     }}
                     placeholder="Code oder Name eingeben"
@@ -1812,7 +1804,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
               {customReport && (
                 <div className="mt-6 border-t border-gray-200 dark:border-slate-700 pt-6">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-                    {customReport.driver.driver_name} ({customReport.driver.driver_code})
+                    {customReport.driver.driver_name}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                     <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
@@ -1854,7 +1846,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                       const suggestions = getDriverSuggestions(compareDriver1Search);
                       if (suggestions.length > 0) {
                         setCompareDriver1(suggestions[0].id);
-                        setCompareDriver1Search(`${suggestions[0].driver_code} - ${suggestions[0].driver_name}`);
+                        setCompareDriver1Search(suggestions[0].driver_name);
                       }
                     }}
                     placeholder="Code oder Name eingeben"
@@ -1877,7 +1869,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                       const suggestions = getDriverSuggestions(compareDriver2Search);
                       if (suggestions.length > 0) {
                         setCompareDriver2(suggestions[0].id);
-                        setCompareDriver2Search(`${suggestions[0].driver_code} - ${suggestions[0].driver_name}`);
+                        setCompareDriver2Search(suggestions[0].driver_name);
                       }
                     }}
                     placeholder="Code oder Name eingeben"
@@ -1913,7 +1905,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-                        {comparison.driver1.driver.driver_name} ({comparison.driver1.driver.driver_code})
+                        {comparison.driver1.driver.driver_name}
                       </h3>
                       <div className="space-y-3">
                         <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3">
@@ -1933,7 +1925,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-                        {comparison.driver2.driver.driver_name} ({comparison.driver2.driver.driver_code})
+                        {comparison.driver2.driver.driver_name}
                       </h3>
                       <div className="space-y-3">
                         <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3">
@@ -1992,7 +1984,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                     <option value="">Alle Fahrer</option>
                     {drivers.filter(d => d.is_active).map(driver => (
                       <option key={driver.id} value={driver.id}>
-                        {driver.driver_name} ({driver.driver_code})
+                        {driver.driver_name}
                       </option>
                     ))}
                   </select>
@@ -2263,7 +2255,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                     <div>
                       <span className="text-gray-600 dark:text-slate-400">Fahrer:</span>
                       <span className="ml-2 font-medium text-gray-900 dark:text-white">
-                        {vehicleResult.driver.driver_name} ({vehicleResult.driver.driver_code})
+                        {vehicleResult.driver.driver_name}
                       </span>
                     </div>
                     <div>
@@ -2293,20 +2285,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Neuen Fahrer hinzufügen
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                <input
-                  type="text"
-                  value={newDriverCode}
-                  onChange={(e) => setNewDriverCode(e.target.value.toUpperCase())}
-                  placeholder="Fahrercode (z.B. DRV001)"
-                  className="input-field"
-                />
+              <div className="mb-4">
                 <input
                   type="text"
                   value={newDriverName}
                   onChange={(e) => setNewDriverName(e.target.value)}
                   placeholder="Fahrername"
-                  className="input-field"
+                  className="input-field w-full"
                 />
               </div>
               <button
@@ -2326,7 +2311,6 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-slate-700">
-                      <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Code</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Name</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Status</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-slate-300">Konto</th>
@@ -2336,21 +2320,6 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                   <tbody>
                     {drivers.map(driver => (
                       <tr key={driver.id} className="group border-b border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50">
-                        <td className="py-3 px-4">
-                          {editingDriver?.id === driver.id ? (
-                            <input
-                              type="text"
-                              value={editingDriver.driver_code}
-                              onChange={(e) => setEditingDriver({
-                                ...editingDriver,
-                                driver_code: e.target.value.toUpperCase()
-                              })}
-                              className="input-field py-1 text-sm"
-                            />
-                          ) : (
-                            driver.driver_code
-                          )}
-                        </td>
                         <td className="py-3 px-4">
                           {editingDriver?.id === driver.id ? (
                             <input
