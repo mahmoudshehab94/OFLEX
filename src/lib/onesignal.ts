@@ -32,6 +32,22 @@ export class OneSignalService {
       return;
     }
 
+    // Check if running on allowed domain
+    const currentDomain = window.location.hostname;
+    const allowedDomains = ['transoflex.netlify.app', 'localhost', '127.0.0.1'];
+
+    if (!allowedDomains.includes(currentDomain)) {
+      console.warn('OneSignal: Not running on allowed domain. Skipping initialization.');
+      return;
+    }
+
+    // Skip OneSignal on localhost if not explicitly enabled
+    const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
+    if (isLocalhost) {
+      console.warn('⚠️ OneSignal: Running on localhost. Notifications may not work unless configured in OneSignal Dashboard.');
+      console.warn('💡 To test notifications, deploy to https://transoflex.netlify.app');
+    }
+
     try {
       window.OneSignalDeferred = window.OneSignalDeferred || [];
 
