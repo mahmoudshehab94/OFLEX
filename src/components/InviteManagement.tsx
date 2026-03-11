@@ -131,7 +131,7 @@ export function InviteManagement() {
       await loadInvites();
       setSelectedDriverId('');
       setDriverSearch('');
-      setNewDriverData({ code: '', name: '', license_letters: '', license_numbers: '' });
+      setNewDriverData({ name: '', license_letters: '', license_numbers: '' });
     } else {
       setMessage({ type: 'error', text: result.error || 'Fehler beim Erstellen der Einladung' });
     }
@@ -311,7 +311,7 @@ export function InviteManagement() {
                     type="button"
                     onClick={() => {
                       setInviteType('existing');
-                      setNewDriverData({ code: '', name: '', license_letters: '', license_numbers: '' });
+                      setNewDriverData({ name: '', license_letters: '', license_numbers: '' });
                     }}
                     className={`p-4 rounded-lg border-2 transition-all ${
                       inviteType === 'existing'
