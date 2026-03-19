@@ -793,33 +793,78 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
     const { from, to } = getDateRange(comparePeriod);
     const fromDate = new Date(from);
+    const toDate = new Date(to);
 
     try {
-      const results = await Promise.all([resolvedDriver1Id, resolvedDriver2Id].map(async (driverId) => {
+      // Process driver 1 independently
+      const driver1Promise = (async () => {
         const { data: driver } = await supabase
           .from('drivers')
           .select('*')
-          .eq('id', driverId)
+          .eq('id', resolvedDriver1Id)
           .single();
 
         const { data: entries } = await supabase
           .from('work_entries')
           .select('*')
-          .eq('driver_id', driverId)
+          .eq('driver_id', resolvedDriver1Id)
           .gte('date', from)
           .lte('date', to);
 
         if (!driver || !entries) return null;
 
-        const summary = calculateSummary(entries, fromDate.getFullYear(), fromDate.getMonth() + 1);
+        console.log(`[COMPARISON] Driver 1: ${driver.driver_name}`);
+        console.log(`[COMPARISON] Driver 1 entries count: ${entries.length}`);
+        console.log(`[COMPARISON] Driver 1 date range: ${from} to ${to}`);
+        console.log(`[COMPARISON] Driver 1 calculating for year: ${fromDate.getFullYear()}, month: ${fromDate.getMonth() + 1}`);
 
-        return { driver, summary };
-      }));
+        // Calculate summary with isolated data for driver 1
+        const driver1Summary = calculateSummary(entries, fromDate.getFullYear(), fromDate.getMonth() + 1);
 
-      if (results[0] && results[1]) {
+        console.log(`[COMPARISON] Driver 1 fehlendeTage: ${driver1Summary.fehlendeTage}`);
+        console.log(`[COMPARISON] Driver 1 fehlendeTageList: ${driver1Summary.fehlendeTageList.join(', ')}`);
+
+        return { driver, summary: driver1Summary };
+      })();
+
+      // Process driver 2 independently
+      const driver2Promise = (async () => {
+        const { data: driver } = await supabase
+          .from('drivers')
+          .select('*')
+          .eq('id', resolvedDriver2Id)
+          .single();
+
+        const { data: entries } = await supabase
+          .from('work_entries')
+          .select('*')
+          .eq('driver_id', resolvedDriver2Id)
+          .gte('date', from)
+          .lte('date', to);
+
+        if (!driver || !entries) return null;
+
+        console.log(`[COMPARISON] Driver 2: ${driver.driver_name}`);
+        console.log(`[COMPARISON] Driver 2 entries count: ${entries.length}`);
+        console.log(`[COMPARISON] Driver 2 date range: ${from} to ${to}`);
+        console.log(`[COMPARISON] Driver 2 calculating for year: ${fromDate.getFullYear()}, month: ${fromDate.getMonth() + 1}`);
+
+        // Calculate summary with isolated data for driver 2
+        const driver2Summary = calculateSummary(entries, fromDate.getFullYear(), fromDate.getMonth() + 1);
+
+        console.log(`[COMPARISON] Driver 2 fehlendeTage: ${driver2Summary.fehlendeTage}`);
+        console.log(`[COMPARISON] Driver 2 fehlendeTageList: ${driver2Summary.fehlendeTageList.join(', ')}`);
+
+        return { driver, summary: driver2Summary };
+      })();
+
+      // Wait for both independent calculations
+      const [result1, result2] = await Promise.all([driver1Promise, driver2Promise]);
+
+      if (result1 && result2) {
         setComparison({
-          driver1: results[0],
-          driver2: results[1]
+          driver1: result1,
+          driver2: result2
         });
       } else {
         setMessage({ type: 'error', text: 'Fehler beim Laden der Fahrerdaten' });
