@@ -22,7 +22,7 @@ export function ScanPage({ onBack }: ScanPageProps) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -62,18 +62,8 @@ export function ScanPage({ onBack }: ScanPageProps) {
       }
     } catch (error) {
       console.error('Error loading scan data:', error);
-    } finally {
-      setLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 flex items-center justify-center">
-        <div className="text-white text-xl">Laden...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 p-4">
@@ -100,7 +90,7 @@ export function ScanPage({ onBack }: ScanPageProps) {
                   <img
                     src={driverIdBarcodeUrl}
                     alt="Driver ID Barcode"
-                    className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-32 object-contain"
+                    className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-48 object-contain"
                   />
                 </div>
               ) : (
@@ -143,7 +133,7 @@ export function ScanPage({ onBack }: ScanPageProps) {
                       <img
                         src={selectedVehicle.vehicle_code_image_url}
                         alt="Vehicle Code"
-                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-28 object-contain"
+                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-40 object-contain"
                       />
                     </div>
                   </div>
@@ -167,7 +157,7 @@ export function ScanPage({ onBack }: ScanPageProps) {
                       <img
                         src={selectedVehicle.cooling_code_image_url}
                         alt="Cooling Code"
-                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-28 object-contain"
+                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-40 object-contain"
                       />
                     </div>
                   </div>
@@ -191,7 +181,7 @@ export function ScanPage({ onBack }: ScanPageProps) {
                       <img
                         src={selectedVehicle.standard_code_image_url}
                         alt="Standard Code"
-                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-28 object-contain"
+                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-40 object-contain"
                       />
                     </div>
                   </div>
