@@ -10,7 +10,7 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useDebounce } from '../hooks/useDebounce';
-import { InviteManagement, InviteHistory } from './InviteManagement';
+import { InviteManagement } from './InviteManagement';
 import { DirectAccountCreation } from './DirectAccountCreation';
 import { useAuth } from '../contexts/AuthContext';
 import { getPermissions } from '../lib/permissions';
@@ -2516,7 +2516,6 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
           <div className="space-y-6">
             <InviteManagement />
             <DirectAccountCreation />
-            <InviteHistory />
           </div>
         )}
 
