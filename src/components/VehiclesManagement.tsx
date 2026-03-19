@@ -176,12 +176,15 @@ export default function VehiclesManagement() {
         }
 
         const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-vehicle`;
-        const sessionUserId = localStorage.getItem('sessionUserId');
+        const sessionData = localStorage.getItem('userSession');
+        if (!sessionData) throw new Error('Not authenticated');
+        const session = JSON.parse(sessionData);
+        const userId = session.user.id;
 
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${sessionUserId}`,
+            'Authorization': `Bearer ${userId}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -218,12 +221,15 @@ export default function VehiclesManagement() {
         }
 
         const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-vehicle`;
-        const sessionUserId = localStorage.getItem('sessionUserId');
+        const sessionData = localStorage.getItem('userSession');
+        if (!sessionData) throw new Error('Not authenticated');
+        const session = JSON.parse(sessionData);
+        const userId = session.user.id;
 
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${sessionUserId}`,
+            'Authorization': `Bearer ${userId}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -282,12 +288,15 @@ export default function VehiclesManagement() {
       if (vehicle.standard_code_image_url) await deleteImage(vehicle.standard_code_image_url);
 
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-vehicle`;
-      const sessionUserId = localStorage.getItem('sessionUserId');
+      const sessionData = localStorage.getItem('userSession');
+      if (!sessionData) throw new Error('Not authenticated');
+      const session = JSON.parse(sessionData);
+      const userId = session.user.id;
 
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${sessionUserId}`,
+          'Authorization': `Bearer ${userId}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

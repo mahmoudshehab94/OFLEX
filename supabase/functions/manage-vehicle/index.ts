@@ -31,17 +31,18 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const sessionToken = authHeader.replace("Bearer ", "");
+    const userId = authHeader.replace("Bearer ", "");
 
-    const { data: session } = await supabase
+    const { data: userAccount, error: userError } = await supabase
       .from("user_accounts")
       .select("id, role")
-      .eq("id", sessionToken)
+      .eq("id", userId)
+      .eq("is_active", true)
       .maybeSingle();
 
-    if (!session || session.role !== "admin") {
+    if (userError || !userAccount || userAccount.role !== "admin") {
       return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
+        JSON.stringify({ success: false, error: "Unauthorized - Admin access required" }),
         {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
