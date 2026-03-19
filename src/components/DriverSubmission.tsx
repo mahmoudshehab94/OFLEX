@@ -5,6 +5,22 @@ import { DriverProfile } from './DriverProfile';
 import { ScanPage } from './ScanPage';
 import { useAuth } from '../contexts/AuthContext';
 
+const getAvatarUrl = (avatarPath: string | null | undefined): string | null => {
+  if (!avatarPath || !supabase) return null;
+
+  // If already a full URL, return as is
+  if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+    return avatarPath;
+  }
+
+  // Otherwise, generate the public URL from the path
+  const { data: { publicUrl } } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(avatarPath);
+
+  return publicUrl;
+};
+
 export function DriverSubmission() {
   const { user, logout } = useAuth();
 
@@ -14,8 +30,7 @@ export function DriverSubmission() {
     return null;
   }
 
-  // Debug avatar URL
-  console.log('DriverSubmission - User avatar_url:', user?.avatar_url);
+  const avatarUrl = getAvatarUrl(user?.avatar_url);
 
   const [showProfile, setShowProfile] = useState(false);
   const [showScan, setShowScan] = useState(false);
@@ -285,13 +300,13 @@ export function DriverSubmission() {
               className="p-1 hover:opacity-80 transition-opacity rounded-full flex-shrink-0"
               title="Profil"
             >
-              {user?.avatar_url ? (
+              {avatarUrl ? (
                 <img
-                  src={user.avatar_url}
+                  src={avatarUrl}
                   alt="Profile"
                   className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-gray-600 hover:border-blue-500 transition-colors"
                   onError={(e) => {
-                    console.error('Avatar load error:', user.avatar_url);
+                    console.error('Avatar load error:', avatarUrl);
                     e.currentTarget.style.display = 'none';
                     const parent = e.currentTarget.parentElement;
                     if (parent) {
