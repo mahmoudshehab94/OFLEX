@@ -89,15 +89,12 @@ export class OneSignalService {
           }
         });
 
-        const script = document.createElement('script');
-        script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
-        script.defer = true;
-        script.onload = () => console.log('✅ OneSignal SDK loaded');
-        script.onerror = () => {
-          console.error('❌ Failed to load OneSignal SDK');
-          resolve();
-        };
-        document.head.appendChild(script);
+        setTimeout(() => {
+          if (!window.OneSignal) {
+            console.warn('⚠️ OneSignal SDK not loaded yet, resolving anyway');
+            resolve();
+          }
+        }, 5000);
       });
     } catch (error) {
       console.error('❌ Failed to initialize OneSignal:', error);
@@ -290,17 +287,21 @@ export class OneSignalService {
     return subscription?.enabled || false;
   }
 
-  private static async waitForOneSignal(timeout = 15000): Promise<void> {
+  private static async waitForOneSignal(timeout = 20000): Promise<void> {
     const startTime = Date.now();
 
     console.log('⏳ Waiting for OneSignal to be ready...');
 
     while (!window.OneSignal && Date.now() - startTime < timeout) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
 
     if (!window.OneSignal) {
       console.error('❌ OneSignal not available after', timeout, 'ms');
+      console.error('💡 This might be due to:');
+      console.error('   1. Ad blockers blocking OneSignal SDK');
+      console.error('   2. Network issues preventing SDK download');
+      console.error('   3. Browser privacy settings blocking third-party scripts');
       throw new Error('OneSignal failed to load');
     }
 

@@ -86,7 +86,7 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
       } else if (error?.message?.includes('not configured')) {
         errorMessage = 'نظام الإشعارات غير مُهيأ. تواصل مع الإدارة لتفعيل OneSignal.';
       } else if (error?.message?.includes('failed to load')) {
-        errorMessage = 'فشل تحميل نظام الإشعارات. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.';
+        errorMessage = 'فشل تحميل نظام الإشعارات. يرجى التحقق من:\n• إيقاف أي برامج حجب الإعلانات (Ad Blockers)\n• السماح بالسكريبتات من onesignal.com\n• إعادة تحميل الصفحة والمحاولة مرة أخرى';
       } else if (error?.message?.includes('Database')) {
         errorMessage = 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى.';
       } else {
