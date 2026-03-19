@@ -283,33 +283,41 @@ export function ReportsTab() {
 
     setLoadingCompare(true);
     try {
-      const from = new Date(compareYear, compareMonth - 1, 1).toISOString().split('T')[0];
-      const to = new Date(compareYear, compareMonth, 0).toISOString().split('T')[0];
+      // Use the same date calculation method as DriverProfile for consistency
+      const startDate = `${compareYear}-${String(compareMonth).padStart(2, '0')}-01`;
+      const endDate = new Date(compareYear, compareMonth, 0);
+      const endDateStr = `${compareYear}-${String(compareMonth).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
 
-      const [resultA, resultB] = await Promise.all([
-        supabase
-          .from('work_entries')
-          .select(`
-            *,
-            drivers:driver_id (
-              driver_name
-            )
-          `)
-          .eq('driver_id', driverA.id)
-          .gte('date', from)
-          .lte('date', to),
-        supabase
-          .from('work_entries')
-          .select(`
-            *,
-            drivers:driver_id (
-              driver_name
-            )
-          `)
-          .eq('driver_id', driverB.id)
-          .gte('date', from)
-          .lte('date', to)
-      ]);
+      const from = startDate;
+      const to = endDateStr;
+
+      // Query driver A entries
+      const resultA = await supabase
+        .from('work_entries')
+        .select(`
+          *,
+          drivers:driver_id (
+            driver_name
+          )
+        `)
+        .eq('driver_id', driverA.id)
+        .gte('date', from)
+        .lte('date', to)
+        .order('date', { ascending: false });
+
+      // Query driver B entries
+      const resultB = await supabase
+        .from('work_entries')
+        .select(`
+          *,
+          drivers:driver_id (
+            driver_name
+          )
+        `)
+        .eq('driver_id', driverB.id)
+        .gte('date', from)
+        .lte('date', to)
+        .order('date', { ascending: false });
 
       if (resultA.error || resultB.error) {
         console.error('Load compare stats error:', resultA.error || resultB.error);
@@ -342,6 +350,7 @@ export function ReportsTab() {
         };
       };
 
+      // Process stats for each driver independently
       setStatsA(processStats(resultA.data || []));
       setStatsB(processStats(resultB.data || []));
     } catch (error: any) {

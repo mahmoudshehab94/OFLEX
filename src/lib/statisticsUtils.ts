@@ -91,6 +91,7 @@ export const calculateMonthStatistics = (
   year: number,
   month: number
 ): MonthStats => {
+  // Handle empty entries case - all working days in the month are missing
   if (!entries || entries.length === 0) {
     const missing = getMissingWorkingDays(year, month, new Set());
     return {
@@ -106,14 +107,19 @@ export const calculateMonthStatistics = (
     };
   }
 
+  // Calculate total work hours across all entries
   const totalHours = entries.reduce((sum, entry) => {
     return sum + calculateWorkHours(entry.start_time, entry.end_time, entry.break_minutes || 0);
   }, 0);
 
+  // Count unique days worked (multiple entries on same day count as one day)
   const uniqueDays = new Set(entries.map(e => e.date)).size;
   const avgHours = uniqueDays > 0 ? totalHours / uniqueDays : 0;
 
+  // Get all dates that have submissions
   const submittedDates = getSubmittedDates(entries);
+
+  // Calculate which working days are missing submissions
   const missing = getMissingWorkingDays(year, month, submittedDates);
 
   return {
