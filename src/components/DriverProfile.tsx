@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Lock, Camera, BarChart3, Calendar, Clock, Truck, ArrowLeft, LogOut, Eye, EyeOff, TrendingUp, Bell } from 'lucide-react';
+import { User, Lock, Camera, BarChart3, Calendar, Clock, Truck, ArrowLeft, LogOut, Eye, EyeOff, TrendingUp, Bell, CreditCard, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, hashPassword } from '../lib/supabase';
 import { NotificationSettings } from './NotificationSettings';
@@ -16,6 +16,7 @@ interface DriverStats {
 
 interface DriverInfo {
   driver_name: string;
+  id_barcode_image_url: string | null;
 }
 
 interface DriverProfileProps {
@@ -84,6 +85,8 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
   const [updatingName, setUpdatingName] = useState(false);
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingIdBarcode, setUploadingIdBarcode] = useState(false);
+  const [idBarcodePreview, setIdBarcodePreview] = useState<string | null>(null);
 
   useEffect(() => {
     loadDriverData();
@@ -115,13 +118,14 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
     try {
       const { data: driver } = await supabase
         .from('drivers')
-        .select('driver_name')
+        .select('driver_name, id_barcode_image_url')
         .eq('id', user.driver_id)
         .single();
 
       if (driver) {
         setDriverInfo(driver);
         setNewDisplayName(driver.driver_name);
+        setIdBarcodePreview(driver.id_barcode_image_url);
       }
 
       const now = new Date();
@@ -365,6 +369,113 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
     }
   };
 
+  const handleIdBarcodeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Bitte wählen Sie eine Bilddatei' });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Bild darf maximal 5 MB groß sein' });
+      return;
+    }
+
+    setUploadingIdBarcode(true);
+    setMessage(null);
+
+    try {
+      if (!supabase || !user || !user.driver_id) {
+        setMessage({ type: 'error', text: 'Datenbankfehler' });
+        setUploadingIdBarcode(false);
+        return;
+      }
+
+      if (driverInfo?.id_barcode_image_url) {
+        const oldPath = driverInfo.id_barcode_image_url.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('avatars')
+            .remove([`${user.id}/id_barcode_${oldPath}`]);
+        }
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `id_barcode_${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const publicUrl = publicUrlData.publicUrl;
+
+      const { error: updateError } = await supabase
+        .from('drivers')
+        .update({ id_barcode_image_url: publicUrl })
+        .eq('id', user.driver_id);
+
+      if (updateError) throw updateError;
+
+      setIdBarcodePreview(publicUrl);
+      setMessage({ type: 'success', text: 'Ausweiscode erfolgreich hochgeladen' });
+      loadDriverData();
+    } catch (error) {
+      console.error('Error uploading ID barcode:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Hochladen des Ausweiscodes' });
+    } finally {
+      setUploadingIdBarcode(false);
+    }
+  };
+
+  const handleIdBarcodeRemove = async () => {
+    if (!user?.driver_id || !driverInfo?.id_barcode_image_url) return;
+
+    setMessage(null);
+
+    try {
+      if (!supabase) {
+        setMessage({ type: 'error', text: 'Datenbankfehler' });
+        return;
+      }
+
+      const oldPath = driverInfo.id_barcode_image_url.split('/').pop();
+      if (oldPath) {
+        await supabase.storage
+          .from('avatars')
+          .remove([`${user.id}/${oldPath}`]);
+      }
+
+      const { error: updateError } = await supabase
+        .from('drivers')
+        .update({ id_barcode_image_url: null })
+        .eq('id', user.driver_id);
+
+      if (updateError) throw updateError;
+
+      setIdBarcodePreview(null);
+      setMessage({ type: 'success', text: 'Ausweiscode erfolgreich entfernt' });
+      loadDriverData();
+    } catch (error) {
+      console.error('Error removing ID barcode:', error);
+      setMessage({ type: 'error', text: 'Fehler beim Entfernen des Ausweiscodes' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 flex items-center justify-center">
@@ -589,6 +700,78 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
                         {uploadingPhoto ? 'Wird hochgeladen...' : 'PNG, JPG bis zu 5MB'}
                       </p>
                     </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" />
+                    Ausweiscode
+                  </h3>
+                  <div className="space-y-4">
+                    {idBarcodePreview ? (
+                      <div className="space-y-4">
+                        <div className="relative inline-block">
+                          <img
+                            src={idBarcodePreview}
+                            alt="ID Barcode"
+                            className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-48 object-contain"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <label className="flex-1">
+                            <span className="sr-only">Neues Bild auswählen</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleIdBarcodeUpload}
+                              disabled={uploadingIdBarcode}
+                              className="hidden"
+                              id="id-barcode-replace"
+                            />
+                            <label
+                              htmlFor="id-barcode-replace"
+                              className={`block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition cursor-pointer ${
+                                uploadingIdBarcode ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
+                            >
+                              {uploadingIdBarcode ? 'Wird hochgeladen...' : 'Bild ändern'}
+                            </label>
+                          </label>
+                          <button
+                            onClick={handleIdBarcodeRemove}
+                            disabled={uploadingIdBarcode}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            <X className="w-4 h-4" />
+                            Entfernen
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block">
+                          <span className="sr-only">Ausweiscode hochladen</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleIdBarcodeUpload}
+                            disabled={uploadingIdBarcode}
+                            className="block w-full text-sm text-gray-300
+                              file:mr-4 file:py-2 file:px-4
+                              file:rounded-lg file:border-0
+                              file:text-sm file:font-semibold
+                              file:bg-blue-600 file:text-white
+                              hover:file:bg-blue-700
+                              file:cursor-pointer file:transition
+                              disabled:opacity-50 disabled:cursor-not-allowed"
+                          />
+                        </label>
+                        <p className="mt-2 text-xs text-gray-400">
+                          {uploadingIdBarcode ? 'Wird hochgeladen...' : 'PNG, JPG bis zu 5MB'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
