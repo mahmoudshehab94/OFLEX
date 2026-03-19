@@ -1,17 +1,13 @@
 import { useState, useEffect } from 'react';
-import { User, Lock, Camera, BarChart3, Calendar, Clock, Truck, ArrowLeft, LogOut, Eye, EyeOff, TrendingUp, Bell, CreditCard, X } from 'lucide-react';
+import { User, Lock, Camera, BarChart3, Calendar, Clock, Truck, ArrowLeft, LogOut, Eye, EyeOff, TrendingUp, Bell, CreditCard, X, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, hashPassword } from '../lib/supabase';
 import { NotificationSettings } from './NotificationSettings';
+import { MonthSelector } from './MonthSelector';
+import { calculateMonthStatistics, MonthStats } from '../lib/statisticsUtils';
 
-interface DriverStats {
-  currentMonthEntries: number;
-  currentMonthHours: number;
-  currentMonthDays: number;
-  averageHoursPerDay: number;
+interface DriverStats extends MonthStats {
   mostUsedVehicle: string | null;
-  monthName: string;
-  year: number;
 }
 
 interface DriverInfo {
@@ -73,6 +69,10 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -90,26 +90,7 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
 
   useEffect(() => {
     loadDriverData();
-  }, []);
-
-  const getMonthName = (monthIndex: number): string => {
-    const months = [
-      'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-      'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
-    ];
-    return months[monthIndex];
-  };
-
-  const calculateWorkHours = (startTime: string, endTime: string, breakMinutes: number): number => {
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-
-    let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
-    if (totalMinutes < 0) totalMinutes += 24 * 60;
-
-    totalMinutes -= breakMinutes;
-    return totalMinutes / 60;
-  };
+  }, [selectedYear, selectedMonth]);
 
   const loadDriverData = async () => {
     if (!user?.driver_id) return;
@@ -128,62 +109,44 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
         setIdBarcodePreview(driver.id_barcode_image_url);
       }
 
-      const now = new Date();
-      const currentMonth = now.toISOString().slice(0, 7);
-      const monthIndex = now.getMonth();
-      const year = now.getFullYear();
+      const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+      const endDate = new Date(selectedYear, selectedMonth, 0);
+      const endDateStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
 
       const { data: entries } = await supabase
         .from('work_entries')
         .select('*')
         .eq('driver_id', user.driver_id)
-        .gte('date', `${currentMonth}-01`)
-        .lt('date', `${year}-${String(monthIndex + 2).padStart(2, '0')}-01`);
+        .gte('date', startDate)
+        .lte('date', endDateStr);
 
-      if (entries && entries.length > 0) {
-        const totalHours = entries.reduce((sum, entry) => {
-          return sum + calculateWorkHours(entry.start_time, entry.end_time, entry.break_minutes);
-        }, 0);
+      const baseStats = calculateMonthStatistics(entries || [], selectedYear, selectedMonth);
 
-        const uniqueDays = new Set(entries.map(e => e.date)).size;
-        const avgHours = uniqueDays > 0 ? totalHours / uniqueDays : 0;
+      const vehicleCounts: Record<string, number> = {};
+      (entries || []).forEach(entry => {
+        if (entry.vehicle) {
+          vehicleCounts[entry.vehicle] = (vehicleCounts[entry.vehicle] || 0) + 1;
+        }
+      });
 
-        const vehicleCounts: Record<string, number> = {};
-        entries.forEach(entry => {
-          if (entry.vehicle) {
-            vehicleCounts[entry.vehicle] = (vehicleCounts[entry.vehicle] || 0) + 1;
-          }
-        });
+      const mostUsedVehicle = Object.keys(vehicleCounts).length > 0
+        ? Object.entries(vehicleCounts).sort((a, b) => b[1] - a[1])[0][0]
+        : null;
 
-        const mostUsedVehicle = Object.keys(vehicleCounts).length > 0
-          ? Object.entries(vehicleCounts).sort((a, b) => b[1] - a[1])[0][0]
-          : null;
-
-        setStats({
-          currentMonthEntries: entries.length,
-          currentMonthHours: Math.round(totalHours * 10) / 10,
-          currentMonthDays: uniqueDays,
-          averageHoursPerDay: Math.round(avgHours * 10) / 10,
-          mostUsedVehicle,
-          monthName: getMonthName(monthIndex),
-          year
-        });
-      } else {
-        setStats({
-          currentMonthEntries: 0,
-          currentMonthHours: 0,
-          currentMonthDays: 0,
-          averageHoursPerDay: 0,
-          mostUsedVehicle: null,
-          monthName: getMonthName(monthIndex),
-          year
-        });
-      }
+      setStats({
+        ...baseStats,
+        mostUsedVehicle
+      });
     } catch (error) {
       console.error('Error loading driver data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleMonthChange = (year: number, month: number) => {
+    setSelectedYear(year);
+    setSelectedMonth(month);
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -576,23 +539,25 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
 
             {activeTab === 'stats' && stats && (
               <div className="space-y-6">
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
-                  <h2 className="text-2xl font-bold mb-1">{stats.monthName} {stats.year}</h2>
-                  <p className="text-blue-100">Aktuelle Monatsstatistik</p>
-                </div>
+                <MonthSelector
+                  selectedYear={selectedYear}
+                  selectedMonth={selectedMonth}
+                  onMonthChange={handleMonthChange}
+                  variant="driver"
+                />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white shadow-lg">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="bg-white/20 p-3 rounded-lg">
                         <Calendar className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-purple-100 text-sm font-medium">Arbeitstage</p>
-                        <p className="text-3xl font-bold">{stats.currentMonthDays}</p>
+                        <p className="text-blue-100 text-sm font-medium">Arbeitstage</p>
+                        <p className="text-3xl font-bold">{stats.arbeitstage}</p>
                       </div>
                     </div>
-                    <p className="text-purple-100 text-sm">Tage mit Einträgen</p>
+                    <p className="text-blue-100 text-sm">Tage mit Einträgen</p>
                   </div>
 
                   <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-6 text-white shadow-lg">
@@ -602,10 +567,10 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
                       </div>
                       <div>
                         <p className="text-green-100 text-sm font-medium">Gesamtstunden</p>
-                        <p className="text-3xl font-bold">{stats.currentMonthHours}h</p>
+                        <p className="text-3xl font-bold">{stats.gesamtstunden}h</p>
                       </div>
                     </div>
-                    <p className="text-green-100 text-sm">Im aktuellen Monat</p>
+                    <p className="text-green-100 text-sm">Im gewählten Monat</p>
                   </div>
 
                   <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl p-6 text-white shadow-lg">
@@ -615,23 +580,38 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
                       </div>
                       <div>
                         <p className="text-orange-100 text-sm font-medium">Durchschnitt</p>
-                        <p className="text-3xl font-bold">{stats.averageHoursPerDay}h</p>
+                        <p className="text-3xl font-bold">{stats.durchschnitt}h</p>
                       </div>
                     </div>
                     <p className="text-orange-100 text-sm">Stunden pro Tag</p>
                   </div>
 
-                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white shadow-lg">
+                  <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-xl p-6 text-white shadow-lg">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="bg-white/20 p-3 rounded-lg">
                         <BarChart3 className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-blue-100 text-sm font-medium">Einträge</p>
-                        <p className="text-3xl font-bold">{stats.currentMonthEntries}</p>
+                        <p className="text-cyan-100 text-sm font-medium">Einträge</p>
+                        <p className="text-3xl font-bold">{stats.entries}</p>
                       </div>
                     </div>
-                    <p className="text-blue-100 text-sm">Erfasste Arbeitstage</p>
+                    <p className="text-cyan-100 text-sm">Erfasste Arbeitstage</p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-white/20 p-3 rounded-lg">
+                        <AlertCircle className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-red-100 text-sm font-medium">Fehlende Tage</p>
+                        <p className="text-3xl font-bold">{stats.fehlendeTage}</p>
+                      </div>
+                    </div>
+                    <p className="text-red-100 text-sm truncate">
+                      {stats.fehlendeTageList.length > 0 ? stats.fehlendeTageList.join(', ') : '-'}
+                    </p>
                   </div>
                 </div>
 
@@ -649,7 +629,7 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
                   </div>
                 )}
 
-                {stats.currentMonthEntries === 0 && (
+                {stats.entries === 0 && (
                   <div className="bg-gray-700/50 border border-gray-600 rounded-xl p-8 text-center">
                     <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-3" />
                     <p className="text-gray-400 text-lg">Keine Einträge für diesen Monat</p>

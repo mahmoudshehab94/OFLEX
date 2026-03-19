@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Trash2, TrendingUp, Clock, Users as UsersIcon, Search } from 'lucide-react';
+import { Calendar, Trash2, TrendingUp, Clock, Users as UsersIcon, Search, AlertCircle, BarChart3 } from 'lucide-react';
 import { supabase, Driver, WorkEntry } from '../lib/supabase';
+import { MonthSelector } from './MonthSelector';
+import { calculateMonthStatistics, MonthStats } from '../lib/statisticsUtils';
 
 interface WorkEntryWithDriver extends WorkEntry {
   driver_name: string;
 }
 
-interface DriverStats {
-  arbeitstage: number;
-  gesamtstunden: number;
-  durchschnitt: number;
+interface DriverStats extends MonthStats {
   entries: WorkEntryWithDriver[];
 }
 
@@ -253,14 +252,20 @@ export function ReportsTab() {
         driver_name: (entry.drivers as any)?.driver_name || 'Unbekannt'
       }));
 
-      const totalHours = entriesWithDriver.reduce((sum, entry) => {
-        return sum + calculateWorkTime(entry.start_time, entry.end_time);
-      }, 0);
+      const baseStats = calculateMonthStatistics(
+        entriesWithDriver.map(e => ({
+          date: e.date,
+          start_time: e.start_time,
+          end_time: e.end_time,
+          break_minutes: e.break_minutes,
+          vehicle: e.vehicle
+        })),
+        selectedYear,
+        selectedMonth
+      );
 
       const stats: DriverStats = {
-        arbeitstage: entriesWithDriver.length,
-        gesamtstunden: totalHours,
-        durchschnitt: entriesWithDriver.length > 0 ? totalHours / entriesWithDriver.length : 0,
+        ...baseStats,
         entries: entriesWithDriver
       };
 
@@ -319,14 +324,20 @@ export function ReportsTab() {
           driver_name: (entry.drivers as any)?.driver_name || 'Unbekannt'
         }));
 
-        const totalHours = entriesWithDriver.reduce((sum, entry) => {
-          return sum + calculateWorkTime(entry.start_time, entry.end_time);
-        }, 0);
+        const baseStats = calculateMonthStatistics(
+          entriesWithDriver.map(e => ({
+            date: e.date,
+            start_time: e.start_time,
+            end_time: e.end_time,
+            break_minutes: e.break_minutes,
+            vehicle: e.vehicle
+          })),
+          compareYear,
+          compareMonth
+        );
 
         return {
-          arbeitstage: entriesWithDriver.length,
-          gesamtstunden: totalHours,
-          durchschnitt: entriesWithDriver.length > 0 ? totalHours / entriesWithDriver.length : 0,
+          ...baseStats,
           entries: entriesWithDriver
         };
       };
@@ -574,22 +585,61 @@ export function ReportsTab() {
               <p className="text-gray-500 text-center py-12">Lädt Statistiken...</p>
             ) : driverStats ? (
               <>
+                <div className="mb-6">
+                  <MonthSelector
+                    selectedYear={selectedYear}
+                    selectedMonth={selectedMonth}
+                    onMonthChange={(year, month) => {
+                      setSelectedYear(year);
+                      setSelectedMonth(month);
+                      setPeriodType('month');
+                    }}
+                    variant="admin"
+                  />
+                </div>
+
                 {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-600 font-medium mb-1">Arbeitstage</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="w-5 h-5 text-blue-600" />
+                      <p className="text-sm text-blue-600 font-medium">Arbeitstage</p>
+                    </div>
                     <p className="text-3xl font-bold text-blue-900">{driverStats.arbeitstage}</p>
                   </div>
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <p className="text-sm text-green-600 font-medium mb-1">Gesamtstunden</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="w-5 h-5 text-green-600" />
+                      <p className="text-sm text-green-600 font-medium">Gesamtstunden</p>
+                    </div>
                     <p className="text-3xl font-bold text-green-900">
                       {formatHours(driverStats.gesamtstunden)}
                     </p>
                   </div>
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                    <p className="text-sm text-orange-600 font-medium mb-1">Durchschnitt pro Tag</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="w-5 h-5 text-orange-600" />
+                      <p className="text-sm text-orange-600 font-medium">Durchschnitt</p>
+                    </div>
                     <p className="text-3xl font-bold text-orange-900">
                       {formatHours(driverStats.durchschnitt)}
+                    </p>
+                  </div>
+                  <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BarChart3 className="w-5 h-5 text-cyan-600" />
+                      <p className="text-sm text-cyan-600 font-medium">Einträge</p>
+                    </div>
+                    <p className="text-3xl font-bold text-cyan-900">{driverStats.entries.length}</p>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                      <p className="text-sm text-red-600 font-medium">Fehlende Tage</p>
+                    </div>
+                    <p className="text-3xl font-bold text-red-900">{driverStats.fehlendeTage}</p>
+                    <p className="text-xs text-red-600 mt-1 truncate">
+                      {driverStats.fehlendeTageList.length > 0 ? driverStats.fehlendeTageList.join(', ') : '-'}
                     </p>
                   </div>
                 </div>
@@ -741,6 +791,17 @@ export function ReportsTab() {
                     {formatHours(statsA.durchschnitt)}
                   </p>
                 </div>
+                <div className="bg-cyan-50 border border-cyan-200 rounded p-3">
+                  <p className="text-sm text-cyan-600 font-medium">Einträge</p>
+                  <p className="text-2xl font-bold text-cyan-900">{statsA.entries.length}</p>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded p-3">
+                  <p className="text-sm text-red-600 font-medium">Fehlende Tage</p>
+                  <p className="text-2xl font-bold text-red-900">{statsA.fehlendeTage}</p>
+                  <p className="text-xs text-red-600 mt-1 break-words">
+                    {statsA.fehlendeTageList.length > 0 ? statsA.fehlendeTageList.join(', ') : '-'}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -764,6 +825,17 @@ export function ReportsTab() {
                   <p className="text-sm text-orange-600 font-medium">Durchschnitt pro Tag</p>
                   <p className="text-2xl font-bold text-orange-900">
                     {formatHours(statsB.durchschnitt)}
+                  </p>
+                </div>
+                <div className="bg-cyan-50 border border-cyan-200 rounded p-3">
+                  <p className="text-sm text-cyan-600 font-medium">Einträge</p>
+                  <p className="text-2xl font-bold text-cyan-900">{statsB.entries.length}</p>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded p-3">
+                  <p className="text-sm text-red-600 font-medium">Fehlende Tage</p>
+                  <p className="text-2xl font-bold text-red-900">{statsB.fehlendeTage}</p>
+                  <p className="text-xs text-red-600 mt-1 break-words">
+                    {statsB.fehlendeTageList.length > 0 ? statsB.fehlendeTageList.join(', ') : '-'}
                   </p>
                 </div>
               </div>
