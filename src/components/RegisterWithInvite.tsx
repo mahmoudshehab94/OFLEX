@@ -1,15 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, uploadAvatar, AccountInvite } from '../lib/supabase';
-import { UserPlus, Lock, Mail, User, Loader2, Upload, X, AlertCircle, Eye, EyeOff } from 'lucide-react';
-
-const COMPANY_DOMAIN = '@malek.com';
+import { UserPlus, Lock, Loader2, Upload, X, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export function RegisterWithInvite() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inviteToken, setInviteToken] = useState('');
   const [inviteData, setInviteData] = useState<AccountInvite | null>(null);
-  const [emailLocalPart, setEmailLocalPart] = useState('');
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -17,7 +13,6 @@ export function RegisterWithInvite() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [error, setError] = useState('');
-  const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
   const [validatingInvite, setValidatingInvite] = useState(true);
   const [inviteValid, setInviteValid] = useState(false);
@@ -46,12 +41,11 @@ export function RegisterWithInvite() {
     setError('');
 
     try {
-      // Fetch invitation from database
+      // Fetch invitation from database (public read access enabled)
       const { data: invite, error: inviteError } = await supabase
         .from('account_invites')
         .select('*')
         .eq('token', token)
-        .eq('status', 'pending')
         .maybeSingle();
 
       if (inviteError) {
@@ -69,32 +63,39 @@ export function RegisterWithInvite() {
         return;
       }
 
-      // Check if invitation has expired (30 days)
-      const inviteCreatedAt = new Date(invite.created_at);
-      const now = new Date();
-      const daysDiff = (now.getTime() - inviteCreatedAt.getTime()) / (1000 * 60 * 60 * 24);
-
-      if (daysDiff > 30) {
+      // Check if already used
+      if (invite.status === 'used' || invite.is_used) {
         setInviteValid(false);
-        setError('Diese Einladung ist abgelaufen. Bitte kontaktieren Sie Ihren Administrator für eine neue Einladung.');
+        setError('Diese Einladung wurde bereits verwendet.');
         setValidatingInvite(false);
         return;
+      }
+
+      // Check expiration (30 days from creation OR expires_at field)
+      if (invite.expires_at) {
+        const expiresAt = new Date(invite.expires_at);
+        if (expiresAt < new Date()) {
+          setInviteValid(false);
+          setError('Diese Einladung ist abgelaufen. Bitte kontaktieren Sie Ihren Administrator für eine neue Einladung.');
+          setValidatingInvite(false);
+          return;
+        }
+      } else {
+        const inviteCreatedAt = new Date(invite.created_at);
+        const now = new Date();
+        const daysDiff = (now.getTime() - inviteCreatedAt.getTime()) / (1000 * 60 * 60 * 24);
+
+        if (daysDiff > 30) {
+          setInviteValid(false);
+          setError('Diese Einladung ist abgelaufen. Bitte kontaktieren Sie Ihren Administrator für eine neue Einladung.');
+          setValidatingInvite(false);
+          return;
+        }
       }
 
       // Invitation is valid
       setInviteValid(true);
       setInviteData(invite);
-
-      // Pre-fill username from invite if available
-      if (invite.username) {
-        setUsername(invite.username);
-      }
-
-      // Pre-fill email local part from invite if available
-      if (invite.email_local_part) {
-        setEmailLocalPart(invite.email_local_part);
-      }
-
       setValidatingInvite(false);
     } catch (error) {
       console.error('Unexpected validation error:', error);
@@ -102,29 +103,6 @@ export function RegisterWithInvite() {
       setError('Ein unerwarteter Fehler ist aufgetreten');
       setValidatingInvite(false);
     }
-  };
-
-  const validateEmailLocalPart = (value: string): boolean => {
-    // Check if user tried to enter full email with @
-    if (value.includes('@')) {
-      setEmailError('Bitte geben Sie nur den Teil vor @malek.com ein. Geben Sie keine vollständige E-Mail-Adresse ein.');
-      return false;
-    }
-
-    // Basic validation for local part
-    if (value && !/^[a-zA-Z0-9._-]+$/.test(value)) {
-      setEmailError('Nur Buchstaben, Zahlen, Punkte, Unterstriche und Bindestriche sind erlaubt.');
-      return false;
-    }
-
-    setEmailError('');
-    return true;
-  };
-
-  const handleEmailLocalPartChange = (value: string) => {
-    setEmailLocalPart(value);
-    validateEmailLocalPart(value);
-    setError('');
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,20 +139,9 @@ export function RegisterWithInvite() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setEmailError('');
 
     if (!inviteValid || !inviteData) {
       setError('Ungültiger Einladungstoken. Bitte verwenden Sie den korrekten Einladungslink.');
-      return;
-    }
-
-    // Validate email local part
-    if (!validateEmailLocalPart(emailLocalPart)) {
-      return;
-    }
-
-    if (!emailLocalPart.trim()) {
-      setEmailError('Bitte geben Sie den E-Mail-Teil vor @malek.com ein.');
       return;
     }
 
@@ -185,11 +152,6 @@ export function RegisterWithInvite() {
 
     if (password.length < 6) {
       setError('Passwort muss mindestens 6 Zeichen lang sein.');
-      return;
-    }
-
-    if (!username.trim()) {
-      setError('Benutzername ist erforderlich.');
       return;
     }
 
@@ -209,6 +171,10 @@ export function RegisterWithInvite() {
           console.warn('Avatar upload failed, continuing without avatar');
         }
       }
+
+      // Use preset values from invitation
+      const username = inviteData.username || inviteData.new_driver_name || '';
+      const emailLocalPart = inviteData.email_local_part || username.toLowerCase();
 
       // Call the Edge Function to handle registration
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -281,7 +247,7 @@ export function RegisterWithInvite() {
     );
   }
 
-  const isUsernameReadOnly = !!inviteData?.username;
+  const username = inviteData?.username || inviteData?.new_driver_name || '';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 px-4 py-8">
@@ -294,8 +260,8 @@ export function RegisterWithInvite() {
             Konto erstellen
           </h2>
           <p className="text-slate-600 dark:text-slate-400">
-            {inviteData?.role === 'driver' && inviteData?.new_driver_name ? (
-              <>Willkommen, <span className="font-medium">{inviteData.new_driver_name}</span></>
+            {username ? (
+              <>Willkommen, <span className="font-medium">{username}</span></>
             ) : (
               'Vervollständigen Sie Ihre Registrierung'
             )}
@@ -310,62 +276,20 @@ export function RegisterWithInvite() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email Local Part */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              E-Mail *
-            </label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="text"
-                  value={emailLocalPart}
-                  onChange={(e) => handleEmailLocalPartChange(e.target.value)}
-                  placeholder="vorname.nachname"
-                  className={`w-full pl-10 pr-4 py-2.5 border ${
-                    emailError
-                      ? 'border-red-300 dark:border-red-700 focus:ring-red-500'
-                      : 'border-slate-300 dark:border-slate-600 focus:ring-blue-500'
-                  } bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:border-transparent transition`}
-                  required
-                />
-              </div>
-              <span className="text-slate-600 dark:text-slate-400 font-medium">@malek.com</span>
-            </div>
-            {emailError && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{emailError}</p>
-            )}
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Geben Sie nur den Teil vor @malek.com ein
-            </p>
-          </div>
-
-          {/* Username */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Benutzername *
-            </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="benutzername"
-                className={`w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                  isUsernameReadOnly ? 'opacity-60 cursor-not-allowed' : ''
-                }`}
-                required
-                readOnly={isUsernameReadOnly}
-              />
-            </div>
-            {isUsernameReadOnly && (
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Der Benutzername wurde von Ihrem Administrator festgelegt
+          {/* Username Display (read-only) */}
+          {username && (
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm text-blue-900 dark:text-blue-100 mb-1 font-medium">
+                Ihr Benutzername
               </p>
-            )}
-          </div>
+              <p className="text-lg text-blue-900 dark:text-blue-100 font-bold">
+                {username}
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                E-Mail: {(inviteData?.email_local_part || username).toLowerCase()}@malek.com
+              </p>
+            </div>
+          )}
 
           {/* Password */}
           <div>

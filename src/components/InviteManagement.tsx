@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase, generateInviteToken, AccountInvite } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getPermissions } from '../lib/permissions';
-import { UserPlus, Copy, Check, Clock, XCircle, X, Share2, User, AlertCircle } from 'lucide-react';
+import { UserPlus, Copy, Check, Clock, XCircle, X, Share2, AlertCircle, Trash2 } from 'lucide-react';
 
 export function InviteManagement() {
   const { user } = useAuth();
@@ -13,15 +13,13 @@ export function InviteManagement() {
   const [invites, setInvites] = useState<AccountInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedInviteUrl, setGeneratedInviteUrl] = useState('');
 
   const [selectedRole, setSelectedRole] = useState<'driver' | 'supervisor' | 'admin'>('driver');
-
-  const [driverDisplayName, setDriverDisplayName] = useState('');
-  const [presetUsername, setPresetUsername] = useState('');
-  const [presetEmailLocal, setPresetEmailLocal] = useState('');
+  const [username, setUsername] = useState('');
 
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -57,39 +55,32 @@ export function InviteManagement() {
       return;
     }
 
-    // For driver invitations, require driver display name
-    if (selectedRole === 'driver' && !driverDisplayName.trim()) {
-      setMessage({ type: 'error', text: 'Bitte geben Sie den Anzeigenamen des Fahrers ein' });
+    if (!username.trim()) {
+      setMessage({ type: 'error', text: 'Bitte geben Sie einen Benutzernamen ein' });
       return;
     }
 
-    // Validate preset username if provided
-    if (presetUsername && !/^[a-zA-Z0-9._-]+$/.test(presetUsername)) {
+    // Validate username format
+    if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
       setMessage({ type: 'error', text: 'Benutzername kann nur Buchstaben, Zahlen, Punkte, Unterstriche und Bindestriche enthalten' });
-      return;
-    }
-
-    // Validate preset email local part if provided
-    if (presetEmailLocal && !/^[a-zA-Z0-9._-]+$/.test(presetEmailLocal)) {
-      setMessage({ type: 'error', text: 'E-Mail-Teil kann nur Buchstaben, Zahlen, Punkte, Unterstriche und Bindestriche enthalten' });
       return;
     }
 
     setGenerating(true);
     setMessage(null);
 
-    const newDriverData = selectedRole === 'driver' ? {
-      name: driverDisplayName.trim(),
+    const newDriverData = {
+      name: username.trim(),
       license_letters: '',
       license_numbers: '',
-      username: presetUsername.trim() || '',
-      email_local_part: presetEmailLocal.trim() || ''
-    } : undefined;
+      username: username.trim(),
+      email_local_part: username.trim().toLowerCase()
+    };
 
     const result = await generateInviteToken(
       selectedRole,
       user.id,
-      undefined, // driver_id not needed for new flow
+      undefined,
       newDriverData
     );
 
@@ -98,16 +89,33 @@ export function InviteManagement() {
       setGeneratedInviteUrl(inviteUrl);
       setShowShareModal(true);
       await loadInvites();
-
-      // Reset form
-      setDriverDisplayName('');
-      setPresetUsername('');
-      setPresetEmailLocal('');
+      setUsername('');
     } else {
       setMessage({ type: 'error', text: result.error || 'Fehler beim Erstellen der Einladung' });
     }
 
     setGenerating(false);
+  };
+
+  const handleDeleteInvite = async (inviteId: string) => {
+    if (!supabase) return;
+    if (!confirm('Möchten Sie diese Einladung wirklich löschen?')) return;
+
+    setDeleting(inviteId);
+
+    const { error } = await supabase
+      .from('account_invites')
+      .delete()
+      .eq('id', inviteId);
+
+    if (error) {
+      setMessage({ type: 'error', text: 'Fehler beim Löschen der Einladung' });
+    } else {
+      setMessage({ type: 'success', text: 'Einladung erfolgreich gelöscht' });
+      await loadInvites();
+    }
+
+    setDeleting(null);
   };
 
   const copyInviteLink = (url: string) => {
@@ -122,8 +130,15 @@ export function InviteManagement() {
   };
 
   const getInviteStatus = (invite: AccountInvite) => {
-    if (invite.status === 'used') {
+    if (invite.status === 'used' || invite.is_used) {
       return { status: 'Verwendet', color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' };
+    }
+
+    if (invite.expires_at) {
+      const expiresAt = new Date(invite.expires_at);
+      if (expiresAt < new Date()) {
+        return { status: 'Abgelaufen', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20' };
+      }
     }
 
     const createdAt = new Date(invite.created_at);
@@ -237,12 +252,7 @@ export function InviteManagement() {
             </label>
             <select
               value={selectedRole}
-              onChange={(e) => {
-                setSelectedRole(e.target.value as 'driver' | 'supervisor' | 'admin');
-                setDriverDisplayName('');
-                setPresetUsername('');
-                setPresetEmailLocal('');
-              }}
+              onChange={(e) => setSelectedRole(e.target.value as 'driver' | 'supervisor' | 'admin')}
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="driver">Fahrer</option>
@@ -255,77 +265,26 @@ export function InviteManagement() {
             </select>
           </div>
 
-          {selectedRole === 'driver' && (
-            <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <div className="flex items-start gap-2 mb-3">
-                <User className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                    Neuer Fahrer
-                  </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                    Geben Sie die Informationen für den neuen Fahrer ein
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Fahrername / Anzeigename *
-                </label>
-                <input
-                  type="text"
-                  value={driverDisplayName}
-                  onChange={(e) => setDriverDisplayName(e.target.value)}
-                  placeholder="z.B. Osman Ali"
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  required
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Dieser Name wird später in der Admin-Ansicht angezeigt
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Benutzername (optional, vorausgefüllt)
-                </label>
-                <input
-                  type="text"
-                  value={presetUsername}
-                  onChange={(e) => setPresetUsername(e.target.value)}
-                  placeholder="z.B. osama.ali"
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Falls angegeben, wird es bei der Registrierung vorausgefüllt und schreibgeschützt
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  E-Mail-Teil (optional, vorausgefüllt)
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={presetEmailLocal}
-                    onChange={(e) => setPresetEmailLocal(e.target.value)}
-                    placeholder="z.B. osama.ali"
-                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <span className="text-sm text-slate-600 dark:text-slate-400">@malek.com</span>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Falls angegeben, wird der E-Mail-Teil bei der Registrierung vorausgefüllt
-                </p>
-              </div>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Benutzername *
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="z.B. osama.ali"
+              className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-base"
+              required
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Dies wird als Anzeigename und Benutzername verwendet
+            </p>
+          </div>
 
           <button
             onClick={handleGenerateInvite}
-            disabled={generating || (selectedRole === 'driver' && !driverDisplayName.trim())}
+            disabled={generating || !username.trim()}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition font-medium"
           >
             {generating ? (
@@ -362,10 +321,10 @@ export function InviteManagement() {
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700">
                   <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Rolle</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Name</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Benutzername</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Erstellt am</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Status</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Link</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-slate-600 dark:text-slate-400">Aktionen</th>
                 </tr>
               </thead>
               <tbody>
@@ -380,7 +339,7 @@ export function InviteManagement() {
                           {invite.role === 'driver' ? 'Fahrer' : invite.role === 'supervisor' ? 'Supervisor' : 'Admin'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-slate-900 dark:text-white">
+                      <td className="py-3 px-4 text-sm text-slate-900 dark:text-white font-medium">
                         {invite.new_driver_name || invite.username || '-'}
                       </td>
                       <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400">
@@ -395,24 +354,40 @@ export function InviteManagement() {
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        {status.status === 'Aktiv' && (
+                        <div className="flex items-center gap-2">
+                          {status.status === 'Aktiv' && (
+                            <button
+                              onClick={() => copyInviteLink(inviteUrl)}
+                              className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
+                            >
+                              {copiedToken === inviteUrl ? (
+                                <>
+                                  <Check className="w-4 h-4" />
+                                  Kopiert
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-4 h-4" />
+                                  Link
+                                </>
+                              )}
+                            </button>
+                          )}
                           <button
-                            onClick={() => copyInviteLink(inviteUrl)}
-                            className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                            onClick={() => handleDeleteInvite(invite.id)}
+                            disabled={deleting === invite.id}
+                            className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition disabled:opacity-50"
                           >
-                            {copiedToken === inviteUrl ? (
-                              <>
-                                <Check className="w-4 h-4" />
-                                Kopiert
-                              </>
+                            {deleting === invite.id ? (
+                              <div className="w-4 h-4 border-2 border-red-600/20 border-t-red-600 rounded-full animate-spin" />
                             ) : (
                               <>
-                                <Copy className="w-4 h-4" />
-                                Link
+                                <Trash2 className="w-4 h-4" />
+                                Löschen
                               </>
                             )}
                           </button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   );
