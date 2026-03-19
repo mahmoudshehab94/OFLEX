@@ -5,7 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface Vehicle {
   id: string;
-  vehicle_name: string;
+  plate_letters: string;
+  plate_number: string;
   vehicle_code_image_url: string | null;
   cooling_code_image_url: string | null;
   standard_code_image_url: string | null;
@@ -53,7 +54,8 @@ export function ScanPage({ onBack }: ScanPageProps) {
       const { data: vehiclesData } = await supabase
         .from('vehicles')
         .select('*')
-        .order('vehicle_name');
+        .order('plate_letters', { ascending: true })
+        .order('plate_number', { ascending: true });
 
       if (vehiclesData) {
         setVehicles(vehiclesData);
@@ -90,41 +92,41 @@ export function ScanPage({ onBack }: ScanPageProps) {
             <h1 className="text-2xl font-bold text-white">Scan</h1>
           </div>
 
-          <div className="p-6 space-y-6">
-            <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-              <h3 className="text-lg font-semibold text-white mb-4">Ausweiscode</h3>
+          <div className="p-4 space-y-3">
+            <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+              <h3 className="text-base font-semibold text-white mb-3">Ausweiscode</h3>
               {driverIdBarcodeUrl ? (
                 <div className="flex justify-center">
                   <img
                     src={driverIdBarcodeUrl}
                     alt="Driver ID Barcode"
-                    className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-64 object-contain"
+                    className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-32 object-contain"
                   />
                 </div>
               ) : (
-                <div className="bg-gray-600/50 rounded-lg p-8 text-center">
-                  <p className="text-gray-300">Kein Ausweiscode vorhanden.</p>
-                  <p className="text-gray-400 text-sm mt-2">
+                <div className="bg-gray-600/50 rounded-lg p-4 text-center">
+                  <p className="text-gray-300 text-sm">Kein Ausweiscode vorhanden.</p>
+                  <p className="text-gray-400 text-xs mt-1">
                     Bitte laden Sie Ihren Ausweiscode in den Einstellungen hoch.
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-              <label htmlFor="vehicle" className="block text-sm font-medium text-gray-300 mb-3">
+            <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+              <label htmlFor="vehicle" className="block text-sm font-medium text-gray-300 mb-2">
                 Fahrzeug auswählen
               </label>
               <select
                 id="vehicle"
                 value={selectedVehicleId}
                 onChange={(e) => setSelectedVehicleId(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-600 border border-gray-500 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                className="w-full px-4 py-2.5 bg-gray-600 border border-gray-500 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               >
                 <option value="">-- Bitte wählen --</option>
                 {vehicles.map((vehicle) => (
                   <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.vehicle_name}
+                    {vehicle.plate_letters} {vehicle.plate_number}
                   </option>
                 ))}
               </select>
@@ -133,79 +135,73 @@ export function ScanPage({ onBack }: ScanPageProps) {
             {selectedVehicle && (
               <>
                 {selectedVehicle.vehicle_code_image_url ? (
-                  <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Car className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-lg font-semibold text-white">Fahrzeugcode</h3>
+                  <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Car className="w-4 h-4 text-blue-400" />
                     </div>
                     <div className="flex justify-center">
                       <img
                         src={selectedVehicle.vehicle_code_image_url}
                         alt="Vehicle Code"
-                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-64 object-contain"
+                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-28 object-contain"
                       />
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Car className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-lg font-semibold text-white">Fahrzeugcode</h3>
+                  <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Car className="w-4 h-4 text-blue-400" />
                     </div>
-                    <div className="bg-gray-600/50 rounded-lg p-6 text-center">
-                      <p className="text-gray-300 text-sm">Für dieses Fahrzeug fehlt das Code-Bild.</p>
+                    <div className="bg-gray-600/50 rounded-lg p-4 text-center">
+                      <p className="text-gray-300 text-xs">Für dieses Fahrzeug fehlt das Code-Bild.</p>
                     </div>
                   </div>
                 )}
 
                 {selectedVehicle.cooling_code_image_url ? (
-                  <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Snowflake className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-lg font-semibold text-white">Kühlcode</h3>
+                  <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Snowflake className="w-4 h-4 text-blue-400" />
                     </div>
                     <div className="flex justify-center">
                       <img
                         src={selectedVehicle.cooling_code_image_url}
                         alt="Cooling Code"
-                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-64 object-contain"
+                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-28 object-contain"
                       />
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Snowflake className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-lg font-semibold text-white">Kühlcode</h3>
+                  <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Snowflake className="w-4 h-4 text-blue-400" />
                     </div>
-                    <div className="bg-gray-600/50 rounded-lg p-6 text-center">
-                      <p className="text-gray-300 text-sm">Für dieses Fahrzeug fehlt das Code-Bild.</p>
+                    <div className="bg-gray-600/50 rounded-lg p-4 text-center">
+                      <p className="text-gray-300 text-xs">Für dieses Fahrzeug fehlt das Code-Bild.</p>
                     </div>
                   </div>
                 )}
 
                 {selectedVehicle.standard_code_image_url ? (
-                  <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Snowflake className="w-5 h-5 text-orange-400" />
-                      <h3 className="text-lg font-semibold text-white">Standardcode</h3>
+                  <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Snowflake className="w-4 h-4 text-orange-400" />
                     </div>
                     <div className="flex justify-center">
                       <img
                         src={selectedVehicle.standard_code_image_url}
                         alt="Standard Code"
-                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-64 object-contain"
+                        className="max-w-full h-auto rounded-lg border-2 border-gray-600 max-h-28 object-contain"
                       />
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-gray-700 rounded-lg p-6 border border-gray-600">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Snowflake className="w-5 h-5 text-orange-400" />
-                      <h3 className="text-lg font-semibold text-white">Standardcode</h3>
+                  <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Snowflake className="w-4 h-4 text-orange-400" />
                     </div>
-                    <div className="bg-gray-600/50 rounded-lg p-6 text-center">
-                      <p className="text-gray-300 text-sm">Für dieses Fahrzeug fehlt das Code-Bild.</p>
+                    <div className="bg-gray-600/50 rounded-lg p-4 text-center">
+                      <p className="text-gray-300 text-xs">Für dieses Fahrzeug fehlt das Code-Bild.</p>
                     </div>
                   </div>
                 )}
