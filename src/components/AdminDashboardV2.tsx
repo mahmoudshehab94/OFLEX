@@ -354,7 +354,39 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     return `${h}h ${m}m`;
   };
 
-  const calculateSummary = (entries: WorkEntry[], year: number, month: number): ReportSummary => {
+  const calculateMissingDaysInRange = (entries: WorkEntry[], fromDate: string, toDate: string): { count: number; days: number[] } => {
+    const submittedDates = new Set(entries.map(e => e.date));
+    const missingDays: number[] = [];
+
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Don't check future dates
+    const lastDateToCheck = end > today ? today : end;
+
+    let current = new Date(start);
+    while (current <= lastDateToCheck) {
+      const dayOfWeek = current.getDay();
+      // Skip weekends (0 = Sunday, 6 = Saturday)
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        const dateStr = current.toISOString().split('T')[0];
+        if (!submittedDates.has(dateStr)) {
+          missingDays.push(current.getDate());
+        }
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    return { count: missingDays.length, days: missingDays };
+  };
+
+  const calculateSummary = (entries: WorkEntry[], year: number, month: number, fromDate?: string, toDate?: string): ReportSummary => {
+    console.log(`[calculateSummary] Called with ${entries.length} entries, year: ${year}, month: ${month}`);
+    console.log(`[calculateSummary] Date range: ${fromDate} to ${toDate}`);
+    console.log(`[calculateSummary] Entry dates:`, entries.map(e => e.date).sort());
+
     const workEntryData: WorkEntryData[] = entries.map(e => ({
       date: e.date,
       start_time: e.start_time,
@@ -363,7 +395,28 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       vehicle: e.vehicle
     }));
 
-    const stats = calculateMonthStatistics(workEntryData, year, month);
+    let fehlendeTage: number;
+    let fehlendeTageList: number[];
+
+    // If fromDate and toDate are provided, calculate missing days for that range
+    if (fromDate && toDate) {
+      const missing = calculateMissingDaysInRange(entries, fromDate, toDate);
+      fehlendeTage = missing.count;
+      fehlendeTageList = missing.days;
+      console.log(`[calculateSummary] Using date range calculation`);
+    } else {
+      // Otherwise use month-based calculation
+      const stats = calculateMonthStatistics(workEntryData, year, month);
+      fehlendeTage = stats.fehlendeTage;
+      fehlendeTageList = stats.fehlendeTageList;
+      console.log(`[calculateSummary] Using month calculation`);
+    }
+
+    console.log(`[calculateSummary] Result:`, {
+      fehlendeTage,
+      fehlendeTageList,
+      arbeitstage: workEntryData.length > 0 ? new Set(workEntryData.map(e => e.date)).size : 0
+    });
 
     const totalHours = entries.reduce((sum, e) => sum + calculateDuration(e.start_time, e.end_time), 0);
     const overtimeHours = entries.reduce((sum, e) => {
@@ -371,14 +424,16 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
       return sum + Math.max(0, daily - STANDARD_HOURS);
     }, 0);
 
+    const arbeitstage = entries.length > 0 ? new Set(entries.map(e => e.date)).size : 0;
+
     return {
-      arbeitstage: stats.arbeitstage,
+      arbeitstage,
       gesamtarbeitszeit: formatHours(totalHours),
       uberstunden: formatHours(overtimeHours),
       totalHours,
       overtimeHours,
-      fehlendeTage: stats.fehlendeTage,
-      fehlendeTageList: stats.fehlendeTageList
+      fehlendeTage,
+      fehlendeTageList
     };
   };
 
@@ -819,7 +874,8 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         console.log(`[COMPARISON] Driver 1 calculating for year: ${fromDate.getFullYear()}, month: ${fromDate.getMonth() + 1}`);
 
         // Calculate summary with isolated data for driver 1
-        const driver1Summary = calculateSummary(entries, fromDate.getFullYear(), fromDate.getMonth() + 1);
+        // Pass date range for accurate missing days calculation
+        const driver1Summary = calculateSummary(entries, fromDate.getFullYear(), fromDate.getMonth() + 1, from, to);
 
         console.log(`[COMPARISON] Driver 1 fehlendeTage: ${driver1Summary.fehlendeTage}`);
         console.log(`[COMPARISON] Driver 1 fehlendeTageList: ${driver1Summary.fehlendeTageList.join(', ')}`);
@@ -850,7 +906,8 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         console.log(`[COMPARISON] Driver 2 calculating for year: ${fromDate.getFullYear()}, month: ${fromDate.getMonth() + 1}`);
 
         // Calculate summary with isolated data for driver 2
-        const driver2Summary = calculateSummary(entries, fromDate.getFullYear(), fromDate.getMonth() + 1);
+        // Pass date range for accurate missing days calculation
+        const driver2Summary = calculateSummary(entries, fromDate.getFullYear(), fromDate.getMonth() + 1, from, to);
 
         console.log(`[COMPARISON] Driver 2 fehlendeTage: ${driver2Summary.fehlendeTage}`);
         console.log(`[COMPARISON] Driver 2 fehlendeTageList: ${driver2Summary.fehlendeTageList.join(', ')}`);
