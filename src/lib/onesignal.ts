@@ -80,6 +80,8 @@ export class OneSignalService {
                 enable: false,
               },
               allowLocalhostAsSecureOrigin: true,
+              serviceWorkerParam: { scope: '/' },
+              serviceWorkerPath: '/OneSignalSDKWorker.js',
             });
             console.log('✅ OneSignal initialized successfully');
             resolve();
