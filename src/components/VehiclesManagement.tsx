@@ -6,9 +6,9 @@ interface Vehicle {
   id: string;
   plate_letters: string;
   plate_number: string;
-  vehicle_code_image_url: string;
-  cooling_code_image_url: string;
-  standard_code_image_url: string;
+  vehicle_code_image_url: string | null;
+  cooling_code_image_url: string | null;
+  standard_code_image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -151,22 +151,6 @@ export default function VehiclesManagement() {
       return;
     }
 
-    if (editingVehicle) {
-      const hasNewImages = barcodeImages.vehicle_code || barcodeImages.cooling_code || barcodeImages.standard_code;
-      const hasExistingImages = editingVehicle.vehicle_code_image_url &&
-                                editingVehicle.cooling_code_image_url &&
-                                editingVehicle.standard_code_image_url;
-
-      if (!hasNewImages && !hasExistingImages) {
-        showMessage('error', 'Bitte alle 3 Barcode-Bilder hochladen');
-        return;
-      }
-    } else {
-      if (!barcodeImages.vehicle_code || !barcodeImages.cooling_code || !barcodeImages.standard_code) {
-        showMessage('error', 'Bitte alle 3 Barcode-Bilder hochladen');
-        return;
-      }
-    }
 
     try {
       setUploading(true);
@@ -207,9 +191,19 @@ export default function VehiclesManagement() {
       } else {
         const tempId = crypto.randomUUID();
 
-        const vehicleCodeUrl = await uploadImage(barcodeImages.vehicle_code!, tempId, 'vehicle_code');
-        const coolingCodeUrl = await uploadImage(barcodeImages.cooling_code!, tempId, 'cooling_code');
-        const standardCodeUrl = await uploadImage(barcodeImages.standard_code!, tempId, 'standard_code');
+        let vehicleCodeUrl = null;
+        let coolingCodeUrl = null;
+        let standardCodeUrl = null;
+
+        if (barcodeImages.vehicle_code) {
+          vehicleCodeUrl = await uploadImage(barcodeImages.vehicle_code, tempId, 'vehicle_code');
+        }
+        if (barcodeImages.cooling_code) {
+          coolingCodeUrl = await uploadImage(barcodeImages.cooling_code, tempId, 'cooling_code');
+        }
+        if (barcodeImages.standard_code) {
+          standardCodeUrl = await uploadImage(barcodeImages.standard_code, tempId, 'standard_code');
+        }
 
         const { error } = await supabase
           .from('vehicles')
@@ -259,9 +253,9 @@ export default function VehiclesManagement() {
       const vehicle = vehicles.find(v => v.id === vehicleId);
       if (!vehicle) return;
 
-      await deleteImage(vehicle.vehicle_code_image_url);
-      await deleteImage(vehicle.cooling_code_image_url);
-      await deleteImage(vehicle.standard_code_image_url);
+      if (vehicle.vehicle_code_image_url) await deleteImage(vehicle.vehicle_code_image_url);
+      if (vehicle.cooling_code_image_url) await deleteImage(vehicle.cooling_code_image_url);
+      if (vehicle.standard_code_image_url) await deleteImage(vehicle.standard_code_image_url);
 
       const { error } = await supabase
         .from('vehicles')
@@ -276,6 +270,35 @@ export default function VehiclesManagement() {
       showMessage('error', 'Fehler beim Löschen: ' + error.message);
     } finally {
       setShowDeleteConfirm(null);
+    }
+  };
+
+  const deleteIndividualCode = async (vehicleId: string, type: 'vehicle_code' | 'cooling_code' | 'standard_code') => {
+    try {
+      const vehicle = vehicles.find(v => v.id === vehicleId);
+      if (!vehicle) return;
+
+      const imageUrlKey = `${type}_image_url` as keyof Vehicle;
+      const imageUrl = vehicle[imageUrlKey] as string | null;
+
+      if (imageUrl) {
+        await deleteImage(imageUrl);
+      }
+
+      const updateData: any = {};
+      updateData[imageUrlKey] = null;
+
+      const { error } = await supabase
+        .from('vehicles')
+        .update(updateData)
+        .eq('id', vehicleId);
+
+      if (error) throw error;
+
+      showMessage('success', 'Code erfolgreich gelöscht');
+      loadVehicles();
+    } catch (error: any) {
+      showMessage('error', 'Fehler beim Löschen: ' + error.message);
     }
   };
 
@@ -533,42 +556,75 @@ export default function VehiclesManagement() {
               </div>
 
               <div className="space-y-3 mb-4">
-                <div className="space-y-2">
-                  <div className="text-xs text-slate-400 font-medium">Fahrzeugcode</div>
-                  <div className="bg-white rounded p-2">
-                    <img
-                      src={vehicle.vehicle_code_image_url}
-                      alt="Fahrzeugcode"
-                      className="w-full h-20 object-contain"
-                    />
+                {vehicle.vehicle_code_image_url && (
+                  <div className="space-y-2 relative group">
+                    <div className="text-xs text-slate-400 font-medium">Fahrzeugcode</div>
+                    <div className="bg-white rounded p-2 relative">
+                      <img
+                        src={vehicle.vehicle_code_image_url}
+                        alt="Fahrzeugcode"
+                        className="w-full h-20 object-contain"
+                      />
+                      <button
+                        onClick={() => deleteIndividualCode(vehicle.id, 'vehicle_code')}
+                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Code löschen"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-center">
-                    <Snowflake className="w-5 h-5 text-blue-400" />
+                {vehicle.cooling_code_image_url && (
+                  <div className="space-y-2 relative group">
+                    <div className="flex items-center justify-center">
+                      <Snowflake className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div className="bg-white rounded p-2 relative">
+                      <img
+                        src={vehicle.cooling_code_image_url}
+                        alt="Cooling Code"
+                        className="w-full h-20 object-contain"
+                      />
+                      <button
+                        onClick={() => deleteIndividualCode(vehicle.id, 'cooling_code')}
+                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Code löschen"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white rounded p-2">
-                    <img
-                      src={vehicle.cooling_code_image_url}
-                      alt="Cooling Code"
-                      className="w-full h-20 object-contain"
-                    />
-                  </div>
-                </div>
+                )}
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-center">
-                    <Snowflake className="w-5 h-5 text-orange-400" />
+                {vehicle.standard_code_image_url && (
+                  <div className="space-y-2 relative group">
+                    <div className="flex items-center justify-center">
+                      <Snowflake className="w-5 h-5 text-orange-400" />
+                    </div>
+                    <div className="bg-white rounded p-2 relative">
+                      <img
+                        src={vehicle.standard_code_image_url}
+                        alt="Standard Code"
+                        className="w-full h-20 object-contain"
+                      />
+                      <button
+                        onClick={() => deleteIndividualCode(vehicle.id, 'standard_code')}
+                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Code löschen"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white rounded p-2">
-                    <img
-                      src={vehicle.standard_code_image_url}
-                      alt="Standard Code"
-                      className="w-full h-20 object-contain"
-                    />
+                )}
+
+                {!vehicle.vehicle_code_image_url && !vehicle.cooling_code_image_url && !vehicle.standard_code_image_url && (
+                  <div className="text-center py-4 text-slate-400 text-sm">
+                    Keine Codes vorhanden
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="flex gap-2">
