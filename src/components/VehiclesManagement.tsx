@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Car, Plus, Pencil, Trash2, Search, X, Upload, Image as ImageIcon, Snowflake, AlertCircle, Loader2 } from 'lucide-react';
+import { BarcodeModal } from './BarcodeModal';
 
 interface Vehicle {
   id: string;
@@ -54,6 +55,16 @@ export default function VehiclesManagement() {
   });
 
   const [uploading, setUploading] = useState(false);
+
+  const [barcodeModal, setBarcodeModal] = useState<{
+    isOpen: boolean;
+    imageUrl: string;
+    label: string;
+  }>({
+    isOpen: false,
+    imageUrl: '',
+    label: '',
+  });
 
   useEffect(() => {
     loadVehicles();
@@ -392,7 +403,14 @@ export default function VehiclesManagement() {
 
         {hasImage ? (
           <div className="space-y-3">
-            <div className="relative bg-white rounded-lg p-4">
+            <div className="relative bg-white rounded-lg p-4 cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all group"
+              onClick={() => setBarcodeModal({
+                isOpen: true,
+                imageUrl: previewUrls[type]!,
+                label: label || 'Barcode',
+              })}
+              title="Klicken für Vollbild"
+            >
               <img
                 src={previewUrls[type]!}
                 alt={label}
@@ -403,6 +421,7 @@ export default function VehiclesManagement() {
                   Neu
                 </div>
               )}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors rounded-lg pointer-events-none" />
             </div>
             <div className="flex gap-2">
               <label className="flex-1 cursor-pointer">
@@ -618,15 +637,25 @@ export default function VehiclesManagement() {
                 {vehicle.vehicle_code_image_url && (
                   <div className="space-y-2 relative group">
                     <div className="text-xs text-slate-400 font-medium">Fahrzeugcode</div>
-                    <div className="bg-white rounded p-2 relative">
+                    <div className="bg-white rounded p-2 relative cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                      onClick={() => setBarcodeModal({
+                        isOpen: true,
+                        imageUrl: vehicle.vehicle_code_image_url!,
+                        label: `${vehicle.plate_letters} ${vehicle.plate_number} - Fahrzeugcode`,
+                      })}
+                      title="Klicken für Vollbild"
+                    >
                       <img
                         src={vehicle.vehicle_code_image_url}
                         alt="Fahrzeugcode"
                         className="w-full h-20 object-contain"
                       />
                       <button
-                        onClick={() => deleteIndividualCode(vehicle.id, 'vehicle_code')}
-                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteIndividualCode(vehicle.id, 'vehicle_code');
+                        }}
+                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10"
                         title="Code löschen"
                       >
                         <X className="w-3 h-3" />
@@ -640,15 +669,25 @@ export default function VehiclesManagement() {
                     <div className="flex items-center justify-center">
                       <Snowflake className="w-5 h-5 text-blue-400" />
                     </div>
-                    <div className="bg-white rounded p-2 relative">
+                    <div className="bg-white rounded p-2 relative cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                      onClick={() => setBarcodeModal({
+                        isOpen: true,
+                        imageUrl: vehicle.cooling_code_image_url!,
+                        label: `${vehicle.plate_letters} ${vehicle.plate_number} - Kühlcode`,
+                      })}
+                      title="Klicken für Vollbild"
+                    >
                       <img
                         src={vehicle.cooling_code_image_url}
                         alt="Cooling Code"
                         className="w-full h-20 object-contain"
                       />
                       <button
-                        onClick={() => deleteIndividualCode(vehicle.id, 'cooling_code')}
-                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteIndividualCode(vehicle.id, 'cooling_code');
+                        }}
+                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10"
                         title="Code löschen"
                       >
                         <X className="w-3 h-3" />
@@ -662,15 +701,25 @@ export default function VehiclesManagement() {
                     <div className="flex items-center justify-center">
                       <Snowflake className="w-5 h-5 text-orange-400" />
                     </div>
-                    <div className="bg-white rounded p-2 relative">
+                    <div className="bg-white rounded p-2 relative cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                      onClick={() => setBarcodeModal({
+                        isOpen: true,
+                        imageUrl: vehicle.standard_code_image_url!,
+                        label: `${vehicle.plate_letters} ${vehicle.plate_number} - Standardcode`,
+                      })}
+                      title="Klicken für Vollbild"
+                    >
                       <img
                         src={vehicle.standard_code_image_url}
                         alt="Standard Code"
                         className="w-full h-20 object-contain"
                       />
                       <button
-                        onClick={() => deleteIndividualCode(vehicle.id, 'standard_code')}
-                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteIndividualCode(vehicle.id, 'standard_code');
+                        }}
+                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10"
                         title="Code löschen"
                       >
                         <X className="w-3 h-3" />
@@ -733,6 +782,14 @@ export default function VehiclesManagement() {
           ))}
         </div>
       )}
+
+      <BarcodeModal
+        isOpen={barcodeModal.isOpen}
+        onClose={() => setBarcodeModal({ ...barcodeModal, isOpen: false })}
+        imageUrl={barcodeModal.imageUrl}
+        altText="Barcode"
+        label={barcodeModal.label}
+      />
     </div>
   );
 }

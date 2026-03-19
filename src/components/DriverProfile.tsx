@@ -5,6 +5,7 @@ import { supabase, hashPassword } from '../lib/supabase';
 import { NotificationSettings } from './NotificationSettings';
 import { MonthSelector } from './MonthSelector';
 import { calculateMonthStatistics, MonthStats } from '../lib/statisticsUtils';
+import { BarcodeModal } from './BarcodeModal';
 
 interface DriverStats extends MonthStats {
   mostUsedVehicle: string | null;
@@ -87,6 +88,8 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingIdBarcode, setUploadingIdBarcode] = useState(false);
   const [idBarcodePreview, setIdBarcodePreview] = useState<string | null>(null);
+
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
 
   useEffect(() => {
     loadDriverData();
@@ -692,7 +695,10 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
                   <div className="space-y-4">
                     {idBarcodePreview ? (
                       <div className="space-y-4">
-                        <div className="relative inline-block">
+                        <div className="relative inline-block cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all rounded-lg"
+                          onClick={() => setShowBarcodeModal(true)}
+                          title="Klicken für Vollbild"
+                        >
                           <img
                             src={idBarcodePreview}
                             alt="ID Barcode"
@@ -882,6 +888,16 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
           </div>
         </div>
       </div>
+
+      {idBarcodePreview && (
+        <BarcodeModal
+          isOpen={showBarcodeModal}
+          onClose={() => setShowBarcodeModal(false)}
+          imageUrl={idBarcodePreview}
+          altText="Ausweiscode"
+          label="Scannen Sie diesen Code"
+        />
+      )}
     </div>
   );
 }
