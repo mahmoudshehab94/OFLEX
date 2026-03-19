@@ -129,6 +129,35 @@ export function DirectAccountCreation() {
       return;
     }
 
+    // Check if username already exists
+    if (supabase) {
+      const { data: existingUsername } = await supabase
+        .from('user_accounts')
+        .select('id')
+        .eq('username', formData.username.trim())
+        .maybeSingle();
+
+      if (existingUsername) {
+        setMessage({ type: 'error', text: 'Benutzername ist bereits vergeben' });
+        setLoading(false);
+        return;
+      }
+
+      // Check if email already exists
+      const emailToCheck = `${formData.emailLocalPart.trim().toLowerCase()}@transo-flex.de`;
+      const { data: existingEmail } = await supabase
+        .from('user_accounts')
+        .select('id')
+        .eq('email', emailToCheck)
+        .maybeSingle();
+
+      if (existingEmail) {
+        setMessage({ type: 'error', text: 'E-Mail-Adresse ist bereits vergeben' });
+        setLoading(false);
+        return;
+      }
+    }
+
     const result = await createAccountDirect(
       {
         fullName: formData.fullName,

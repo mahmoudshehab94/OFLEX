@@ -69,6 +69,35 @@ export function InviteManagement() {
     setGenerating(true);
     setMessage(null);
 
+    // Check if username already exists
+    if (supabase) {
+      const { data: existingUsername } = await supabase
+        .from('user_accounts')
+        .select('id')
+        .eq('username', username.trim())
+        .maybeSingle();
+
+      if (existingUsername) {
+        setMessage({ type: 'error', text: 'Benutzername ist bereits vergeben' });
+        setGenerating(false);
+        return;
+      }
+
+      // Check if email already exists (username@domain.com format)
+      const emailToCheck = `${username.trim().toLowerCase()}@transo-flex.de`;
+      const { data: existingEmail } = await supabase
+        .from('user_accounts')
+        .select('id')
+        .eq('email', emailToCheck)
+        .maybeSingle();
+
+      if (existingEmail) {
+        setMessage({ type: 'error', text: 'E-Mail-Adresse ist bereits vergeben' });
+        setGenerating(false);
+        return;
+      }
+    }
+
     const newDriverData = {
       name: username.trim(),
       license_letters: '',

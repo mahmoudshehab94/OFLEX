@@ -87,14 +87,63 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Check for unique constraint violations before updating
+    if (username !== undefined) {
+      const { data: existingUsername } = await supabase
+        .from('user_accounts')
+        .select('id')
+        .eq('username', username)
+        .neq('id', userId)
+        .maybeSingle();
+
+      if (existingUsername) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Benutzername ist bereits vergeben' }),
+          {
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    }
+
+    if (email !== undefined) {
+      const { data: existingEmail } = await supabase
+        .from('user_accounts')
+        .select('id')
+        .eq('email', email)
+        .neq('id', userId)
+        .maybeSingle();
+
+      if (existingEmail) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'E-Mail-Adresse ist bereits vergeben' }),
+          {
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    }
+
     const { error: updateError } = await supabase
       .from('user_accounts')
       .update(updateData)
       .eq('id', userId);
 
     if (updateError) {
+      // Provide user-friendly error messages for unique constraint violations
+      let errorMessage = updateError.message;
+      if (updateError.code === '23505') { // PostgreSQL unique violation code
+        if (errorMessage.includes('username')) {
+          errorMessage = 'Benutzername ist bereits vergeben';
+        } else if (errorMessage.includes('email')) {
+          errorMessage = 'E-Mail-Adresse ist bereits vergeben';
+        }
+      }
+
       return new Response(
-        JSON.stringify({ success: false, error: updateError.message }),
+        JSON.stringify({ success: false, error: errorMessage }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
