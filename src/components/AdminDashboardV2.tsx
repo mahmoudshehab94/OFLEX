@@ -3,7 +3,7 @@ import { supabase, Driver, WorkEntry, UserAccount, getAllUserAccounts, generateP
 import {
   Users, FileText, BarChart3, Plus, Pencil, Trash2,
   Check, X, Search, Download, LogOut,
-  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet, Settings, Clock, Moon, Sun, Loader2, Save, Scale, Key, Copy, ShieldAlert, User, Camera
+  Power, PowerOff, Filter, RefreshCw, FileSpreadsheet, Settings, Clock, Moon, Sun, Loader2, Save, Scale, Key, Copy, ShieldAlert, User, Camera, Car
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -14,13 +14,14 @@ import { InviteManagement, InviteHistory } from './InviteManagement';
 import { DirectAccountCreation } from './DirectAccountCreation';
 import { useAuth } from '../contexts/AuthContext';
 import { getPermissions } from '../lib/permissions';
+import VehiclesManagement from './VehiclesManagement';
 
 interface Message {
   type: 'success' | 'error';
   text: string;
 }
 
-type TabType = 'dashboard' | 'reports' | 'entries' | 'drivers' | 'invites' | 'users' | 'settings';
+type TabType = 'dashboard' | 'reports' | 'entries' | 'drivers' | 'invites' | 'users' | 'settings' | 'vehicles';
 
 interface DashboardStats {
   driversSubmittedToday: number;
@@ -1312,6 +1313,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
               { id: 'reports', label: 'Berichte', icon: FileText, requiresPermission: 'canViewReports' },
               { id: 'entries', label: 'Einträge', icon: Clock },
               { id: 'drivers', label: 'Fahrer', icon: Users },
+              { id: 'vehicles', label: 'Fahrzeuge', icon: Car },
               { id: 'invites', label: 'Einladungen', icon: Plus },
               { id: 'users', label: 'Benutzer', icon: ShieldAlert, requiresPermission: 'canResetPasswords' },
               { id: 'settings', label: 'Einstellungen', icon: Settings }
@@ -2747,6 +2749,10 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === 'vehicles' && (
+          <VehiclesManagement />
         )}
 
         {activeTab === 'settings' && (
