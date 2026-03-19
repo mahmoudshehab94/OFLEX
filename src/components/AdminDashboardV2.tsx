@@ -2609,6 +2609,9 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                           Rolle
                         </th>
                         <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                          Vollständiger Name
+                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
                           Fahrer
                         </th>
                         <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
@@ -2678,6 +2681,9 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                             }`}>
                               {userAccount.role}
                             </span>
+                          </td>
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                            {userAccount.full_name || '—'}
                           </td>
                           <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
                             {userAccount.driver_name || '—'}

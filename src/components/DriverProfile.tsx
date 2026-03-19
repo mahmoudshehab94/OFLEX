@@ -224,6 +224,7 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
         return;
       }
 
+      // Update driver name in drivers table
       const { error: driverError } = await supabase
         .from('drivers')
         .update({ driver_name: newDisplayName.trim() })
@@ -231,11 +232,11 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
 
       if (driverError) throw driverError;
 
-      // Update account using Edge Function (bypasses RLS)
-      const result = await updateUserProfileAPI(user?.id || '', { username: newDisplayName.trim() });
+      // Update full_name in user_accounts (this will show in admin panel)
+      const result = await updateUserProfileAPI(user?.id || '', { full_name: newDisplayName.trim() });
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to update username');
+        throw new Error(result.error || 'Failed to update full name');
       }
 
       setMessage({ type: 'success', text: 'Name erfolgreich aktualisiert' });
