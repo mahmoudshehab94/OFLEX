@@ -301,10 +301,12 @@ export default function VehiclesManagement() {
 
     return (
       <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="font-medium text-white">{label}</span>
-          {icon}
-        </div>
+        {(label || icon) && (
+          <div className="flex items-center gap-2 mb-4">
+            {label && <span className="font-medium text-white">{label}</span>}
+            {icon}
+          </div>
+        )}
 
         {hasImage ? (
           <div className="space-y-3">
@@ -441,13 +443,13 @@ export default function VehiclesManagement() {
 
             <ImageUploadSection
               type="cooling_code"
-              label="Kühlcode"
+              label=""
               icon={<Snowflake className="w-5 h-5 text-blue-400" />}
             />
 
             <ImageUploadSection
               type="standard_code"
-              label="Standardcode"
+              label=""
               icon={<Snowflake className="w-5 h-5 text-orange-400" />}
             />
           </div>
@@ -543,28 +545,26 @@ export default function VehiclesManagement() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-1 text-xs text-slate-400 font-medium">
-                    <Snowflake className="w-3 h-3 text-blue-400" />
-                    <span>Kühlcode</span>
+                  <div className="flex items-center justify-center">
+                    <Snowflake className="w-5 h-5 text-blue-400" />
                   </div>
                   <div className="bg-white rounded p-2">
                     <img
                       src={vehicle.cooling_code_image_url}
-                      alt="Kühlcode"
+                      alt="Cooling Code"
                       className="w-full h-20 object-contain"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-1 text-xs text-slate-400 font-medium">
-                    <Snowflake className="w-3 h-3 text-orange-400" />
-                    <span>Standardcode</span>
+                  <div className="flex items-center justify-center">
+                    <Snowflake className="w-5 h-5 text-orange-400" />
                   </div>
                   <div className="bg-white rounded p-2">
                     <img
                       src={vehicle.standard_code_image_url}
-                      alt="Standardcode"
+                      alt="Standard Code"
                       className="w-full h-20 object-contain"
                     />
                   </div>
