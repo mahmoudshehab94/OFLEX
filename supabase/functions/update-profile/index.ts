@@ -111,7 +111,7 @@ Deno.serve(async (req: Request) => {
       .from('user_accounts')
       .update(updateData)
       .eq('id', userId)
-      .select()
+      .select('*, driver_id')
       .single();
 
     if (updateError) {
@@ -137,6 +137,23 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log('Update successful:', data);
+
+    // If full_name was updated and user has a driver profile, sync to drivers table
+    if (full_name !== undefined && data?.driver_id) {
+      console.log('Syncing driver name to drivers table:', { driver_id: data.driver_id, driver_name: full_name });
+
+      const { error: driverUpdateError } = await supabase
+        .from('drivers')
+        .update({ driver_name: full_name })
+        .eq('id', data.driver_id);
+
+      if (driverUpdateError) {
+        console.error('Failed to sync driver name:', driverUpdateError);
+        // Don't fail the whole request, just log the error
+      } else {
+        console.log('Driver name synced successfully');
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, data }),
