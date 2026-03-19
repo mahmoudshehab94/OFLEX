@@ -31,7 +31,9 @@ export function InviteManagement() {
   const [newDriverData, setNewDriverData] = useState({
     name: '',
     license_letters: '',
-    license_numbers: ''
+    license_numbers: '',
+    username: '',
+    email_local_part: ''
   });
 
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -111,6 +113,10 @@ export function InviteManagement() {
           setMessage({ type: 'error', text: 'Fahrername ist erforderlich' });
           return;
         }
+        if (!newDriverData.username.trim()) {
+          setMessage({ type: 'error', text: 'Benutzername ist erforderlich' });
+          return;
+        }
       }
     }
 
@@ -131,7 +137,7 @@ export function InviteManagement() {
       await loadInvites();
       setSelectedDriverId('');
       setDriverSearch('');
-      setNewDriverData({ name: '', license_letters: '', license_numbers: '' });
+      setNewDriverData({ name: '', license_letters: '', license_numbers: '', username: '', email_local_part: '' });
     } else {
       setMessage({ type: 'error', text: result.error || 'Fehler beim Erstellen der Einladung' });
     }
@@ -266,7 +272,7 @@ export function InviteManagement() {
               onChange={(e) => {
                 setSelectedRole(e.target.value as 'driver' | 'supervisor' | 'admin');
                 setSelectedDriverId('');
-                setNewDriverData({ name: '', license_letters: '', license_numbers: '' });
+                setNewDriverData({ name: '', license_letters: '', license_numbers: '', username: '', email_local_part: '' });
               }}
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
@@ -311,7 +317,7 @@ export function InviteManagement() {
                     type="button"
                     onClick={() => {
                       setInviteType('existing');
-                      setNewDriverData({ name: '', license_letters: '', license_numbers: '' });
+                      setNewDriverData({ name: '', license_letters: '', license_numbers: '', username: '', email_local_part: '' });
                     }}
                     className={`p-4 rounded-lg border-2 transition-all ${
                       inviteType === 'existing'
@@ -378,6 +384,40 @@ export function InviteManagement() {
                       required
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Benutzername *
+                    </label>
+                    <input
+                      type="text"
+                      value={newDriverData.username}
+                      onChange={(e) => setNewDriverData({ ...newDriverData, username: e.target.value })}
+                      placeholder="z.B. osama.ali"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      required
+                    />
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Dieser wird auf der Registrierungsseite angezeigt (nicht änderbar)
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      E-Mail (nur Teil vor @malek.com)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newDriverData.email_local_part}
+                        onChange={(e) => setNewDriverData({ ...newDriverData, email_local_part: e.target.value })}
+                        placeholder="benutzername"
+                        className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                      <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">@malek.com</span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Optional: Kann auf der Registrierungsseite vorausgefüllt werden
+                    </p>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
@@ -387,7 +427,7 @@ export function InviteManagement() {
                         type="text"
                         value={newDriverData.license_letters}
                         onChange={(e) => setNewDriverData({ ...newDriverData, license_letters: e.target.value })}
-                        placeholder="e.g., ABC"
+                        placeholder="z.B. ABC"
                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                       />
                     </div>
@@ -399,7 +439,7 @@ export function InviteManagement() {
                         type="text"
                         value={newDriverData.license_numbers}
                         onChange={(e) => setNewDriverData({ ...newDriverData, license_numbers: e.target.value })}
-                        placeholder="e.g., 123456"
+                        placeholder="z.B. 123456"
                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                       />
                     </div>

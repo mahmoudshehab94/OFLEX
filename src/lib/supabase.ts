@@ -68,6 +68,8 @@ export interface AccountInvite {
   new_driver_name?: string | null;
   new_driver_license_letters?: string | null;
   new_driver_license_numbers?: string | null;
+  username?: string | null;
+  email_local_part?: string | null;
 }
 
 export async function testDatabaseConnection(): Promise<{
@@ -129,7 +131,7 @@ export async function generateInviteToken(
   role: 'driver' | 'supervisor' | 'admin',
   createdBy: string,
   driverId?: string,
-  newDriverData?: { name: string; license_letters?: string; license_numbers?: string }
+  newDriverData?: { name: string; license_letters?: string; license_numbers?: string; username?: string; email_local_part?: string }
 ): Promise<{ success: boolean; token?: string; error?: string }> {
   if (!supabase) {
     return { success: false, error: 'Supabase not configured' };
@@ -154,6 +156,8 @@ export async function generateInviteToken(
       inviteData.new_driver_name = newDriverData.name;
       inviteData.new_driver_license_letters = newDriverData.license_letters || null;
       inviteData.new_driver_license_numbers = newDriverData.license_numbers || null;
+      inviteData.username = newDriverData.username || null;
+      inviteData.email_local_part = newDriverData.email_local_part || null;
     }
 
     const { data, error } = await supabase

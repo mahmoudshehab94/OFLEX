@@ -112,9 +112,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string, username: string, inviteToken: string, avatarUrl?: string): Promise<{ success: boolean; error?: string }> => {
     try {
       if (!supabase) {
-        return { success: false, error: 'Database connection error' };
+        return { success: false, error: 'Datenbankverbindungsfehler' };
       }
 
+      // Validate invite token first
       const validation = await validateInviteToken(inviteToken);
       if (!validation.valid) {
         return { success: false, error: validation.error || 'Invalid invite' };
@@ -122,11 +123,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const invite = validation.invite!;
 
-      const { data: existingUser } = await supabase
+      // Check if email already exists
+      const { data: existingUser, error: checkError } = await supabase
         .from('user_accounts')
         .select('email')
         .eq('email', email)
         .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing user:', checkError);
+        return { success: false, error: 'Failed to create account: Database error' };
+      }
 
       if (existingUser) {
         return { success: false, error: 'Email already registered' };
@@ -134,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       let driverId = invite.driver_id;
 
+      // Create new driver record if needed
       if (invite.role === 'driver' && !driverId && invite.new_driver_name) {
         const { data: newDriver, error: driverError } = await supabase
           .from('drivers')
@@ -147,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (driverError) {
+          console.error('Error creating driver record:', driverError);
           return { success: false, error: 'Failed to create driver record' };
         }
 
@@ -156,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Hash the password before storing
       const passwordHash = await hashPassword(password);
 
+      // Create user account
       const { data: newUser, error: insertError } = await supabase
         .from('user_accounts')
         .insert({
@@ -171,11 +181,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (insertError) {
+        console.error('Error creating account:', insertError);
+
+        // Provide more specific error messages
+        if (insertError.message?.includes('unique')) {
+          return { success: false, error: 'Email already registered' };
+        }
+
         return { success: false, error: 'Failed to create account' };
       }
 
+      // Mark invite as used
       await markInviteAsUsed(inviteToken);
 
+      // Create user session
       const userData: User = {
         id: newUser.id,
         email: newUser.email,
@@ -183,6 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: newUser.role,
         driver_id: newUser.driver_id,
         avatar_url: newUser.avatar_url,
+        full_name: newUser.full_name,
+        phone: newUser.phone,
       };
 
       setUser(userData);
@@ -196,9 +217,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }));
 
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
-      return { success: false, error: 'An unexpected error occurred' };
+      return { success: false, error: error.message || 'An unexpected error occurred' };
     }
   };
 
