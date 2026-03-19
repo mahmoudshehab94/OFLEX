@@ -5,6 +5,7 @@ export interface MonthStats {
   entries: number;
   fehlendeTage: number;
   fehlendeTageList: number[];
+  uberstunden: number;
   monthName: string;
   year: number;
   month: number;
@@ -91,6 +92,8 @@ export const calculateMonthStatistics = (
   year: number,
   month: number
 ): MonthStats => {
+  const STANDARD_WORK_HOURS = 8;
+
   // Handle empty entries case - all working days in the month are missing
   if (!entries || entries.length === 0) {
     const missing = getMissingWorkingDays(year, month, new Set());
@@ -101,6 +104,7 @@ export const calculateMonthStatistics = (
       entries: 0,
       fehlendeTage: missing.count,
       fehlendeTageList: missing.days,
+      uberstunden: 0,
       monthName: getMonthName(month - 1),
       year,
       month
@@ -111,6 +115,27 @@ export const calculateMonthStatistics = (
   const totalHours = entries.reduce((sum, entry) => {
     return sum + calculateWorkHours(entry.start_time, entry.end_time, entry.break_minutes || 0);
   }, 0);
+
+  // Group entries by date and calculate overtime per day
+  const entriesByDate: Record<string, WorkEntryData[]> = {};
+  entries.forEach(entry => {
+    if (!entriesByDate[entry.date]) {
+      entriesByDate[entry.date] = [];
+    }
+    entriesByDate[entry.date].push(entry);
+  });
+
+  // Calculate overtime (hours over 8 per day)
+  let totalOvertime = 0;
+  Object.values(entriesByDate).forEach(dayEntries => {
+    const dayTotal = dayEntries.reduce((sum, entry) => {
+      return sum + calculateWorkHours(entry.start_time, entry.end_time, entry.break_minutes || 0);
+    }, 0);
+
+    if (dayTotal > STANDARD_WORK_HOURS) {
+      totalOvertime += dayTotal - STANDARD_WORK_HOURS;
+    }
+  });
 
   // Count unique days worked (multiple entries on same day count as one day)
   const uniqueDays = new Set(entries.map(e => e.date)).size;
@@ -129,6 +154,7 @@ export const calculateMonthStatistics = (
     entries: entries.length,
     fehlendeTage: missing.count,
     fehlendeTageList: missing.days,
+    uberstunden: Math.round(totalOvertime * 10) / 10,
     monthName: getMonthName(month - 1),
     year,
     month

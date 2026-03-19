@@ -617,6 +617,19 @@ export function DriverProfile({ onBack }: DriverProfileProps) {
                       {stats.fehlendeTageList.length > 0 ? stats.fehlendeTageList.join(', ') : '-'}
                     </p>
                   </div>
+
+                  <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white shadow-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-white/20 p-3 rounded-lg">
+                        <Clock className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-purple-100 text-sm font-medium">Überstunden</p>
+                        <p className="text-3xl font-bold">{stats.uberstunden}h</p>
+                      </div>
+                    </div>
+                    <p className="text-purple-100 text-sm">Stunden über 8h pro Tag</p>
+                  </div>
                 </div>
 
                 {stats.mostUsedVehicle && (
