@@ -28,8 +28,11 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
   const [savingPreferences, setSavingPreferences] = useState(false);
 
   useEffect(() => {
-    checkSubscriptionStatus();
-    OneSignalService.initialize();
+    const initAndCheck = async () => {
+      await OneSignalService.initialize();
+      checkSubscriptionStatus();
+    };
+    initAndCheck();
   }, [userAccountId]);
 
   const checkSubscriptionStatus = async () => {

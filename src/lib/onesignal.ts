@@ -66,31 +66,43 @@ export class OneSignalService {
 
     try {
       console.log('🚀 Initializing OneSignal...');
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
 
-      window.OneSignalDeferred.push(async function(OneSignal: any) {
-        console.log('⚙️ Configuring OneSignal with App ID:', ONESIGNAL_APP_ID.substring(0, 8) + '...');
-        await OneSignal.init({
-          appId: ONESIGNAL_APP_ID,
-          safari_web_id: undefined,
-          notifyButton: {
-            enable: false,
-          },
-          allowLocalhostAsSecureOrigin: true,
+      return new Promise<void>((resolve) => {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+
+        window.OneSignalDeferred.push(async function(OneSignal: any) {
+          try {
+            console.log('⚙️ Configuring OneSignal with App ID:', ONESIGNAL_APP_ID.substring(0, 8) + '...');
+            await OneSignal.init({
+              appId: ONESIGNAL_APP_ID,
+              safari_web_id: undefined,
+              notifyButton: {
+                enable: false,
+              },
+              allowLocalhostAsSecureOrigin: true,
+            });
+            console.log('✅ OneSignal initialized successfully');
+            resolve();
+          } catch (error) {
+            console.error('❌ Failed to configure OneSignal:', error);
+            resolve();
+          }
         });
-        console.log('✅ OneSignal initialized successfully');
+
+        const script = document.createElement('script');
+        script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+        script.defer = true;
+        script.onload = () => console.log('✅ OneSignal SDK loaded');
+        script.onerror = () => {
+          console.error('❌ Failed to load OneSignal SDK');
+          resolve();
+        };
+        document.head.appendChild(script);
       });
-
-      const script = document.createElement('script');
-      script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
-      script.defer = true;
-      script.onload = () => console.log('✅ OneSignal SDK loaded');
-      script.onerror = () => console.error('❌ Failed to load OneSignal SDK');
-      document.head.appendChild(script);
-
-      this.initialized = true;
     } catch (error) {
       console.error('❌ Failed to initialize OneSignal:', error);
+    } finally {
+      this.initialized = true;
     }
   }
 
@@ -125,11 +137,17 @@ export class OneSignalService {
       throw new Error('OneSignal not configured');
     }
 
+    if (!this.initialized) {
+      console.log('🚀 OneSignal not initialized, initializing now...');
+      await this.initialize();
+    }
+
     try {
       if (!window.OneSignal) {
         console.log('⏳ Waiting for OneSignal to load...');
         await this.waitForOneSignal();
       }
+      console.log('✅ OneSignal is available');
     } catch (error) {
       console.error('❌ OneSignal failed to load:', error);
       throw new Error('OneSignal failed to load');
@@ -272,15 +290,20 @@ export class OneSignalService {
     return subscription?.enabled || false;
   }
 
-  private static async waitForOneSignal(timeout = 10000): Promise<void> {
+  private static async waitForOneSignal(timeout = 15000): Promise<void> {
     const startTime = Date.now();
 
+    console.log('⏳ Waiting for OneSignal to be ready...');
+
     while (!window.OneSignal && Date.now() - startTime < timeout) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
 
     if (!window.OneSignal) {
+      console.error('❌ OneSignal not available after', timeout, 'ms');
       throw new Error('OneSignal failed to load');
     }
+
+    console.log('✅ OneSignal is ready');
   }
 }
