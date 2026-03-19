@@ -175,18 +175,30 @@ export default function VehiclesManagement() {
           standardCodeUrl = await uploadImage(barcodeImages.standard_code, editingVehicle.id, 'standard_code');
         }
 
-        const { error } = await supabase
-          .from('vehicles')
-          .update({
-            plate_letters: formData.plate_letters.trim().toUpperCase(),
-            plate_number: formData.plate_number.trim(),
-            vehicle_code_image_url: vehicleCodeUrl,
-            cooling_code_image_url: coolingCodeUrl,
-            standard_code_image_url: standardCodeUrl,
-          })
-          .eq('id', editingVehicle.id);
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-vehicle`;
+        const sessionUserId = localStorage.getItem('sessionUserId');
 
-        if (error) throw error;
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sessionUserId}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'update',
+            vehicleData: {
+              id: editingVehicle.id,
+              plate_letters: formData.plate_letters.trim().toUpperCase(),
+              plate_number: formData.plate_number.trim(),
+              vehicle_code_image_url: vehicleCodeUrl,
+              cooling_code_image_url: coolingCodeUrl,
+              standard_code_image_url: standardCodeUrl,
+            }
+          }),
+        });
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error);
         showMessage('success', 'Fahrzeug erfolgreich aktualisiert');
       } else {
         const tempId = crypto.randomUUID();
@@ -205,18 +217,30 @@ export default function VehiclesManagement() {
           standardCodeUrl = await uploadImage(barcodeImages.standard_code, tempId, 'standard_code');
         }
 
-        const { error } = await supabase
-          .from('vehicles')
-          .insert({
-            id: tempId,
-            plate_letters: formData.plate_letters.trim().toUpperCase(),
-            plate_number: formData.plate_number.trim(),
-            vehicle_code_image_url: vehicleCodeUrl,
-            cooling_code_image_url: coolingCodeUrl,
-            standard_code_image_url: standardCodeUrl,
-          });
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-vehicle`;
+        const sessionUserId = localStorage.getItem('sessionUserId');
 
-        if (error) throw error;
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sessionUserId}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'create',
+            vehicleData: {
+              id: tempId,
+              plate_letters: formData.plate_letters.trim().toUpperCase(),
+              plate_number: formData.plate_number.trim(),
+              vehicle_code_image_url: vehicleCodeUrl,
+              cooling_code_image_url: coolingCodeUrl,
+              standard_code_image_url: standardCodeUrl,
+            }
+          }),
+        });
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error);
         showMessage('success', 'Fahrzeug erfolgreich hinzugefügt');
       }
 
@@ -257,12 +281,23 @@ export default function VehiclesManagement() {
       if (vehicle.cooling_code_image_url) await deleteImage(vehicle.cooling_code_image_url);
       if (vehicle.standard_code_image_url) await deleteImage(vehicle.standard_code_image_url);
 
-      const { error } = await supabase
-        .from('vehicles')
-        .delete()
-        .eq('id', vehicleId);
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-vehicle`;
+      const sessionUserId = localStorage.getItem('sessionUserId');
 
-      if (error) throw error;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sessionUserId}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'delete',
+          vehicleData: { id: vehicleId }
+        }),
+      });
+
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
 
       showMessage('success', 'Fahrzeug erfolgreich gelöscht');
       loadVehicles();
@@ -285,15 +320,30 @@ export default function VehiclesManagement() {
         await deleteImage(imageUrl);
       }
 
-      const updateData: any = {};
-      updateData[imageUrlKey] = null;
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-vehicle`;
+      const sessionUserId = localStorage.getItem('sessionUserId');
 
-      const { error } = await supabase
-        .from('vehicles')
-        .update(updateData)
-        .eq('id', vehicleId);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sessionUserId}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'update',
+          vehicleData: {
+            id: vehicleId,
+            plate_letters: vehicle.plate_letters,
+            plate_number: vehicle.plate_number,
+            vehicle_code_image_url: type === 'vehicle_code' ? null : vehicle.vehicle_code_image_url,
+            cooling_code_image_url: type === 'cooling_code' ? null : vehicle.cooling_code_image_url,
+            standard_code_image_url: type === 'standard_code' ? null : vehicle.standard_code_image_url,
+          }
+        }),
+      });
 
-      if (error) throw error;
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
 
       showMessage('success', 'Code erfolgreich gelöscht');
       loadVehicles();
