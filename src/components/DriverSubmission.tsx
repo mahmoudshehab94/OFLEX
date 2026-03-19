@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Truck, Clock, Calendar, Download, LogOut, User } from 'lucide-react';
+import { Truck, Clock, Calendar, LogOut, User, ScanLine } from 'lucide-react';
 import { supabase, hasSupabaseConfig } from '../lib/supabase';
-import { InstallationQuickTourModal } from './InstallationQuickTourModal';
 import { DriverProfile } from './DriverProfile';
+import { ScanPage } from './ScanPage';
 import { useAuth } from '../contexts/AuthContext';
 
 export function DriverSubmission() {
@@ -18,6 +18,7 @@ export function DriverSubmission() {
   console.log('DriverSubmission - User avatar_url:', user?.avatar_url);
 
   const [showProfile, setShowProfile] = useState(false);
+  const [showScan, setShowScan] = useState(false);
   const [workDate, setWorkDate] = useState(new Date().toISOString().split('T')[0]);
   const [licenseLetters, setLicenseLetters] = useState('');
   const [licenseNumbers, setLicenseNumbers] = useState('');
@@ -32,7 +33,6 @@ export function DriverSubmission() {
   const [showVehicleSuggestions, setShowVehicleSuggestions] = useState(false);
   const [vehicleConflict, setVehicleConflict] = useState<any>(null);
   const [showConflictDetails, setShowConflictDetails] = useState(false);
-  const [showInstallTour, setShowInstallTour] = useState(false);
 
   useEffect(() => {
     if (licenseLetters.length > 0 || licenseNumbers.length > 0) {
@@ -264,6 +264,10 @@ export function DriverSubmission() {
 
   if (showProfile) {
     return <DriverProfile onBack={() => setShowProfile(false)} />;
+  }
+
+  if (showScan) {
+    return <ScanPage onBack={() => setShowScan(false)} />;
   }
 
   return (
@@ -542,11 +546,11 @@ export function DriverSubmission() {
         <div className="mt-4 sm:mt-6 border-t border-gray-700 pt-4 sm:pt-6">
           <button
             type="button"
-            onClick={() => setShowInstallTour(true)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3 bg-gray-700 hover:bg-gray-600 border border-gray-600 hover:border-gray-500 text-gray-200 rounded-lg transition-colors text-sm sm:text-base"
+            onClick={() => setShowScan(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3 bg-blue-600 hover:bg-blue-700 border border-blue-500 hover:border-blue-600 text-white rounded-lg transition-colors text-sm sm:text-base font-medium"
           >
-            <Download className="w-4 h-4" />
-            <span className="font-medium">App installieren</span>
+            <ScanLine className="w-5 h-5" />
+            <span className="font-medium">Scan</span>
           </button>
         </div>
 
@@ -555,11 +559,6 @@ export function DriverSubmission() {
           <p className="mt-0.5">v2.2.0</p>
         </div>
       </div>
-
-      <InstallationQuickTourModal
-        isOpen={showInstallTour}
-        onClose={() => setShowInstallTour(false)}
-      />
     </div>
   );
 }
