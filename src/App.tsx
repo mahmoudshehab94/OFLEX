@@ -20,6 +20,9 @@ function AppContent() {
     if (loading) return;
 
     if (path === '/register') {
+      // Clear any existing session when accessing registration page
+      // This prevents automatic login after registration
+      localStorage.removeItem('userSession');
       setCurrentRoute('register');
       return;
     }

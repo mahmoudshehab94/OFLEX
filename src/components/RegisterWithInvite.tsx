@@ -199,8 +199,12 @@ export function RegisterWithInvite() {
       const result = await response.json();
 
       if (result.success) {
-        // Registration successful - redirect to login
-        window.location.href = '/?registration=success';
+        // Clear any existing session before redirecting
+        localStorage.removeItem('userSession');
+
+        // Registration successful - redirect to login with success message
+        alert('Registrierung erfolgreich! Bitte melden Sie sich jetzt mit Ihren neuen Zugangsdaten an.');
+        window.location.href = '/';
       } else {
         setError(result.error || 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.');
       }
