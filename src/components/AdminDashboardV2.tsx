@@ -15,6 +15,7 @@ import { DirectAccountCreation } from './DirectAccountCreation';
 import { useAuth } from '../contexts/AuthContext';
 import { getPermissions } from '../lib/permissions';
 import VehiclesManagement from './VehiclesManagement';
+import { calculateMonthStatistics, WorkEntryData } from '../lib/statisticsUtils';
 
 interface Message {
   type: 'success' | 'error';
@@ -36,6 +37,8 @@ interface ReportSummary {
   uberstunden: string;
   totalHours: number;
   overtimeHours: number;
+  fehlendeTage: number;
+  fehlendeTageList: number[];
 }
 
 interface EditingEntry {
@@ -351,8 +354,17 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     return `${h}h ${m}m`;
   };
 
-  const calculateSummary = (entries: WorkEntry[]): ReportSummary => {
-    const arbeitstage = new Set(entries.map(e => e.date)).size;
+  const calculateSummary = (entries: WorkEntry[], year: number, month: number): ReportSummary => {
+    const workEntryData: WorkEntryData[] = entries.map(e => ({
+      date: e.date,
+      start_time: e.start_time,
+      end_time: e.end_time,
+      break_minutes: e.break_minutes || 0,
+      vehicle: e.vehicle
+    }));
+
+    const stats = calculateMonthStatistics(workEntryData, year, month);
+
     const totalHours = entries.reduce((sum, e) => sum + calculateDuration(e.start_time, e.end_time), 0);
     const overtimeHours = entries.reduce((sum, e) => {
       const daily = calculateDuration(e.start_time, e.end_time);
@@ -360,11 +372,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     }, 0);
 
     return {
-      arbeitstage,
+      arbeitstage: stats.arbeitstage,
       gesamtarbeitszeit: formatHours(totalHours),
       uberstunden: formatHours(overtimeHours),
       totalHours,
-      overtimeHours
+      overtimeHours,
+      fehlendeTage: stats.fehlendeTage,
+      fehlendeTageList: stats.fehlendeTageList
     };
   };
 
@@ -713,7 +727,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         return;
       }
 
-      const summary = calculateSummary(entries || []);
+      const summary = calculateSummary(entries || [], monthlyYear, monthlyMonth);
       setMonthlyReport({ driver, entries: entries || [], summary });
     } catch (error) {
       console.error('Error generating monthly report:', error);
@@ -753,7 +767,8 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
         return;
       }
 
-      const summary = calculateSummary(entries || []);
+      const fromDate = new Date(customDateFrom);
+      const summary = calculateSummary(entries || [], fromDate.getFullYear(), fromDate.getMonth() + 1);
       setCustomReport({ driver, entries: entries || [], summary });
     } catch (error) {
       console.error('Error generating custom report:', error);
@@ -777,6 +792,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
     }
 
     const { from, to } = getDateRange(comparePeriod);
+    const fromDate = new Date(from);
 
     try {
       const results = await Promise.all([resolvedDriver1Id, resolvedDriver2Id].map(async (driverId) => {
@@ -795,7 +811,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
 
         if (!driver || !entries) return null;
 
-        const summary = calculateSummary(entries);
+        const summary = calculateSummary(entries, fromDate.getFullYear(), fromDate.getMonth() + 1);
 
         return { driver, summary };
       }));
@@ -1710,7 +1726,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
                     {monthlyReport.driver.driver_name}
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
                       <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Arbeitstage</div>
                       <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">{monthlyReport.summary.arbeitstage}</div>
@@ -1722,6 +1738,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                     <div className="bg-orange-50 dark:bg-orange-950/20 rounded-lg p-4">
                       <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Überstunden</div>
                       <div className="text-2xl font-bold text-orange-900 dark:text-orange-200">{monthlyReport.summary.uberstunden}</div>
+                    </div>
+                    <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-4">
+                      <div className="text-sm text-red-600 dark:text-red-400 font-medium">Fehlende Tage</div>
+                      <div className="text-2xl font-bold text-red-900 dark:text-red-200">{monthlyReport.summary.fehlendeTage}</div>
+                      <div className="text-xs text-red-600 dark:text-red-400 mt-1 truncate">
+                        {monthlyReport.summary.fehlendeTageList.length > 0 ? monthlyReport.summary.fehlendeTageList.join(', ') : '-'}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1808,7 +1831,7 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
                     {customReport.driver.driver_name}
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
                       <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Arbeitstage</div>
                       <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">{customReport.summary.arbeitstage}</div>
@@ -1820,6 +1843,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                     <div className="bg-orange-50 dark:bg-orange-950/20 rounded-lg p-4">
                       <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Überstunden</div>
                       <div className="text-2xl font-bold text-orange-900 dark:text-orange-200">{customReport.summary.uberstunden}</div>
+                    </div>
+                    <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-4">
+                      <div className="text-sm text-red-600 dark:text-red-400 font-medium">Fehlende Tage</div>
+                      <div className="text-2xl font-bold text-red-900 dark:text-red-200">{customReport.summary.fehlendeTage}</div>
+                      <div className="text-xs text-red-600 dark:text-red-400 mt-1 truncate">
+                        {customReport.summary.fehlendeTageList.length > 0 ? customReport.summary.fehlendeTageList.join(', ') : '-'}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1922,6 +1952,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                           <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Überstunden</div>
                           <div className="text-xl font-bold text-orange-900 dark:text-orange-200">{comparison.driver1.summary.uberstunden}</div>
                         </div>
+                        <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-3">
+                          <div className="text-sm text-red-600 dark:text-red-400 font-medium">Fehlende Tage</div>
+                          <div className="text-xl font-bold text-red-900 dark:text-red-200">{comparison.driver1.summary.fehlendeTage}</div>
+                          <div className="text-xs text-red-600 dark:text-red-400 mt-1 break-words">
+                            {comparison.driver1.summary.fehlendeTageList.length > 0 ? comparison.driver1.summary.fehlendeTageList.join(', ') : '-'}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -1941,6 +1978,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                         <div className="bg-orange-50 dark:bg-orange-950/20 rounded-lg p-3">
                           <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Überstunden</div>
                           <div className="text-xl font-bold text-orange-900 dark:text-orange-200">{comparison.driver2.summary.uberstunden}</div>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-3">
+                          <div className="text-sm text-red-600 dark:text-red-400 font-medium">Fehlende Tage</div>
+                          <div className="text-xl font-bold text-red-900 dark:text-red-200">{comparison.driver2.summary.fehlendeTage}</div>
+                          <div className="text-xs text-red-600 dark:text-red-400 mt-1 break-words">
+                            {comparison.driver2.summary.fehlendeTageList.length > 0 ? comparison.driver2.summary.fehlendeTageList.join(', ') : '-'}
+                          </div>
                         </div>
                       </div>
                     </div>
