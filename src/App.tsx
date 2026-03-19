@@ -16,13 +16,26 @@ function AppContent() {
 
   useEffect(() => {
     const path = window.location.pathname;
+    const urlParams = new URLSearchParams(window.location.search);
 
     if (loading) return;
+
+    // CRITICAL: If user just registered, force clear all sessions
+    if (urlParams.get('registered') === 'true') {
+      localStorage.removeItem('userSession');
+      localStorage.removeItem('adminLoggedIn');
+      sessionStorage.clear();
+      // Don't proceed with normal routing
+      setCurrentRoute('login');
+      return;
+    }
 
     if (path === '/register') {
       // Clear any existing session when accessing registration page
       // This prevents automatic login after registration
       localStorage.removeItem('userSession');
+      localStorage.removeItem('adminLoggedIn');
+      sessionStorage.clear();
       setCurrentRoute('register');
       return;
     }

@@ -199,12 +199,18 @@ export function RegisterWithInvite() {
       const result = await response.json();
 
       if (result.success) {
-        // Clear any existing session before redirecting
+        // CRITICAL: Clear any existing session before redirecting
         localStorage.removeItem('userSession');
+        localStorage.removeItem('adminLoggedIn');
+        sessionStorage.clear();
 
-        // Registration successful - redirect to login with success message
-        alert('Registrierung erfolgreich! Bitte melden Sie sich jetzt mit Ihren neuen Zugangsdaten an.');
-        window.location.href = '/';
+        // Show success message and redirect after user acknowledges
+        setError('');
+        setLoading(false);
+
+        // Force navigation to login page with success flag
+        window.location.replace('/?registered=true');
+        return;
       } else {
         setError(result.error || 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.');
       }

@@ -35,6 +35,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkSession = async () => {
     try {
+      // CRITICAL: Don't load session if user just registered
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('registered') === 'true') {
+        // Clear everything and skip session check
+        localStorage.removeItem('userSession');
+        localStorage.removeItem('adminLoggedIn');
+        sessionStorage.clear();
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       const sessionData = localStorage.getItem('userSession');
       if (sessionData) {
         const session = JSON.parse(sessionData);
