@@ -46,11 +46,22 @@ export class OneSignalService {
         const scriptURL = registration.active?.scriptURL || '';
         console.log('   - Service Worker:', scriptURL);
 
-        if (!scriptURL.includes('OneSignalSDK') && !scriptURL.includes('workbox')) {
-          console.log('   ⚠️ Unregistering non-OneSignal service worker');
-          await registration.unregister();
+        if (scriptURL.includes('OneSignalSDK')) {
+          try {
+            const state = registration.active?.state;
+            if (state !== 'activated') {
+              console.log('   🔄 Reloading incomplete OneSignal service worker');
+              await registration.unregister();
+            } else {
+              console.log('   ✅ OneSignal SW already active');
+            }
+          } catch (e) {
+            console.warn('   ⚠️ Could not check OneSignal SW state:', e);
+          }
         }
       }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (error) {
       console.warn('Failed to cleanup service workers:', error);
     }
@@ -89,8 +100,10 @@ export class OneSignalService {
 
     const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
     if (isLocalhost) {
-      console.warn('⚠️ OneSignal: Running on localhost. Notifications may not work unless configured in OneSignal Dashboard.');
+      console.warn('⚠️ OneSignal: Disabled on localhost to prevent Service Worker conflicts');
       console.warn('💡 To test notifications, deploy to https://transoflex.netlify.app');
+      this.initialized = true;
+      return;
     }
 
     await this.cleanupOldServiceWorkers();
@@ -110,8 +123,13 @@ export class OneSignalService {
             notifyButton: {
               enable: false,
             },
-            allowLocalhostAsSecureOrigin: true,
-            serviceWorkerParam: { scope: '/' },
+            allowLocalhostAsSecureOrigin: false,
+            serviceWorkerParam: {
+              scope: '/onesignal/',
+              registrationOptions: {
+                updateViaCache: 'none'
+              }
+            },
             serviceWorkerPath: '/OneSignalSDKWorker.js',
             serviceWorkerUpdaterPath: '/OneSignalSDKUpdaterWorker.js',
           });
@@ -140,9 +158,17 @@ export class OneSignalService {
       await this.initPromise;
       this.initialized = true;
       console.log('✅ OneSignal initialization complete');
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to initialize OneSignal:', error);
       this.initialized = true;
+
+      if (error?.message?.includes('ServiceWorker')) {
+        console.error('💡 Service Worker conflict detected. Try:');
+        console.error('   1. Clear site data in browser DevTools');
+        console.error('   2. Unregister all service workers');
+        console.error('   3. Hard refresh (Ctrl+Shift+R)');
+      }
+
       throw error;
     } finally {
       this.initPromise = null;
