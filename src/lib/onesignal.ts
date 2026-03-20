@@ -32,40 +32,7 @@ export interface NotificationSubscription {
 export class OneSignalService {
   private static initialized = false;
   private static initPromise: Promise<void> | null = null;
-
-  private static async cleanupOldServiceWorkers(): Promise<void> {
-    if (!('serviceWorker' in navigator)) {
-      return;
-    }
-
-    try {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      console.log(`🧹 Found ${registrations.length} service worker(s)`);
-
-      for (const registration of registrations) {
-        const scriptURL = registration.active?.scriptURL || '';
-        console.log('   - Service Worker:', scriptURL);
-
-        if (scriptURL.includes('OneSignalSDK')) {
-          try {
-            const state = registration.active?.state;
-            if (state !== 'activated') {
-              console.log('   🔄 Reloading incomplete OneSignal service worker');
-              await registration.unregister();
-            } else {
-              console.log('   ✅ OneSignal SW already active');
-            }
-          } catch (e) {
-            console.warn('   ⚠️ Could not check OneSignal SW state:', e);
-          }
-        }
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (error) {
-      console.warn('Failed to cleanup service workers:', error);
-    }
-  }
+  private static shouldEnable = false;
 
   static async initialize(): Promise<void> {
     if (this.initialized) {
@@ -79,34 +46,32 @@ export class OneSignalService {
     }
 
     if (!ONESIGNAL_APP_ID) {
-      console.error('❌ CRITICAL: VITE_ONESIGNAL_APP_ID is not set!');
-      console.error('📋 To fix this:');
-      console.error('   1. Go to Netlify Dashboard → Site settings → Environment variables');
-      console.error('   2. Add: VITE_ONESIGNAL_APP_ID = 1db29131-1f03-4188-8b3b-af2ae9c43717');
-      console.error('   3. Redeploy the site');
+      console.warn('⚠️ OneSignal App ID not configured - notifications disabled');
       this.initialized = true;
+      this.shouldEnable = false;
       return;
     }
 
     const currentDomain = window.location.hostname;
-    const allowedDomains = ['transoflex.netlify.app', 'localhost', '127.0.0.1'];
+    const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
 
+    if (isLocalhost) {
+      console.warn('⚠️ OneSignal disabled on localhost (prevents Service Worker conflicts)');
+      console.warn('💡 To test notifications, deploy to production');
+      this.initialized = true;
+      this.shouldEnable = false;
+      return;
+    }
+
+    const allowedDomains = ['transoflex.netlify.app'];
     if (!allowedDomains.includes(currentDomain)) {
       console.warn('⚠️ OneSignal: Not running on allowed domain:', currentDomain);
-      console.warn('   Allowed domains:', allowedDomains.join(', '));
       this.initialized = true;
+      this.shouldEnable = false;
       return;
     }
 
-    const isLocalhost = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
-    if (isLocalhost) {
-      console.warn('⚠️ OneSignal: Disabled on localhost to prevent Service Worker conflicts');
-      console.warn('💡 To test notifications, deploy to https://transoflex.netlify.app');
-      this.initialized = true;
-      return;
-    }
-
-    await this.cleanupOldServiceWorkers();
+    this.shouldEnable = true;
 
     this.initPromise = new Promise<void>((resolve, reject) => {
       console.log('🚀 Initializing OneSignal...');
@@ -115,27 +80,16 @@ export class OneSignalService {
 
       window.OneSignalDeferred.push(async function(OneSignal: any) {
         try {
-          console.log('⚙️ Configuring OneSignal with App ID:', ONESIGNAL_APP_ID.substring(0, 8) + '...');
+          console.log('⚙️ Configuring OneSignal...');
 
           await OneSignal.init({
             appId: ONESIGNAL_APP_ID,
             safari_web_id: undefined,
-            notifyButton: {
-              enable: false,
-            },
+            notifyButton: { enable: false },
             allowLocalhostAsSecureOrigin: false,
-            serviceWorkerParam: {
-              scope: '/onesignal/',
-              registrationOptions: {
-                updateViaCache: 'none'
-              }
-            },
-            serviceWorkerPath: '/OneSignalSDKWorker.js',
-            serviceWorkerUpdaterPath: '/OneSignalSDKUpdaterWorker.js',
           });
 
           console.log('✅ OneSignal.init() completed');
-
           await new Promise(resolve => setTimeout(resolve, 1000));
 
           console.log('✅ OneSignal fully initialized and ready');
@@ -147,11 +101,8 @@ export class OneSignalService {
       });
 
       setTimeout(() => {
-        if (!window.OneSignal) {
-          console.warn('⚠️ OneSignal SDK not loaded after 10 seconds');
-          reject(new Error('OneSignal SDK timeout'));
-        }
-      }, 10000);
+        reject(new Error('OneSignal SDK timeout'));
+      }, 15000);
     });
 
     try {
@@ -161,35 +112,76 @@ export class OneSignalService {
     } catch (error: any) {
       console.error('❌ Failed to initialize OneSignal:', error);
       this.initialized = true;
-
-      if (error?.message?.includes('ServiceWorker')) {
-        console.error('💡 Service Worker conflict detected. Try:');
-        console.error('   1. Clear site data in browser DevTools');
-        console.error('   2. Unregister all service workers');
-        console.error('   3. Hard refresh (Ctrl+Shift+R)');
-      }
-
+      this.shouldEnable = false;
       throw error;
     } finally {
       this.initPromise = null;
     }
   }
 
+  private static async ensureServiceWorkerReady(): Promise<boolean> {
+    if (!('serviceWorker' in navigator)) {
+      console.error('❌ Service Workers not supported');
+      return false;
+    }
+
+    try {
+      console.log('⏳ Waiting for Service Worker to be ready...');
+      const registration = await navigator.serviceWorker.ready;
+
+      if (!registration) {
+        console.error('❌ No Service Worker registration available');
+        return false;
+      }
+
+      if (!registration.active) {
+        console.error('❌ Service Worker registration has no active worker');
+        return false;
+      }
+
+      if (registration.active.state !== 'activated') {
+        console.error('❌ Service Worker is not in activated state:', registration.active.state);
+        return false;
+      }
+
+      console.log('✅ Service Worker is ready and activated');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to check Service Worker:', error);
+      return false;
+    }
+  }
+
   static async requestPermission(): Promise<boolean> {
+    if (!this.shouldEnable) {
+      console.warn('⚠️ OneSignal not enabled in this environment');
+      return false;
+    }
+
     if (!window.OneSignal) {
-      await this.waitForOneSignal();
+      console.warn('⚠️ OneSignal SDK not loaded');
+      return false;
+    }
+
+    const swReady = await this.ensureServiceWorkerReady();
+    if (!swReady) {
+      console.error('❌ Cannot request permission: Service Worker not ready');
+      return false;
     }
 
     try {
       const permission = await window.OneSignal.Notifications.permission;
       if (permission === 'granted') {
+        console.log('✅ Notification permission already granted');
         return true;
       }
 
+      console.log('📱 Requesting notification permission...');
       const result = await window.OneSignal.Notifications.requestPermission();
+      console.log('📱 Permission result:', result);
       return result === true;
     } catch (error) {
-      console.error('Failed to request notification permission:', error);
+      console.error('❌ Failed to request notification permission:', error);
       return false;
     }
   }
@@ -201,9 +193,8 @@ export class OneSignalService {
   ): Promise<NotificationSubscription | null> {
     console.log('🔔 Starting subscription process...', { userAccountId, role, driverId });
 
-    if (!ONESIGNAL_APP_ID) {
-      console.error('❌ OneSignal App ID not configured');
-      throw new Error('OneSignal not configured');
+    if (!this.shouldEnable) {
+      throw new Error('Benachrichtigungen sind in dieser Umgebung nicht verfügbar');
     }
 
     if (!this.initialized) {
@@ -211,41 +202,58 @@ export class OneSignalService {
       await this.initialize();
     }
 
-    await this.waitForOneSignal();
+    if (!window.OneSignal) {
+      throw new Error('OneSignal SDK nicht geladen');
+    }
 
     if (!supabase) {
-      console.error('❌ Supabase client not initialized');
-      throw new Error('Database not available');
+      throw new Error('Datenbank nicht verfügbar');
+    }
+
+    const swReady = await this.ensureServiceWorkerReady();
+    if (!swReady) {
+      throw new Error('Service Worker nicht bereit. Bitte laden Sie die Seite neu.');
     }
 
     try {
       console.log('📱 Requesting notification permission...');
       const hasPermission = await this.requestPermission();
       if (!hasPermission) {
-        console.error('❌ Notification permission denied');
         throw new Error('Bitte erlauben Sie Benachrichtigungen im Browser');
       }
 
       console.log('✅ Permission granted');
-
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      console.log('🔑 Logging in to OneSignal...');
       const externalId = `user_${userAccountId}`;
-      await window.OneSignal.login(externalId);
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { data: existingData } = await supabase
+        .from('notification_subscriptions')
+        .select('*')
+        .eq('user_account_id', userAccountId)
+        .maybeSingle();
+
+      const isAlreadyLoggedIn = existingData?.onesignal_external_id === externalId;
+
+      if (!isAlreadyLoggedIn) {
+        console.log('🔑 Logging in to OneSignal...');
+        try {
+          await window.OneSignal.logout();
+        } catch (e) {
+          console.log('ℹ️ No previous session to logout');
+        }
+        await new Promise(resolve => setTimeout(resolve, 300));
+        await window.OneSignal.login(externalId);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        console.log('✅ Already logged in to OneSignal');
+      }
 
       console.log('🔑 Getting player ID...');
       const playerId = await window.OneSignal.User.PushSubscription.id;
       console.log('✅ Player ID:', playerId);
 
       console.log('💾 Saving to database...');
-      const { data: existingData } = await supabase
-        .from('notification_subscriptions')
-        .select('*')
-        .eq('user_account_id', userAccountId)
-        .maybeSingle();
 
       let data, error;
 
@@ -297,18 +305,13 @@ export class OneSignalService {
       console.log('✅ Subscription saved successfully!', data);
       return data;
     } catch (error: any) {
-      console.error('Failed to subscribe user to notifications:', error);
+      console.error('❌ Failed to subscribe user to notifications:', error);
       throw error;
     }
   }
 
   static async unsubscribeUser(userAccountId: string): Promise<boolean> {
-    if (!window.OneSignal) {
-      await this.waitForOneSignal();
-    }
-
-    if (!supabase) {
-      console.error('Supabase client not initialized');
+    if (!this.shouldEnable || !window.OneSignal || !supabase) {
       return false;
     }
 
@@ -331,7 +334,6 @@ export class OneSignalService {
 
   static async getSubscription(userAccountId: string): Promise<NotificationSubscription | null> {
     if (!supabase) {
-      console.error('Supabase client not initialized');
       return null;
     }
 
@@ -356,48 +358,7 @@ export class OneSignalService {
     return subscription?.enabled || false;
   }
 
-  private static async waitForOneSignal(timeout = 20000): Promise<void> {
-    const startTime = Date.now();
-
-    console.log('⏳ Waiting for OneSignal to be ready...');
-
-    while (!window.OneSignal && Date.now() - startTime < timeout) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    if (!window.OneSignal) {
-      console.error('❌ OneSignal not available after', timeout, 'ms');
-      console.error('💡 This might be due to:');
-      console.error('   1. Ad blockers blocking OneSignal SDK');
-      console.error('   2. Network issues preventing SDK download');
-      console.error('   3. Browser privacy settings blocking third-party scripts');
-      throw new Error('OneSignal failed to load');
-    }
-
-    console.log('✅ OneSignal object is available');
-
-    if ('serviceWorker' in navigator) {
-      const maxWaitTime = 5000;
-      const checkStartTime = Date.now();
-
-      while (Date.now() - checkStartTime < maxWaitTime) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        const oneSignalSW = registrations.find(reg =>
-          reg.active?.scriptURL.includes('OneSignalSDK')
-        );
-
-        if (oneSignalSW && oneSignalSW.active?.state === 'activated') {
-          console.log('✅ OneSignal Service Worker is active and ready');
-          await new Promise(resolve => setTimeout(resolve, 500));
-          return;
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-
-      console.warn('⚠️ Service Worker not fully ready, proceeding anyway');
-    }
-
-    console.log('✅ OneSignal is ready');
+  static isEnabled(): boolean {
+    return this.shouldEnable;
   }
 }

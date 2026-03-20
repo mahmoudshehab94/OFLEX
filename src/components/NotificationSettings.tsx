@@ -20,6 +20,7 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isOneSignalEnabled, setIsOneSignalEnabled] = useState(false);
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     reminder_start_hour: 18,
     reminder_interval_minutes: 30,
@@ -29,6 +30,7 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
 
   useEffect(() => {
     checkSubscriptionStatus();
+    setIsOneSignalEnabled(OneSignalService.isEnabled());
   }, [userAccountId]);
 
   const checkSubscriptionStatus = async () => {
@@ -179,30 +181,47 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
           </div>
         </div>
 
-        <button
-          onClick={isSubscribed ? handleDisableNotifications : handleEnableNotifications}
-          disabled={isLoading}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-            isSubscribed
-              ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
-              : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          {isLoading ? (
-            <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          ) : isSubscribed ? (
-            <>
-              <BellOff className="h-5 w-5" />
-              <span>Deaktivieren</span>
-            </>
-          ) : (
-            <>
-              <Bell className="h-5 w-5" />
-              <span>Aktivieren</span>
-            </>
-          )}
-        </button>
+        {isOneSignalEnabled && (
+          <button
+            onClick={isSubscribed ? handleDisableNotifications : handleEnableNotifications}
+            disabled={isLoading}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+              isSubscribed
+                ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
+                : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {isLoading ? (
+              <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : isSubscribed ? (
+              <>
+                <BellOff className="h-5 w-5" />
+                <span>Deaktivieren</span>
+              </>
+            ) : (
+              <>
+                <Bell className="h-5 w-5" />
+                <span>Aktivieren</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
+
+      {!isOneSignalEnabled && (
+        <div className="p-4 bg-amber-50 dark:bg-amber-900/30 rounded-lg border border-amber-200 dark:border-amber-800">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800 dark:text-amber-300">
+              <p className="font-medium mb-1">Benachrichtigungen auf localhost deaktiviert</p>
+              <p>
+                Push-Benachrichtigungen funktionieren nur in der Produktionsumgebung.
+                Das automatische Erinnerungssystem funktioniert weiterhin vollständig.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {message && (
         <div
