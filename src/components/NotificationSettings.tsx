@@ -71,26 +71,26 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
         });
         setMessage({
           type: 'success',
-          text: 'تم تفعيل الإشعارات بنجاح! ستتلقى تذكيرات يومية بعد الساعة المحددة.'
+          text: 'Benachrichtigungen erfolgreich aktiviert! Sie erhalten täglich Erinnerungen nach der festgelegten Uhrzeit.'
         });
       } else {
-        throw new Error('فشل في حفظ البيانات');
+        throw new Error('Speichern fehlgeschlagen');
       }
     } catch (error: any) {
       console.error('❌ Failed to enable notifications:', error);
 
-      let errorMessage = 'فشل تفعيل الإشعارات. ';
+      let errorMessage = 'Aktivierung der Benachrichtigungen fehlgeschlagen. ';
 
-      if (error?.message?.includes('يرجى السماح')) {
+      if (error?.message?.includes('يرجى السماح') || error?.message?.includes('permission')) {
         errorMessage = error.message;
       } else if (error?.message?.includes('not configured')) {
-        errorMessage = 'نظام الإشعارات غير مُهيأ. تواصل مع الإدارة لتفعيل OneSignal.';
+        errorMessage = 'Benachrichtigungssystem nicht konfiguriert. Bitte kontaktieren Sie die Verwaltung zur Aktivierung von OneSignal.';
       } else if (error?.message?.includes('failed to load')) {
-        errorMessage = 'فشل تحميل نظام الإشعارات. يرجى التحقق من:\n• إيقاف أي برامج حجب الإعلانات (Ad Blockers)\n• السماح بالسكريبتات من onesignal.com\n• إعادة تحميل الصفحة والمحاولة مرة أخرى';
+        errorMessage = 'Laden des Benachrichtigungssystems fehlgeschlagen. Bitte überprüfen Sie:\n• Deaktivieren Sie Ad-Blocker\n• Erlauben Sie Skripte von onesignal.com\n• Laden Sie die Seite neu und versuchen Sie es erneut';
       } else if (error?.message?.includes('Database')) {
-        errorMessage = 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى.';
+        errorMessage = 'Datenbankfehler. Bitte versuchen Sie es erneut.';
       } else {
-        errorMessage = 'حدث خطأ غير متوقع. تأكد من السماح بالإشعارات وحاول مرة أخرى.';
+        errorMessage = 'Unerwarteter Fehler aufgetreten. Stellen Sie sicher, dass Sie Benachrichtigungen erlauben und versuchen Sie es erneut.';
       }
 
       setMessage({
@@ -113,7 +113,7 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
         setIsSubscribed(false);
         setMessage({
           type: 'success',
-          text: 'تم إيقاف الإشعارات بنجاح.'
+          text: 'Benachrichtigungen erfolgreich deaktiviert.'
         });
       } else {
         throw new Error('Failed to unsubscribe');
@@ -122,7 +122,7 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
       console.error('Failed to disable notifications:', error);
       setMessage({
         type: 'error',
-        text: 'فشل إيقاف الإشعارات. يرجى المحاولة مرة أخرى.'
+        text: 'Deaktivierung der Benachrichtigungen fehlgeschlagen. Bitte versuchen Sie es erneut.'
       });
     } finally {
       setIsLoading(false);
@@ -131,7 +131,7 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
 
   const handleSavePreferences = async () => {
     if (!supabase) {
-      setMessage({ type: 'error', text: 'خطأ في الاتصال بقاعدة البيانات' });
+      setMessage({ type: 'error', text: 'Datenbankverbindungsfehler' });
       return;
     }
 
@@ -153,13 +153,13 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
 
       setMessage({
         type: 'success',
-        text: 'تم حفظ الإعدادات بنجاح!'
+        text: 'Einstellungen erfolgreich gespeichert!'
       });
     } catch (error) {
       console.error('Failed to save preferences:', error);
       setMessage({
         type: 'error',
-        text: 'فشل حفظ الإعدادات. يرجى المحاولة مرة أخرى.'
+        text: 'Speichern der Einstellungen fehlgeschlagen. Bitte versuchen Sie es erneut.'
       });
     } finally {
       setSavingPreferences(false);
@@ -173,12 +173,12 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
           <Bell className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              إشعارات التذكير
+              Erinnerungsbenachrichtigungen
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {role === 'driver'
-                ? 'احصل على تذكيرات يومية لتسجيل ساعات العمل'
-                : 'احصل على ملخص يومي للسائقين الذين لم يسجلوا ساعات العمل'}
+                ? 'Erhalten Sie tägliche Erinnerungen zur Erfassung Ihrer Arbeitszeiten'
+                : 'Erhalten Sie eine tägliche Zusammenfassung der Fahrer, die noch keine Arbeitszeiten erfasst haben'}
             </p>
           </div>
         </div>
@@ -197,12 +197,12 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
           ) : isSubscribed ? (
             <>
               <BellOff className="h-5 w-5" />
-              <span>إيقاف</span>
+              <span>Deaktivieren</span>
             </>
           ) : (
             <>
               <Bell className="h-5 w-5" />
-              <span>تفعيل</span>
+              <span>Aktivieren</span>
             </>
           )}
         </button>
@@ -229,9 +229,9 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
         <>
           <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
             <p className="text-sm text-blue-800 dark:text-blue-400">
-              <strong>ملاحظة:</strong> سيتم إرسال التذكيرات بدءاً من الساعة المحددة
-              حتى تقوم بتسجيل ساعات العمل لليوم الحالي.
-              {preferences.skip_weekends && ' لن يتم إرسال تذكيرات أيام السبت والأحد.'}
+              <strong>Hinweis:</strong> Erinnerungen werden ab der festgelegten Uhrzeit gesendet,
+              bis Sie Ihre Arbeitszeiten für den aktuellen Tag erfasst haben.
+              {preferences.skip_weekends && ' An Samstagen und Sonntagen werden keine Erinnerungen gesendet.'}
             </p>
           </div>
 
@@ -240,14 +240,14 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
             className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4"
           >
             <Settings className="h-4 w-4" />
-            <span>{showAdvanced ? 'إخفاء الإعدادات المتقدمة' : 'إعدادات متقدمة'}</span>
+            <span>{showAdvanced ? 'Erweiterte Einstellungen ausblenden' : 'Erweiterte Einstellungen'}</span>
           </button>
 
           {showAdvanced && (
             <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  ساعة البدء بالتذكيرات (6 مساءً = 18)
+                  Startzeit für Erinnerungen (18:00 = 6 Uhr abends)
                 </label>
                 <select
                   value={preferences.reminder_start_hour}
@@ -259,7 +259,7 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
                 >
                   {Array.from({ length: 9 }, (_, i) => i + 16).map(hour => (
                     <option key={hour} value={hour}>
-                      {hour}:00 ({hour > 12 ? `${hour - 12} مساءً` : `${hour} صباحاً`})
+                      {hour}:00 Uhr ({hour > 12 ? `${hour - 12} Uhr abends` : `${hour} Uhr morgens`})
                     </option>
                   ))}
                 </select>
@@ -267,7 +267,7 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  الفترة بين التذكيرات (بالدقائق)
+                  Intervall zwischen Erinnerungen (in Minuten)
                 </label>
                 <select
                   value={preferences.reminder_interval_minutes}
@@ -277,22 +277,22 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
                   })}
                   className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
                 >
-                  <option value={15}>15 دقيقة</option>
-                  <option value={30}>30 دقيقة</option>
-                  <option value={45}>45 دقيقة</option>
-                  <option value={60}>ساعة واحدة</option>
-                  <option value={90}>ساعة ونصف</option>
-                  <option value={120}>ساعتان</option>
+                  <option value={15}>15 Minuten</option>
+                  <option value={30}>30 Minuten</option>
+                  <option value={45}>45 Minuten</option>
+                  <option value={60}>1 Stunde</option>
+                  <option value={90}>1,5 Stunden</option>
+                  <option value={120}>2 Stunden</option>
                 </select>
               </div>
 
               <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    إيقاف الإشعارات في عطلة نهاية الأسبوع
+                    Benachrichtigungen am Wochenende deaktivieren
                   </p>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    عدم إرسال تذكيرات يومي السبت والأحد
+                    Keine Erinnerungen an Samstagen und Sonntagen
                   </p>
                 </div>
                 <button
@@ -322,12 +322,12 @@ export function NotificationSettings({ userAccountId, role, driverId }: Notifica
                 {savingPreferences ? (
                   <>
                     <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>جاري الحفظ...</span>
+                    <span>Wird gespeichert...</span>
                   </>
                 ) : (
                   <>
                     <Check className="h-4 w-4" />
-                    <span>حفظ الإعدادات</span>
+                    <span>Einstellungen speichern</span>
                   </>
                 )}
               </button>
