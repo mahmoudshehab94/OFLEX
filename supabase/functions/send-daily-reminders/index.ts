@@ -25,6 +25,11 @@ interface NotificationSubscription {
   role: string;
   driver_id: string | null;
   enabled: boolean;
+  reminder_start_hour: number;
+  reminder_interval_minutes: number;
+  skip_weekends: boolean;
+  last_reminder_sent_at: string | null;
+  last_reminder_date: string | null;
 }
 
 Deno.serve(async (req: Request) => {
@@ -36,38 +41,45 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    console.log("🚀 Starting send-daily-reminders function");
 
-    const now = new Date();
-    const currentHour = now.getHours();
-    const dayOfWeek = now.getDay();
-
-    // Check if today is Saturday (6) or Sunday (0)
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
+    if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
+      console.error("❌ OneSignal credentials not configured");
       return new Response(
         JSON.stringify({
-          success: true,
-          message: "Weekend - no reminders on Saturday and Sunday",
-          time: now.toISOString(),
-          dayOfWeek,
+          success: false,
+          error: "OneSignal not configured",
         }),
         {
+          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
 
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const dayOfWeek = now.getDay();
     const today = now.toISOString().split("T")[0];
 
-    // Get all active drivers
+    console.log(`📅 Current time: ${now.toISOString()}`);
+    console.log(`🕐 Hour: ${currentHour}, Minute: ${currentMinute}, Day: ${dayOfWeek}`);
+
     const { data: drivers, error: driversError } = await supabase
       .from("drivers")
       .select("id, driver_name, is_active")
       .eq("is_active", true);
 
-    if (driversError) throw driversError;
+    if (driversError) {
+      console.error("❌ Error fetching drivers:", driversError);
+      throw driversError;
+    }
 
     if (!drivers || drivers.length === 0) {
+      console.log("ℹ️ No active drivers found");
       return new Response(
         JSON.stringify({
           success: true,
@@ -79,22 +91,29 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get all work entries for today
+    console.log(`👥 Found ${drivers.length} active drivers`);
+
     const { data: todayEntries, error: entriesError } = await supabase
       .from("work_entries")
       .select("driver_id")
       .eq("date", today);
 
-    if (entriesError) throw entriesError;
+    if (entriesError) {
+      console.error("❌ Error fetching work entries:", entriesError);
+      throw entriesError;
+    }
 
     const driversWithSubmissions = new Set(
       (todayEntries || []).map((entry) => entry.driver_id)
     );
 
-    // Find drivers who haven't submitted yet
+    console.log(`✅ ${driversWithSubmissions.size} drivers already submitted today`);
+
     const driversNeedingReminder = drivers.filter(
       (driver: Driver) => !driversWithSubmissions.has(driver.id)
     );
+
+    console.log(`🔔 ${driversNeedingReminder.length} drivers need reminders`);
 
     if (driversNeedingReminder.length === 0) {
       return new Response(
@@ -109,207 +128,271 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check which drivers were already reminded in the last 30 minutes
-    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString();
-
-    const { data: recentReminders, error: remindersError } = await supabase
-      .from("notification_reminders_log")
-      .select("driver_id, sent_at")
-      .eq("reminder_date", today)
-      .eq("reminder_type", "driver")
-      .gte("sent_at", thirtyMinutesAgo);
-
-    if (remindersError) throw remindersError;
-
-    const recentlyRemindedDrivers = new Set(
-      (recentReminders || []).map((r) => r.driver_id)
-    );
-
-    const driversToRemind = driversNeedingReminder.filter(
-      (driver: Driver) => !recentlyRemindedDrivers.has(driver.id)
-    );
-
     let driverNotificationsSent = 0;
+    const remindedDrivers: string[] = [];
+    const skippedDrivers: { name: string; reason: string }[] = [];
 
-    // Send reminders to individual drivers
-    for (const driver of driversToRemind) {
-      const { data: subscription } = await supabase
+    for (const driver of driversNeedingReminder) {
+      console.log(`\n👤 Processing driver: ${driver.driver_name} (${driver.id})`);
+
+      const { data: subscription, error: subError } = await supabase
         .from("notification_subscriptions")
         .select("*")
         .eq("driver_id", driver.id)
         .eq("enabled", true)
         .maybeSingle();
 
-      if (subscription && subscription.onesignal_external_id) {
-        // Check user-specific settings
-        const userStartHour = subscription.reminder_start_hour || 18;
-        const userSkipWeekends = subscription.skip_weekends !== false;
-        const userIntervalMinutes = subscription.reminder_interval_minutes || 30;
+      if (subError) {
+        console.error(`❌ Error fetching subscription for ${driver.driver_name}:`, subError);
+        continue;
+      }
 
-        // Skip if user wants to skip weekends
-        if (userSkipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
+      if (!subscription) {
+        console.log(`⚠️ No active subscription for ${driver.driver_name}`);
+        skippedDrivers.push({ name: driver.driver_name, reason: "No subscription" });
+        continue;
+      }
+
+      if (!subscription.onesignal_external_id) {
+        console.log(`⚠️ No OneSignal ID for ${driver.driver_name}`);
+        skippedDrivers.push({ name: driver.driver_name, reason: "No OneSignal ID" });
+        continue;
+      }
+
+      const userStartHour = subscription.reminder_start_hour || 18;
+      const userSkipWeekends = subscription.skip_weekends !== false;
+      const userIntervalMinutes = subscription.reminder_interval_minutes || 30;
+
+      console.log(`  ⚙️ Settings: start=${userStartHour}:00, interval=${userIntervalMinutes}min, skipWeekends=${userSkipWeekends}`);
+
+      if (userSkipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
+        console.log(`  ⏭️ Skipping (weekend disabled)`);
+        skippedDrivers.push({ name: driver.driver_name, reason: "Weekend skipped" });
+        continue;
+      }
+
+      if (currentHour < userStartHour) {
+        console.log(`  ⏭️ Skipping (before start hour ${userStartHour})`);
+        skippedDrivers.push({ name: driver.driver_name, reason: `Before ${userStartHour}:00` });
+        continue;
+      }
+
+      if (subscription.last_reminder_date === today && subscription.last_reminder_sent_at) {
+        const lastSentAt = new Date(subscription.last_reminder_sent_at);
+        const minutesSinceLastReminder = Math.floor((now.getTime() - lastSentAt.getTime()) / (60 * 1000));
+
+        console.log(`  📊 Last reminder: ${minutesSinceLastReminder} minutes ago`);
+
+        if (minutesSinceLastReminder < userIntervalMinutes) {
+          const waitMinutes = userIntervalMinutes - minutesSinceLastReminder;
+          console.log(`  ⏭️ Skipping (interval not met, wait ${waitMinutes} more minutes)`);
+          skippedDrivers.push({
+            name: driver.driver_name,
+            reason: `Wait ${waitMinutes}min`
+          });
           continue;
         }
+      }
 
-        // Skip if before user's start hour
-        if (currentHour < userStartHour) {
-          continue;
-        }
+      try {
+        console.log(`  📤 Sending reminder to ${driver.driver_name}`);
 
-        // Check cooldown based on user's interval preference
-        const userIntervalMs = userIntervalMinutes * 60 * 1000;
-        const userCooldownTime = new Date(now.getTime() - userIntervalMs).toISOString();
+        const message = {
+          app_id: ONESIGNAL_APP_ID,
+          include_external_user_ids: [subscription.onesignal_external_id],
+          headings: { en: "⏰ تذكير بتسجيل ساعات العمل" },
+          contents: {
+            en: `مرحبا ${driver.driver_name}، لم تسجل ساعات العمل اليوم بعد. يرجى تسجيل الدخول وإكمال التسجيل.`,
+          },
+          data: {
+            type: "work_reminder",
+            driver_id: driver.id,
+            date: today,
+          },
+        };
 
-        const { data: userRecentReminder } = await supabase
-          .from("notification_reminders_log")
-          .select("sent_at")
-          .eq("driver_id", driver.id)
-          .eq("reminder_date", today)
-          .eq("reminder_type", "driver")
-          .gte("sent_at", userCooldownTime)
-          .maybeSingle();
+        const response = await fetch("https://onesignal.com/api/v1/notifications", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
+          },
+          body: JSON.stringify(message),
+        });
 
-        if (userRecentReminder) {
-          continue;
-        }
+        const responseData = await response.json();
 
-        try {
-          const message = {
-            app_id: ONESIGNAL_APP_ID,
-            include_external_user_ids: [subscription.onesignal_external_id],
-            headings: { en: "⏰ تذكير بتسجيل ساعات العمل" },
-            contents: {
-              en: `مرحبا ${driver.driver_name}، لم تسجل ساعات العمل اليوم بعد. يرجى تسجيل الدخول وإكمال التسجيل.`,
-            },
-            data: {
-              type: "work_reminder",
-              driver_id: driver.id,
-              date: today,
-            },
-          };
+        if (response.ok && responseData.id) {
+          console.log(`  ✅ Reminder sent successfully (notification_id: ${responseData.id})`);
 
-          const response = await fetch("https://onesignal.com/api/v1/notifications", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
-            },
-            body: JSON.stringify(message),
+          await supabase
+            .from("notification_subscriptions")
+            .update({
+              last_reminder_sent_at: now.toISOString(),
+              last_reminder_date: today,
+              updated_at: now.toISOString(),
+            })
+            .eq("id", subscription.id);
+
+          await supabase.from("notification_reminders_log").insert({
+            driver_id: driver.id,
+            reminder_date: today,
+            sent_at: now.toISOString(),
+            reminder_type: "driver",
+            message_content: `Reminder sent to ${driver.driver_name} at ${currentHour}:${String(currentMinute).padStart(2, '0')}`,
           });
 
-          if (response.ok) {
-            await supabase.from("notification_reminders_log").insert({
-              driver_id: driver.id,
-              reminder_date: today,
-              sent_at: now.toISOString(),
-              reminder_type: "driver",
-              message_content: `Reminder sent to ${driver.driver_name}`,
-            });
-
-            driverNotificationsSent++;
-          }
-        } catch (error) {
-          console.error(`Failed to send reminder to driver ${driver.id}:`, error);
+          driverNotificationsSent++;
+          remindedDrivers.push(driver.driver_name);
+        } else {
+          console.error(`  ❌ Failed to send reminder:`, responseData);
+          skippedDrivers.push({
+            name: driver.driver_name,
+            reason: `OneSignal error: ${responseData.errors?.[0] || 'Unknown'}`
+          });
         }
+      } catch (error) {
+        console.error(`  ❌ Exception sending reminder to ${driver.driver_name}:`, error);
+        skippedDrivers.push({ name: driver.driver_name, reason: "Send failed" });
       }
     }
 
-    // Send summary to supervisors and admins
-    if (driversNeedingReminder.length > 0) {
+    if (driversNeedingReminder.length > 0 && currentHour >= 18) {
+      console.log(`\n📊 Checking supervisor/admin notifications...`);
+
       const { data: supervisorSubscriptions } = await supabase
         .from("notification_subscriptions")
         .select("*")
         .in("role", ["supervisor", "admin"])
         .eq("enabled", true);
 
-      const driverNames = driversNeedingReminder
-        .slice(0, 5)
-        .map((d: Driver) => d.driver_name)
-        .join("، ");
+      if (supervisorSubscriptions && supervisorSubscriptions.length > 0) {
+        console.log(`👔 Found ${supervisorSubscriptions.length} supervisor/admin subscriptions`);
 
-      const additionalCount = Math.max(0, driversNeedingReminder.length - 5);
-      const summaryText = additionalCount > 0
-        ? `${driverNames} و ${additionalCount} آخرين`
-        : driverNames;
+        const driverNames = driversNeedingReminder
+          .slice(0, 5)
+          .map((d: Driver) => d.driver_name)
+          .join("، ");
 
-      for (const subscription of supervisorSubscriptions || []) {
-        // Check if supervisor was already notified in the last 30 minutes
-        const { data: recentSupervisorReminder } = await supabase
-          .from("notification_reminders_log")
-          .select("id")
-          .eq("reminder_type", `${subscription.role}_summary`)
-          .eq("reminder_date", today)
-          .gte("sent_at", thirtyMinutesAgo)
-          .maybeSingle();
+        const additionalCount = Math.max(0, driversNeedingReminder.length - 5);
+        const summaryText = additionalCount > 0
+          ? `${driverNames} و ${additionalCount} آخرين`
+          : driverNames;
 
-        if (recentSupervisorReminder) {
-          continue; // Skip if already notified recently
-        }
-
-        try {
-          const message = {
-            app_id: ONESIGNAL_APP_ID,
-            include_external_user_ids: [subscription.onesignal_external_id],
-            headings: { en: "📋 ملخص تسجيل ساعات العمل" },
-            contents: {
-              en: `${driversNeedingReminder.length} سائق لم يسجلوا ساعات العمل اليوم: ${summaryText}`,
-            },
-            data: {
-              type: "supervisor_summary",
-              date: today,
-              count: driversNeedingReminder.length,
-            },
-          };
-
-          const response = await fetch("https://onesignal.com/api/v1/notifications", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
-            },
-            body: JSON.stringify(message),
-          });
-
-          if (response.ok) {
-            await supabase.from("notification_reminders_log").insert({
-              driver_id: null,
-              reminder_date: today,
-              sent_at: now.toISOString(),
-              reminder_type: `${subscription.role}_summary`,
-              message_content: `Summary sent: ${driversNeedingReminder.length} drivers pending`,
-            });
+        for (const subscription of supervisorSubscriptions) {
+          if (!subscription.onesignal_external_id) {
+            console.log(`  ⚠️ No OneSignal ID for ${subscription.role}`);
+            continue;
           }
-        } catch (error) {
-          console.error(
-            `Failed to send summary to ${subscription.role}:`,
-            error
-          );
+
+          const userStartHour = subscription.reminder_start_hour || 18;
+          const userIntervalMinutes = subscription.reminder_interval_minutes || 30;
+
+          if (currentHour < userStartHour) {
+            console.log(`  ⏭️ Skipping ${subscription.role} (before start hour)`);
+            continue;
+          }
+
+          if (subscription.last_reminder_date === today && subscription.last_reminder_sent_at) {
+            const lastSentAt = new Date(subscription.last_reminder_sent_at);
+            const minutesSinceLastReminder = Math.floor((now.getTime() - lastSentAt.getTime()) / (60 * 1000));
+
+            if (minutesSinceLastReminder < userIntervalMinutes) {
+              console.log(`  ⏭️ Skipping ${subscription.role} (interval not met)`);
+              continue;
+            }
+          }
+
+          try {
+            console.log(`  📤 Sending summary to ${subscription.role}`);
+
+            const message = {
+              app_id: ONESIGNAL_APP_ID,
+              include_external_user_ids: [subscription.onesignal_external_id],
+              headings: { en: "📋 ملخص تسجيل ساعات العمل" },
+              contents: {
+                en: `${driversNeedingReminder.length} سائق لم يسجلوا ساعات العمل اليوم: ${summaryText}`,
+              },
+              data: {
+                type: "supervisor_summary",
+                date: today,
+                count: driversNeedingReminder.length,
+              },
+            };
+
+            const response = await fetch("https://onesignal.com/api/v1/notifications", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
+              },
+              body: JSON.stringify(message),
+            });
+
+            const responseData = await response.json();
+
+            if (response.ok && responseData.id) {
+              console.log(`  ✅ Summary sent successfully to ${subscription.role}`);
+
+              await supabase
+                .from("notification_subscriptions")
+                .update({
+                  last_reminder_sent_at: now.toISOString(),
+                  last_reminder_date: today,
+                  updated_at: now.toISOString(),
+                })
+                .eq("id", subscription.id);
+
+              await supabase.from("notification_reminders_log").insert({
+                driver_id: null,
+                reminder_date: today,
+                sent_at: now.toISOString(),
+                reminder_type: `${subscription.role}_summary`,
+                message_content: `Summary sent to ${subscription.role}: ${driversNeedingReminder.length} drivers pending`,
+              });
+            } else {
+              console.error(`  ❌ Failed to send summary to ${subscription.role}:`, responseData);
+            }
+          } catch (error) {
+            console.error(`  ❌ Exception sending summary to ${subscription.role}:`, error);
+          }
         }
       }
     }
 
+    console.log(`\n✅ Function completed successfully`);
+    console.log(`📊 Summary: ${driverNotificationsSent} reminders sent`);
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Reminders sent successfully",
+        message: "Reminders processing completed",
         date: today,
         time: now.toISOString(),
-        driversNeedingReminder: driversNeedingReminder.length,
-        driverNotificationsSent,
-        driversReminded: driversToRemind.map((d: Driver) => ({
-          name: d.driver_name,
-        })),
+        hour: currentHour,
+        minute: currentMinute,
+        dayOfWeek,
+        stats: {
+          totalActiveDrivers: drivers.length,
+          driversWithSubmissions: driversWithSubmissions.size,
+          driversNeedingReminder: driversNeedingReminder.length,
+          remindersSent: driverNotificationsSent,
+          driversSkipped: skippedDrivers.length,
+        },
+        remindedDrivers,
+        skippedDrivers,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   } catch (error: any) {
-    console.error("Error in send-daily-reminders:", error);
+    console.error("❌ Error in send-daily-reminders:", error);
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message || "Unknown error",
+        stack: error.stack,
       }),
       {
         status: 500,
