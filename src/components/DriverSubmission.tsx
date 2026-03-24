@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Truck, Clock, Calendar, LogOut, User, ScanLine } from 'lucide-react';
 import { supabase, hasSupabaseConfig } from '../lib/supabase';
-import { DriverProfile } from './DriverProfile';
+import { DriverProfileModern } from './DriverProfileModern';
 import { ScanPage } from './ScanPage';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -278,7 +278,7 @@ export function DriverSubmission() {
   const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
   if (showProfile) {
-    return <DriverProfile onBack={() => setShowProfile(false)} />;
+    return <DriverProfileModern onBack={() => setShowProfile(false)} />;
   }
 
   if (showScan) {
