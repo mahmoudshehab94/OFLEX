@@ -292,33 +292,40 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="relative z-10 backdrop-blur-xl bg-slate-800/50 border-b border-white/10 px-6 py-4 shadow-lg">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin-Dashboard</h1>
-            <p className="text-gray-600">Verwaltung & Berichte</p>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-blue-100 to-cyan-200 bg-clip-text text-transparent">Admin-Dashboard</h1>
+            <p className="text-slate-400 font-medium">Verwaltung & Berichte</p>
           </div>
           <button
             onClick={onLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+            className="group relative flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 text-red-400 hover:text-red-300 rounded-xl transition-all border border-red-500/30 hover:border-red-500/50 hover:scale-105 active:scale-95 shadow-lg shadow-red-500/10 hover:shadow-red-500/20 overflow-hidden"
           >
-            <LogOut className="w-5 h-5" />
-            Abmelden
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+            <LogOut className="w-5 h-5 relative z-10 group-hover:rotate-12 transition-transform" />
+            <span className="font-semibold relative z-10">Abmelden</span>
           </button>
         </div>
       </div>
 
       {/* Tabs Navigation */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="relative z-10 backdrop-blur-xl bg-slate-800/30 border-b border-white/10">
         <div className="px-6 flex gap-2">
           <button
             onClick={() => setActiveTab('drivers')}
-            className={`flex items-center gap-2 px-6 py-4 font-medium border-b-2 transition ${
+            className={`flex items-center gap-2 px-6 py-4 font-semibold border-b-2 transition-all ${
               activeTab === 'drivers'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-500 text-blue-400 bg-blue-500/10'
+                : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5'
             }`}
           >
             <Users className="w-5 h-5" />
@@ -326,10 +333,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </button>
           <button
             onClick={() => setActiveTab('reports')}
-            className={`flex items-center gap-2 px-6 py-4 font-medium border-b-2 transition ${
+            className={`flex items-center gap-2 px-6 py-4 font-semibold border-b-2 transition-all ${
               activeTab === 'reports'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-500 text-blue-400 bg-blue-500/10'
+                : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5'
             }`}
           >
             <FileText className="w-5 h-5" />
@@ -340,74 +347,74 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
       {/* Error/Success Message */}
       {message && (
-        <div className={`mx-6 mt-6 p-4 rounded-lg ${
+        <div className={`relative z-10 mx-6 mt-6 p-4 rounded-xl backdrop-blur-xl shadow-lg ${
           message.type === 'error'
-            ? 'bg-red-50 border border-red-200 text-red-800'
-            : 'bg-green-50 border border-green-200 text-green-800'
+            ? 'bg-red-500/10 border border-red-500/30 text-red-300 shadow-red-500/10'
+            : 'bg-green-500/10 border border-green-500/30 text-green-300 shadow-green-500/10'
         }`}>
           {message.text}
         </div>
       )}
 
       {/* Main Content */}
-      <div className="px-6 py-6 space-y-6">
+      <div className="relative z-10 px-6 py-6 space-y-6">
         {activeTab === 'drivers' ? (
           <>
         {/* Add Driver Section */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="backdrop-blur-xl bg-slate-800/50 rounded-2xl border border-white/10 p-6 shadow-lg">
           <div className="flex items-center gap-2 mb-4">
-            <Users className="w-6 h-6 text-blue-600" />
-            <h2 className="text-2xl font-bold text-gray-900">Neuen Fahrer hinzufügen</h2>
+            <Users className="w-6 h-6 text-blue-400" />
+            <h2 className="text-2xl font-bold text-white">Neuen Fahrer hinzufügen</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-2">Code (eindeutig) *</label>
+              <label className="block text-slate-300 font-semibold mb-2">Code (eindeutig) *</label>
               <input
                 type="text"
                 value={newDriverCode}
                 onChange={(e) => setNewDriverCode(e.target.value)}
                 placeholder="z.B. 101, D001..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 text-white placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all hover:bg-slate-900/70"
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-2">Name *</label>
+              <label className="block text-slate-300 font-semibold mb-2">Name *</label>
               <input
                 type="text"
                 value={newDriverName}
                 onChange={(e) => setNewDriverName(e.target.value)}
                 placeholder="z.B. Max Mustermann"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 text-white placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all hover:bg-slate-900/70"
               />
             </div>
           </div>
           <button
             onClick={addDriver}
             disabled={loading}
-            className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+            className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold hover:from-blue-600 hover:to-cyan-600 transition-all disabled:opacity-50 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 active:scale-95"
           >
             Hinzufügen
           </button>
         </div>
 
         {/* Search and Drivers List */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Alle Fahrer</h2>
+        <div className="backdrop-blur-xl bg-slate-800/50 rounded-2xl border border-white/10 p-6 shadow-lg">
+          <h2 className="text-2xl font-bold text-white mb-4">Alle Fahrer</h2>
 
           {/* Search Box */}
           <div className="mb-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Nach Code oder Name suchen..."
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 text-white placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all hover:bg-slate-900/70"
               />
             </div>
             {searchQuery && (
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-slate-400 font-medium">
                 {filteredDrivers.length} von {drivers.length} Fahrer(n) gefunden
               </p>
             )}
@@ -415,9 +422,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
           {/* Drivers List */}
           {loading ? (
-            <p className="text-gray-500 text-center py-12">Lädt...</p>
+            <p className="text-slate-400 text-center py-12 font-medium">Lädt...</p>
           ) : filteredDrivers.length === 0 ? (
-            <p className="text-gray-500 text-center py-12">
+            <p className="text-slate-400 text-center py-12 font-medium">
               {searchQuery ? 'Keine Fahrer gefunden' : 'Keine Fahrer vorhanden'}
             </p>
           ) : (
@@ -425,81 +432,83 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
               {filteredDrivers.map((driver) => (
                 <div
                   key={driver.id}
-                  className={`border rounded-lg p-4 ${
-                    driver.is_active ? 'border-gray-200 bg-white' : 'border-gray-300 bg-gray-50'
+                  className={`border rounded-xl p-4 backdrop-blur-xl transition-all ${
+                    driver.is_active
+                      ? 'border-white/10 bg-slate-900/30 hover:bg-slate-900/50'
+                      : 'border-slate-600/30 bg-slate-800/20 opacity-60'
                   }`}
                 >
                   {editingDriver?.id === driver.id ? (
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Code</label>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Code</label>
                           <input
                             type="text"
                             value={editCode}
                             onChange={(e) => setEditCode(e.target.value)}
                             placeholder="Code"
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-slate-900/50 border border-white/10 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-blue-500/50 transition-all hover:bg-slate-900/70"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">Name</label>
                           <input
                             type="text"
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
                             placeholder="Name"
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-slate-900/50 border border-white/10 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-blue-500/50 transition-all hover:bg-slate-900/70"
                           />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">License Letters</label>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">License Letters</label>
                           <input
                             type="text"
                             value={editLicenseLetters}
                             onChange={(e) => setEditLicenseLetters(e.target.value)}
                             placeholder="e.g., ABC"
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-slate-900/50 border border-white/10 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-blue-500/50 transition-all hover:bg-slate-900/70"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">License Numbers</label>
+                          <label className="block text-xs font-semibold text-slate-300 mb-1">License Numbers</label>
                           <input
                             type="text"
                             value={editLicenseNumbers}
                             onChange={(e) => setEditLicenseNumbers(e.target.value)}
                             placeholder="e.g., 123456"
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-slate-900/50 border border-white/10 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-blue-500/50 transition-all hover:bg-slate-900/70"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">Email</label>
                         <input
                           type="email"
                           value={editEmail}
                           onChange={(e) => setEditEmail(e.target.value)}
                           placeholder="email@example.com"
-                          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 bg-slate-900/50 border border-white/10 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-blue-500/50 transition-all hover:bg-slate-900/70 disabled:opacity-50"
                           disabled={!editingDriver.user_account_id}
                         />
                         {!editingDriver.user_account_id && (
-                          <p className="text-xs text-gray-500 mt-1">Dieser Fahrer hat kein Benutzerkonto</p>
+                          <p className="text-xs text-slate-400 mt-1">Dieser Fahrer hat kein Benutzerkonto</p>
                         )}
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={saveDriverEdit}
-                          className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                          className="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 text-sm font-semibold shadow-lg shadow-green-500/30 hover:scale-105 active:scale-95 transition-all"
                         >
                           <Save className="w-4 h-4" />
                           Speichern
                         </button>
                         <button
                           onClick={cancelEdit}
-                          className="flex items-center gap-1 px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
+                          className="flex items-center gap-1 px-3 py-2 bg-slate-600/50 text-slate-200 rounded-lg hover:bg-slate-600/70 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
                         >
                           <X className="w-4 h-4" />
                           Abbrechen
@@ -509,10 +518,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   ) : (
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <p className={`font-semibold ${driver.is_active ? 'text-gray-900' : 'text-gray-500'}`}>
-                          {driver.driver_name} (Code: {driver.driver_code})
+                        <p className={`font-bold text-lg ${driver.is_active ? 'text-white' : 'text-slate-400'}`}>
+                          {driver.driver_name} <span className="text-slate-400 text-base font-normal">(Code: {driver.driver_code})</span>
                         </p>
-                        <div className="flex items-center gap-3 mt-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-3 mt-1 text-sm text-slate-400 font-medium">
                           <span>Einträge: {driver.entry_count || 0}</span>
                           {driver.license_letters && driver.license_numbers && (
                             <span>Führerschein: {driver.license_letters} {driver.license_numbers}</span>
@@ -521,11 +530,11 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             <span>Email: {driver.user_accounts.email}</span>
                           )}
                         </div>
-                        <div className="mt-1">
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        <div className="mt-2">
+                          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
                             driver.is_active
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-700'
+                              ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                              : 'bg-slate-600/20 text-slate-400 border border-slate-600/30'
                           }`}>
                             {driver.is_active ? 'Aktiv' : 'Inaktiv'}
                           </span>
@@ -534,10 +543,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       <div className="flex gap-2">
                         <button
                           onClick={() => toggleDriverStatus(driver)}
-                          className={`p-2 rounded ${
+                          className={`p-2 rounded-lg transition-all hover:scale-110 active:scale-95 ${
                             driver.is_active
-                              ? 'bg-orange-100 text-orange-600 hover:bg-orange-200'
-                              : 'bg-green-100 text-green-600 hover:bg-green-200'
+                              ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 border border-orange-500/30'
+                              : 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30'
                           }`}
                           title={driver.is_active ? 'Deaktivieren' : 'Aktivieren'}
                         >
@@ -545,14 +554,14 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         </button>
                         <button
                           onClick={() => startEditDriver(driver)}
-                          className="p-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                          className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 border border-blue-500/30 transition-all hover:scale-110 active:scale-95"
                           title="Bearbeiten"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => deleteDriver(driver)}
-                          className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                          className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 border border-red-500/30 transition-all hover:scale-110 active:scale-95"
                           title="Löschen"
                         >
                           <Trash2 className="w-4 h-4" />
