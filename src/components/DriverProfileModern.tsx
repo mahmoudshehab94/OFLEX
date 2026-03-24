@@ -525,20 +525,6 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
 
         {activeTab === 'stats' && stats && (
           <div className="space-y-6">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-8 shadow-2xl">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-4xl font-bold text-white mb-2">
-                    {new Date(selectedYear, selectedMonth - 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
-                  </h2>
-                  <p className="text-blue-100 text-lg">Monatsstatistik</p>
-                </div>
-                <div className="bg-white/20 p-4 rounded-xl">
-                  <Calendar className="w-10 h-10 text-white" />
-                </div>
-              </div>
-            </div>
-
             <MonthSelector
               selectedYear={selectedYear}
               selectedMonth={selectedMonth}
