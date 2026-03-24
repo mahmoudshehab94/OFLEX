@@ -329,11 +329,12 @@ export function DriverSubmission() {
             </button>
             <button
               onClick={logout}
-              className="group flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-all border border-red-500/20 hover:border-red-500/30 hover:scale-105 text-sm sm:text-base"
+              className="group relative flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 text-red-400 hover:text-red-300 rounded-xl transition-all border border-red-500/30 hover:border-red-500/50 hover:scale-105 active:scale-95 shadow-lg shadow-red-500/10 hover:shadow-red-500/20 text-sm sm:text-base overflow-hidden"
               title="Abmelden"
             >
-              <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              <span className="hidden sm:inline font-medium">Abmelden</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5 relative z-10 group-hover:rotate-12 transition-transform" />
+              <span className="hidden sm:inline font-semibold relative z-10">Abmelden</span>
             </button>
           </div>
         </div>
