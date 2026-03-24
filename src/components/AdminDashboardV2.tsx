@@ -1375,18 +1375,28 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 dark:bg-slate-950 flex flex-col">
-      <header className="card m-0 rounded-none border-b sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex-shrink-0">
-              <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
+      {/* Modern Header with Glassmorphism */}
+      <header className="relative backdrop-blur-xl bg-gradient-to-br from-slate-800/90 via-slate-900/90 to-slate-800/90 border-b border-white/10 shadow-2xl sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
+              <div className="relative p-3 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-2xl border border-blue-500/30 flex-shrink-0">
+                <BarChart3 className="w-7 h-7 text-blue-400" />
+              </div>
             </div>
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
+              <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-white via-blue-100 to-cyan-200 bg-clip-text text-transparent truncate tracking-tight">
                 Admin-Dashboard
               </h1>
-              <p className="text-xs text-gray-500 dark:text-slate-400 hidden sm:block">
+              <p className="text-xs sm:text-sm text-slate-400 hidden sm:block font-medium">
                 Trans Oflex Verwaltung
               </p>
             </div>
@@ -1395,37 +1405,38 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={toggleDarkMode}
-              className="btn-icon"
+              className="group px-3 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl transition-all duration-300 border border-white/10 hover:border-white/20 hover:scale-105"
               title={isDark ? 'Helles Design' : 'Dunkles Design'}
             >
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <button
               onClick={onLogout}
-              className="btn-secondary flex items-center gap-2"
+              className="group flex items-center gap-2 px-3 py-2.5 sm:px-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-all duration-300 border border-red-500/20 hover:border-red-500/30 hover:shadow-lg hover:shadow-red-500/20 hover:scale-105"
             >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Abmelden</span>
+              <LogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <span className="hidden sm:inline font-medium">Abmelden</span>
             </button>
           </div>
         </div>
       </header>
 
       {message && (
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 mt-4">
-          <div className={`p-4 rounded-lg ${
+        <div className="relative max-w-7xl mx-auto w-full px-4 sm:px-6 mt-4 z-20">
+          <div className={`p-4 rounded-xl backdrop-blur-xl animate-in slide-in-from-top duration-500 ${
             message.type === 'success'
-              ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 text-green-900 dark:text-green-200'
-              : 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-200'
+              ? 'bg-green-500/10 text-green-300 border border-green-500/30 shadow-lg shadow-green-500/10'
+              : 'bg-red-500/10 text-red-300 border border-red-500/30 shadow-lg shadow-red-500/10'
           }`}>
             {message.text}
           </div>
         </div>
       )}
 
-      <nav className="card m-0 rounded-none border-b sticky top-16 z-20 shadow-sm">
+      {/* Modern Tab Navigation */}
+      <nav className="relative backdrop-blur-xl bg-slate-900/50 border-b border-white/5 sticky top-[88px] z-20">
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6">
-          <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide pt-2">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
               { id: 'reports', label: 'Berichte', icon: FileText, requiresPermission: 'canViewReports' },
@@ -1443,13 +1454,13 @@ export default function AdminDashboardV2({ onLogout }: { onLogout: () => void })
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as TabType)}
-                    className={`px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors flex items-center gap-2 ${
+                    className={`group relative px-4 py-3 font-semibold text-sm whitespace-nowrap transition-all duration-300 rounded-t-xl flex items-center gap-2 ${
                       activeTab === tab.id
-                        ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'
+                        ? 'text-white bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-t-2 border-x-2 border-blue-500'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
                     }`}
                   >
-                    <IconComponent className="w-4 h-4" />
+                    <IconComponent className={`w-4 h-4 transition-transform duration-300 ${activeTab === tab.id ? 'scale-110' : 'group-hover:scale-110'}`} />
                     <span className="hidden sm:inline">{tab.label}</span>
                   </button>
                 );

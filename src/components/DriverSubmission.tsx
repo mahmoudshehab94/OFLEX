@@ -286,55 +286,62 @@ export function DriverSubmission() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800 flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 md:p-8 border border-gray-700">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-3 sm:p-4 relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+      <div className="relative z-10 backdrop-blur-xl bg-gradient-to-br from-slate-800/90 via-slate-900/90 to-slate-800/90 rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 md:p-8 border border-white/10">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="bg-blue-600 p-2 sm:p-3 rounded-full shadow-lg">
-              <Truck className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
+              <div className="relative bg-gradient-to-br from-blue-500/20 to-cyan-500/20 p-2 sm:p-3 rounded-2xl shadow-lg border border-blue-500/30">
+                <Truck className="w-6 h-6 sm:w-8 sm:h-8 text-blue-400" />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowProfile(true)}
-              className="p-1 hover:opacity-80 transition-opacity rounded-full flex-shrink-0"
+              className="group p-1 hover:opacity-80 transition-all rounded-full flex-shrink-0"
               title="Profil"
             >
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
                   alt="Profile"
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-gray-600 hover:border-blue-500 transition-colors"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-white/20 group-hover:border-blue-500/50 transition-all ring-2 ring-blue-500/20 group-hover:scale-105"
                   onError={(e) => {
                     console.error('Avatar load error:', avatarUrl);
                     e.currentTarget.style.display = 'none';
                     const parent = e.currentTarget.parentElement;
                     if (parent) {
-                      parent.innerHTML = `<div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600"><svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div>`;
+                      parent.innerHTML = `<div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-800/50 flex items-center justify-center border-2 border-white/20"><svg class="w-5 h-5 sm:w-6 sm:h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div>`;
                     }
                   }}
                 />
               ) : (
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600 hover:border-blue-500 transition-colors">
-                  <User className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-800/50 flex items-center justify-center border-2 border-white/20 group-hover:border-blue-500/50 transition-all ring-2 ring-blue-500/20 group-hover:scale-105">
+                  <User className="w-5 h-5 sm:w-6 sm:h-6 text-slate-300" />
                 </div>
               )}
             </button>
             <button
               onClick={logout}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-colors text-sm sm:text-base"
+              className="group flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-all border border-red-500/20 hover:border-red-500/30 hover:scale-105 text-sm sm:text-base"
               title="Abmelden"
             >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Abmelden</span>
+              <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <span className="hidden sm:inline font-medium">Abmelden</span>
             </button>
           </div>
         </div>
 
-        <h1 className="text-xl sm:text-2xl font-bold text-center text-white mb-1 sm:mb-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-center bg-gradient-to-r from-white via-blue-100 to-cyan-200 bg-clip-text text-transparent mb-1 sm:mb-2">
           Trans Oflex
         </h1>
-        <p className="text-center text-gray-300 mb-6 sm:mb-8 text-sm sm:text-base">
+        <p className="text-center text-slate-400 mb-6 sm:mb-8 text-sm sm:text-base font-medium">
           Arbeitszeit erfassen
         </p>
 

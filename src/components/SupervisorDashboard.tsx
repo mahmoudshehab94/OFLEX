@@ -275,114 +275,66 @@ export function SupervisorDashboard() {
   const permissions = hasPermission(user.role, 'canCreateDrivers');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+      <header className="relative backdrop-blur-xl bg-gradient-to-br from-slate-800/90 via-slate-900/90 to-slate-800/90 border-b border-white/10 shadow-2xl sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-4">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                <div className="relative p-3 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-2xl border border-emerald-500/30">
+                  <Users className="w-7 h-7 text-emerald-400" />
+                </div>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Supervisor-Dashboard</h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">{user.username}</p>
+                <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-white via-emerald-100 to-teal-200 bg-clip-text text-transparent tracking-tight">Supervisor-Dashboard</h1>
+                <p className="text-sm text-slate-400 font-medium">{user.username}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={toggleDarkMode}
-                className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                aria-label="Toggle dark mode"
-              >
+              <button onClick={toggleDarkMode} className="group px-3 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl transition-all duration-300 border border-white/10 hover:border-white/20 hover:scale-105" aria-label="Toggle dark mode">
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Abmelden</span>
+              <button onClick={handleLogout} className="group flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-all duration-300 border border-red-500/20 hover:border-red-500/30 hover:shadow-lg hover:shadow-red-500/20 hover:scale-105">
+                <LogOut className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <span className="font-medium">Abmelden</span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 z-10">
         {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
+          <div className={`mb-6 p-4 rounded-xl backdrop-blur-xl animate-in slide-in-from-top duration-500 ${
             message.type === 'success'
-              ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800'
-              : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800'
+              ? 'bg-green-500/10 text-green-300 border border-green-500/30 shadow-lg shadow-green-500/10'
+              : 'bg-red-500/10 text-red-300 border border-red-500/30 shadow-lg shadow-red-500/10'
           }`}>
             {message.text}
           </div>
         )}
 
-        <div className="mb-6 flex gap-4 border-b border-slate-200 dark:border-slate-700">
-          <button
-            onClick={() => setActiveTab('attendance')}
-            className={`pb-3 px-1 font-medium transition-colors relative ${
-              activeTab === 'attendance'
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Anwesenheitserfassung
-            </span>
-            {activeTab === 'attendance' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400" />
-            )}
+        <div className="mb-6 backdrop-blur-xl bg-slate-900/50 rounded-2xl border border-white/5 p-2 inline-flex gap-2">
+          <button onClick={() => setActiveTab('attendance')} className={`group px-4 py-3 font-semibold text-sm rounded-xl transition-all duration-300 flex items-center gap-2 ${activeTab === 'attendance' ? 'text-white bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 shadow-lg shadow-emerald-500/10' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}>
+            <TrendingUp className={`w-5 h-5 transition-transform duration-300 ${activeTab === 'attendance' ? 'scale-110' : 'group-hover:scale-110'}`} />
+            Anwesenheitserfassung
           </button>
-          <button
-            onClick={() => setActiveTab('drivers')}
-            className={`pb-3 px-1 font-medium transition-colors relative ${
-              activeTab === 'drivers'
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Fahrer
-            </span>
-            {activeTab === 'drivers' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400" />
-            )}
+          <button onClick={() => setActiveTab('drivers')} className={`group px-4 py-3 font-semibold text-sm rounded-xl transition-all duration-300 flex items-center gap-2 ${activeTab === 'drivers' ? 'text-white bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 shadow-lg shadow-emerald-500/10' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}>
+            <Users className={`w-5 h-5 transition-transform duration-300 ${activeTab === 'drivers' ? 'scale-110' : 'group-hover:scale-110'}`} />
+            Fahrer
           </button>
-          <button
-            onClick={() => setActiveTab('invites')}
-            className={`pb-3 px-1 font-medium transition-colors relative ${
-              activeTab === 'invites'
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5" />
-              Fahrer einladen
-            </span>
-            {activeTab === 'invites' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400" />
-            )}
+          <button onClick={() => setActiveTab('invites')} className={`group px-4 py-3 font-semibold text-sm rounded-xl transition-all duration-300 flex items-center gap-2 ${activeTab === 'invites' ? 'text-white bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 shadow-lg shadow-emerald-500/10' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}>
+            <UserPlus className={`w-5 h-5 transition-transform duration-300 ${activeTab === 'invites' ? 'scale-110' : 'group-hover:scale-110'}`} />
+            Fahrer einladen
           </button>
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`pb-3 px-1 font-medium transition-colors relative ${
-              activeTab === 'profile'
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Profil
-            </span>
-            {activeTab === 'profile' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-400" />
-            )}
+          <button onClick={() => setActiveTab('profile')} className={`group px-4 py-3 font-semibold text-sm rounded-xl transition-all duration-300 flex items-center gap-2 ${activeTab === 'profile' ? 'text-white bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 shadow-lg shadow-emerald-500/10' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}>
+            <User className={`w-5 h-5 transition-transform duration-300 ${activeTab === 'profile' ? 'scale-110' : 'group-hover:scale-110'}`} />
+            Profil
           </button>
         </div>
 
