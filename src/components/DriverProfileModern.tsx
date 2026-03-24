@@ -432,91 +432,115 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-800 to-slate-900">
-      <div className="bg-gradient-to-br from-blue-600 to-blue-700 px-6 py-8 shadow-xl">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
+      {/* Modern Header with Glassmorphism */}
+      <div className="relative backdrop-blur-xl bg-gradient-to-br from-slate-800/90 via-slate-900/90 to-slate-800/90 border-b border-white/10 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          {/* Top Actions */}
+          <div className="flex items-center justify-between mb-8">
             <button
               onClick={onBack}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+              className="group flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all duration-300 border border-white/10 hover:border-white/20 hover:shadow-lg hover:scale-105"
             >
-              <ArrowLeft className="w-5 h-5" />
-              <span>Zurück</span>
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="font-medium">Zurück</span>
             </button>
             <button
               onClick={logout}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all"
+              className="group flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-xl transition-all duration-300 border border-red-500/20 hover:border-red-500/30 hover:shadow-lg hover:shadow-red-500/20 hover:scale-105"
             >
-              <LogOut className="w-5 h-5" />
-              <span>Abmelden</span>
+              <LogOut className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <span className="font-medium">Abmelden</span>
             </button>
           </div>
-          <div className="flex items-center gap-5">
-            <div className="relative">
+
+          {/* Profile Section */}
+          <div className="flex items-center gap-6">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
               {getAvatarUrl(user?.avatar_url || null) ? (
                 <img
                   src={getAvatarUrl(user?.avatar_url || null)!}
                   alt="Profile"
-                  className="w-24 h-24 rounded-full border-4 border-white/30 object-cover shadow-lg"
+                  className="relative w-28 h-28 rounded-full border-4 border-white/20 object-cover shadow-2xl ring-4 ring-blue-500/20 group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-white/20 border-4 border-white/30 flex items-center justify-center shadow-lg">
-                  <User className="w-12 h-12 text-white" />
+                <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-4 border-white/20 flex items-center justify-center shadow-2xl ring-4 ring-blue-500/20 group-hover:scale-105 transition-transform duration-300">
+                  <User className="w-14 h-14 text-blue-400" />
                 </div>
               )}
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full border-4 border-slate-900 shadow-lg"></div>
             </div>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-white mb-1">{user?.username}</h1>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-cyan-200 bg-clip-text text-transparent mb-2 tracking-tight">
+                {user?.username}
+              </h1>
+              <p className="text-slate-400 text-sm font-medium">Fahrer-Dashboard</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-slate-800 shadow-lg border-b border-slate-700">
-        <div className="max-w-4xl mx-auto flex">
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`flex-1 px-6 py-4 font-medium transition-all ${
-              activeTab === 'stats'
-                ? 'text-blue-400 border-b-2 border-blue-400 bg-slate-700/50'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-slate-700/30'
-            }`}
-          >
-            <BarChart3 className="w-5 h-5 inline mr-2" />
-            Statistiken
-          </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex-1 px-6 py-4 font-medium transition-all ${
-              activeTab === 'settings'
-                ? 'text-blue-400 border-b-2 border-blue-400 bg-slate-700/50'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-slate-700/30'
-            }`}
-          >
-            <Lock className="w-5 h-5 inline mr-2" />
-            Einstellungen
-          </button>
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`flex-1 px-6 py-4 font-medium transition-all ${
-              activeTab === 'notifications'
-                ? 'text-blue-400 border-b-2 border-blue-400 bg-slate-700/50'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-slate-700/30'
-            }`}
-          >
-            <Bell className="w-5 h-5 inline mr-2" />
-            Benachrichtigungen
-          </button>
+      {/* Modern Tab Navigation */}
+      <div className="relative backdrop-blur-xl bg-slate-900/50 border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex gap-2 pt-4">
+            <button
+              onClick={() => setActiveTab('stats')}
+              className={`group relative px-6 py-3 font-semibold transition-all duration-300 rounded-t-xl ${
+                activeTab === 'stats'
+                  ? 'text-white bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-t-2 border-x-2 border-blue-500'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <BarChart3 className={`w-5 h-5 transition-transform duration-300 ${activeTab === 'stats' ? 'scale-110' : 'group-hover:scale-110'}`} />
+                <span>Statistiken</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`group relative px-6 py-3 font-semibold transition-all duration-300 rounded-t-xl ${
+                activeTab === 'settings'
+                  ? 'text-white bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-t-2 border-x-2 border-blue-500'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Lock className={`w-5 h-5 transition-transform duration-300 ${activeTab === 'settings' ? 'scale-110' : 'group-hover:scale-110'}`} />
+                <span>Einstellungen</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('notifications')}
+              className={`group relative px-6 py-3 font-semibold transition-all duration-300 rounded-t-xl ${
+                activeTab === 'notifications'
+                  ? 'text-white bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-t-2 border-x-2 border-blue-500'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Bell className={`w-5 h-5 transition-transform duration-300 ${activeTab === 'notifications' ? 'scale-110' : 'group-hover:scale-110'}`} />
+                <span>Benachrichtigungen</span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="relative max-w-7xl mx-auto p-6">
         {message && (
           <div
-            className={`mb-6 p-4 rounded-lg ${
+            className={`mb-6 p-4 rounded-xl backdrop-blur-xl animate-in slide-in-from-top duration-500 ${
               message.type === 'success'
-                ? 'bg-green-900/50 text-green-200 border border-green-700'
-                : 'bg-red-900/50 text-red-200 border border-red-700'
+                ? 'bg-green-500/10 text-green-300 border border-green-500/30 shadow-lg shadow-green-500/10'
+                : 'bg-red-500/10 text-red-300 border border-red-500/30 shadow-lg shadow-red-500/10'
             }`}
           >
             {message.text}
@@ -532,84 +556,97 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
               variant="driver"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-8 text-white shadow-xl transform hover:scale-105 transition-transform">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="bg-white/30 p-4 rounded-xl">
-                    <Calendar className="w-8 h-8" />
+            {/* Modern Stats Grid with Glassmorphism */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Arbeitstage Card */}
+              <div className="group relative overflow-hidden rounded-2xl backdrop-blur-xl bg-gradient-to-br from-blue-500/10 to-blue-600/10 border border-blue-500/20 p-6 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 hover:scale-[1.02] hover:border-blue-500/40">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 rounded-xl bg-blue-500/20 group-hover:bg-blue-500/30 transition-colors duration-300 group-hover:scale-110 transform">
+                      <Calendar className="w-7 h-7 text-blue-400" />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-blue-50 font-semibold mb-2">Arbeitstage</p>
-                    <p className="text-5xl font-bold">{stats.arbeitstage}</p>
-                  </div>
+                  <p className="text-slate-400 text-sm font-medium mb-2 group-hover:text-slate-300 transition-colors">Arbeitstage</p>
+                  <p className="text-5xl font-bold text-white mb-1 group-hover:scale-105 transition-transform">{stats.arbeitstage}</p>
+                  <p className="text-blue-400/80 text-xs font-medium">Tage mit Einträgen</p>
                 </div>
-                <p className="text-blue-50">Tage mit Einträgen</p>
               </div>
 
-              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-8 text-white shadow-xl transform hover:scale-105 transition-transform">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="bg-white/30 p-4 rounded-xl">
-                    <Clock className="w-8 h-8" />
+              {/* Gesamtstunden Card */}
+              <div className="group relative overflow-hidden rounded-2xl backdrop-blur-xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 border border-emerald-500/20 p-6 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-500 hover:scale-[1.02] hover:border-emerald-500/40">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 rounded-xl bg-emerald-500/20 group-hover:bg-emerald-500/30 transition-colors duration-300 group-hover:scale-110 transform">
+                      <Clock className="w-7 h-7 text-emerald-400" />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-green-50 font-semibold mb-2">Gesamtstunden</p>
-                    <p className="text-5xl font-bold">{stats.gesamtstunden}h</p>
-                  </div>
+                  <p className="text-slate-400 text-sm font-medium mb-2 group-hover:text-slate-300 transition-colors">Gesamtstunden</p>
+                  <p className="text-5xl font-bold text-white mb-1 group-hover:scale-105 transition-transform">{stats.gesamtstunden}h</p>
+                  <p className="text-emerald-400/80 text-xs font-medium">Im gewählten Monat</p>
                 </div>
-                <p className="text-green-50">Im gewählten Monat</p>
               </div>
 
-              <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-8 text-white shadow-xl transform hover:scale-105 transition-transform">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="bg-white/30 p-4 rounded-xl">
-                    <TrendingUp className="w-8 h-8" />
+              {/* Durchschnitt Card */}
+              <div className="group relative overflow-hidden rounded-2xl backdrop-blur-xl bg-gradient-to-br from-amber-500/10 to-orange-600/10 border border-amber-500/20 p-6 hover:shadow-2xl hover:shadow-amber-500/20 transition-all duration-500 hover:scale-[1.02] hover:border-amber-500/40">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 rounded-xl bg-amber-500/20 group-hover:bg-amber-500/30 transition-colors duration-300 group-hover:scale-110 transform">
+                      <TrendingUp className="w-7 h-7 text-amber-400" />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-orange-50 font-semibold mb-2">Durchschnitt</p>
-                    <p className="text-5xl font-bold">{stats.durchschnitt}h</p>
-                  </div>
+                  <p className="text-slate-400 text-sm font-medium mb-2 group-hover:text-slate-300 transition-colors">Durchschnitt</p>
+                  <p className="text-5xl font-bold text-white mb-1 group-hover:scale-105 transition-transform">{stats.durchschnitt}h</p>
+                  <p className="text-amber-400/80 text-xs font-medium">Stunden pro Tag</p>
                 </div>
-                <p className="text-orange-50">Stunden pro Tag</p>
               </div>
 
-              <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-8 text-white shadow-xl transform hover:scale-105 transition-transform">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="bg-white/30 p-4 rounded-xl">
-                    <Clock className="w-8 h-8" />
+              {/* Überstunden Card */}
+              <div className="group relative overflow-hidden rounded-2xl backdrop-blur-xl bg-gradient-to-br from-violet-500/10 to-violet-600/10 border border-violet-500/20 p-6 hover:shadow-2xl hover:shadow-violet-500/20 transition-all duration-500 hover:scale-[1.02] hover:border-violet-500/40">
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 rounded-xl bg-violet-500/20 group-hover:bg-violet-500/30 transition-colors duration-300 group-hover:scale-110 transform">
+                      <Clock className="w-7 h-7 text-violet-400" />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-purple-50 font-semibold mb-2">Überstunden</p>
-                    <p className="text-5xl font-bold">{stats.uberstunden}h</p>
-                  </div>
+                  <p className="text-slate-400 text-sm font-medium mb-2 group-hover:text-slate-300 transition-colors">Überstunden</p>
+                  <p className="text-5xl font-bold text-white mb-1 group-hover:scale-105 transition-transform">{stats.uberstunden}h</p>
+                  <p className="text-violet-400/80 text-xs font-medium">Stunden über 8h pro Tag</p>
                 </div>
-                <p className="text-purple-50">Stunden über 8h pro Tag</p>
               </div>
 
-              <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl p-8 text-white shadow-xl transform hover:scale-105 transition-transform">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="bg-white/30 p-4 rounded-xl">
-                    <AlertCircle className="w-8 h-8" />
+              {/* Fehlende Tage Card */}
+              <div className="group relative overflow-hidden rounded-2xl backdrop-blur-xl bg-gradient-to-br from-rose-500/10 to-rose-600/10 border border-rose-500/20 p-6 hover:shadow-2xl hover:shadow-rose-500/20 transition-all duration-500 hover:scale-[1.02] hover:border-rose-500/40 md:col-span-2 lg:col-span-1">
+                <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 rounded-xl bg-rose-500/20 group-hover:bg-rose-500/30 transition-colors duration-300 group-hover:scale-110 transform">
+                      <AlertCircle className="w-7 h-7 text-rose-400" />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-red-50 font-semibold mb-2">Fehlende Tage</p>
-                    <p className="text-5xl font-bold">{stats.fehlendeTage}</p>
-                  </div>
+                  <p className="text-slate-400 text-sm font-medium mb-2 group-hover:text-slate-300 transition-colors">Fehlende Tage</p>
+                  <p className="text-5xl font-bold text-white mb-1 group-hover:scale-105 transition-transform">{stats.fehlendeTage}</p>
+                  <p className="text-rose-400/80 text-xs font-medium truncate">
+                    {stats.fehlendeTageList.length > 0 ? stats.fehlendeTageList.join(', ') : '-'}
+                  </p>
                 </div>
-                <p className="text-red-50 truncate">
-                  {stats.fehlendeTageList.length > 0 ? stats.fehlendeTageList.join(', ') : '-'}
-                </p>
               </div>
             </div>
 
+            {/* Most Used Vehicle Card */}
             {stats.mostUsedVehicle && (
-              <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-8 text-white shadow-xl transform hover:scale-105 transition-transform">
-                <div className="flex items-center gap-5">
-                  <div className="bg-white/30 p-5 rounded-xl">
-                    <Truck className="w-10 h-10" />
+              <div className="group relative overflow-hidden rounded-2xl backdrop-blur-xl bg-gradient-to-br from-cyan-500/10 to-teal-600/10 border border-cyan-500/20 p-6 hover:shadow-2xl hover:shadow-cyan-500/20 transition-all duration-500 hover:scale-[1.02] hover:border-cyan-500/40">
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative flex items-center gap-5">
+                  <div className="p-4 rounded-2xl bg-cyan-500/20 group-hover:bg-cyan-500/30 transition-colors duration-300 group-hover:scale-110 transform">
+                    <Truck className="w-10 h-10 text-cyan-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-amber-50 font-semibold text-lg mb-2">Meist genutztes Fahrzeug</p>
-                    <p className="text-5xl font-bold">{stats.mostUsedVehicle}</p>
+                    <p className="text-slate-400 text-sm font-medium mb-2 group-hover:text-slate-300 transition-colors">Meist genutztes Fahrzeug</p>
+                    <p className="text-4xl font-bold text-white group-hover:scale-105 transition-transform">{stats.mostUsedVehicle}</p>
                   </div>
                 </div>
               </div>
