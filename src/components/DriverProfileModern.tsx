@@ -572,17 +572,17 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                 <p className="text-orange-50">Stunden pro Tag</p>
               </div>
 
-              <div className="bg-gradient-to-br from-cyan-500 to-teal-600 rounded-2xl p-8 text-white shadow-xl transform hover:scale-105 transition-transform">
+              <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-8 text-white shadow-xl transform hover:scale-105 transition-transform">
                 <div className="flex items-start gap-4 mb-4">
                   <div className="bg-white/30 p-4 rounded-xl">
-                    <BarChart3 className="w-8 h-8" />
+                    <Clock className="w-8 h-8" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-cyan-50 font-semibold mb-2">Einträge</p>
-                    <p className="text-5xl font-bold">{stats.entries}</p>
+                    <p className="text-purple-50 font-semibold mb-2">Überstunden</p>
+                    <p className="text-5xl font-bold">{stats.uberstunden}h</p>
                   </div>
                 </div>
-                <p className="text-cyan-50">Erfasste Arbeitstage</p>
+                <p className="text-purple-50">Stunden über 8h pro Tag</p>
               </div>
 
               <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl p-8 text-white shadow-xl transform hover:scale-105 transition-transform">
@@ -598,19 +598,6 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                 <p className="text-red-50 truncate">
                   {stats.fehlendeTageList.length > 0 ? stats.fehlendeTageList.join(', ') : '-'}
                 </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-8 text-white shadow-xl transform hover:scale-105 transition-transform">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="bg-white/30 p-4 rounded-xl">
-                    <Clock className="w-8 h-8" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-purple-50 font-semibold mb-2">Überstunden</p>
-                    <p className="text-5xl font-bold">{stats.uberstunden}h</p>
-                  </div>
-                </div>
-                <p className="text-purple-50">Stunden über 8h pro Tag</p>
               </div>
             </div>
 
