@@ -83,6 +83,7 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
   const [uploadingIdBarcode, setUploadingIdBarcode] = useState(false);
   const [idBarcodePreview, setIdBarcodePreview] = useState<string | null>(null);
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
 
   useEffect(() => {
     loadDriverData();
@@ -462,7 +463,11 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
 
           {/* Profile Section */}
           <div className="flex items-center gap-6">
-            <div className="relative group">
+            <div
+              className="relative group cursor-pointer"
+              onClick={() => getAvatarUrl(user?.avatar_url || null) && setShowAvatarModal(true)}
+              title={getAvatarUrl(user?.avatar_url || null) ? "Klicken zum Vergrößern" : ""}
+            >
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
               {getAvatarUrl(user?.avatar_url || null) ? (
                 <img
@@ -915,6 +920,14 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
           label="Scannen Sie diesen Code"
         />
       )}
+
+      <BarcodeModal
+        isOpen={showAvatarModal}
+        onClose={() => setShowAvatarModal(false)}
+        imageUrl={getAvatarUrl(user?.avatar_url || null)}
+        altText="Profilbild"
+        label={user?.username || 'Profilbild'}
+      />
     </div>
   );
 }
