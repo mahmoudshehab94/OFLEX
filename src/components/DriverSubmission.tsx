@@ -347,8 +347,8 @@ export function DriverSubmission() {
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div>
-            <label htmlFor="workDate" className="block text-sm font-medium text-gray-200 mb-2">
-              <Calendar className="w-4 h-4 inline mr-1" />
+            <label htmlFor="workDate" className="block text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-blue-400" />
               Datum
             </label>
             <input
@@ -356,13 +356,13 @@ export function DriverSubmission() {
               id="workDate"
               value={workDate}
               onChange={(e) => setWorkDate(e.target.value)}
-              className="w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm sm:text-base"
+              className="w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-slate-900/50 border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-xl text-sm sm:text-base hover:bg-slate-900/70"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-200 mb-2">
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
               Kennzeichen
             </label>
             <div className="grid grid-cols-2 gap-3 relative">
@@ -374,13 +374,13 @@ export function DriverSubmission() {
                   onChange={(e) => handleLicenseLettersChange(e.target.value)}
                   onFocus={() => setShowVehicleSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowVehicleSuggestions(false), 200)}
-                  className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-base sm:text-lg uppercase text-white placeholder-gray-400"
+                  className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-xl text-center font-bold text-base sm:text-lg uppercase text-white placeholder-slate-500 hover:bg-slate-900/70"
                   placeholder="MI"
                   maxLength={2}
                   required
                   autoComplete="off"
                 />
-                <p className="text-xs text-gray-400 mt-1 text-center">Buchstaben</p>
+                <p className="text-xs text-slate-400 mt-1.5 text-center font-medium">Buchstaben</p>
               </div>
               <div>
                 <input
@@ -391,7 +391,7 @@ export function DriverSubmission() {
                   onKeyDown={handleLicenseNumbersKeyDown}
                   onFocus={() => setShowVehicleSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowVehicleSuggestions(false), 200)}
-                  className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-semibold text-base sm:text-lg text-white placeholder-gray-400"
+                  className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-xl text-center font-bold text-base sm:text-lg text-white placeholder-slate-500 hover:bg-slate-900/70"
                   placeholder="299"
                   maxLength={4}
                   required
@@ -399,17 +399,17 @@ export function DriverSubmission() {
                   pattern="[0-9]*"
                   autoComplete="off"
                 />
-                <p className="text-xs text-gray-400 mt-1 text-center">Nummer</p>
+                <p className="text-xs text-slate-400 mt-1.5 text-center font-medium">Nummer</p>
               </div>
             </div>
             {showVehicleSuggestions && vehicleSuggestions.length > 0 && (
-              <div className="mt-2 bg-gray-700 border border-gray-600 rounded-lg overflow-hidden">
+              <div className="mt-2 bg-slate-900/70 border border-white/10 rounded-xl overflow-hidden backdrop-blur-xl shadow-lg">
                 {vehicleSuggestions.map((vehicle, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleVehicleSuggestionClick(vehicle)}
-                    className="w-full px-4 py-2 text-left text-white hover:bg-gray-600 transition"
+                    className="w-full px-4 py-2.5 text-left text-white hover:bg-blue-500/20 transition-all font-medium border-b border-white/5 last:border-0"
                   >
                     {vehicle}
                   </button>
@@ -420,8 +420,8 @@ export function DriverSubmission() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
-                <Clock className="w-4 h-4 inline mr-1" />
+              <label className="block text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-400" />
                 von
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -429,34 +429,34 @@ export function DriverSubmission() {
                   <select
                     value={startHour}
                     onChange={(e) => setStartHour(e.target.value)}
-                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-base sm:text-lg"
+                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-slate-900/50 border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-xl text-center font-mono text-base sm:text-lg hover:bg-slate-900/70"
                     required
                   >
                     {hours.map(h => (
-                      <option key={h} value={h}>{h}</option>
+                      <option key={h} value={h} className="bg-slate-900">{h}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1 text-center">Stunde</p>
+                  <p className="text-xs text-slate-400 mt-1.5 text-center font-medium">Stunde</p>
                 </div>
                 <div>
                   <select
                     value={startMinute}
                     onChange={(e) => setStartMinute(e.target.value)}
-                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-base sm:text-lg"
+                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-slate-900/50 border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-xl text-center font-mono text-base sm:text-lg hover:bg-slate-900/70"
                     required
                   >
                     {minutes.map(m => (
-                      <option key={m} value={m}>{m}</option>
+                      <option key={m} value={m} className="bg-slate-900">{m}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1 text-center">Minute</p>
+                  <p className="text-xs text-slate-400 mt-1.5 text-center font-medium">Minute</p>
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
-                <Clock className="w-4 h-4 inline mr-1" />
+              <label className="block text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-400" />
                 bis
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -464,70 +464,70 @@ export function DriverSubmission() {
                   <select
                     value={endHour}
                     onChange={(e) => setEndHour(e.target.value)}
-                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-base sm:text-lg"
+                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-slate-900/50 border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-xl text-center font-mono text-base sm:text-lg hover:bg-slate-900/70"
                     required
                   >
-                    <option value="">--</option>
+                    <option value="" className="bg-slate-900">--</option>
                     {hours.map(h => (
-                      <option key={h} value={h}>{h}</option>
+                      <option key={h} value={h} className="bg-slate-900">{h}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1 text-center">Stunde</p>
+                  <p className="text-xs text-slate-400 mt-1.5 text-center font-medium">Stunde</p>
                 </div>
                 <div>
                   <select
                     value={endMinute}
                     onChange={(e) => setEndMinute(e.target.value)}
-                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-center font-mono text-base sm:text-lg"
+                    className="w-full px-2 py-2.5 sm:px-4 sm:py-3 bg-slate-900/50 border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-xl text-center font-mono text-base sm:text-lg hover:bg-slate-900/70"
                     required
                   >
-                    <option value="">--</option>
+                    <option value="" className="bg-slate-900">--</option>
                     {minutes.map(m => (
-                      <option key={m} value={m}>{m}</option>
+                      <option key={m} value={m} className="bg-slate-900">{m}</option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1 text-center">Minute</p>
+                  <p className="text-xs text-slate-400 mt-1.5 text-center font-medium">Minute</p>
                 </div>
               </div>
             </div>
           </div>
 
           <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-200 mb-2">
+            <label htmlFor="notes" className="block text-sm font-semibold text-slate-300 mb-2">
               Notiz (optional)
             </label>
             <textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder-gray-400 resize-none text-sm sm:text-base"
+              className="w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-slate-900/50 border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all backdrop-blur-xl placeholder-slate-500 resize-none text-sm sm:text-base hover:bg-slate-900/70"
               placeholder="Optionale Notizen..."
               rows={3}
             />
           </div>
 
           {vehicleConflict && (
-            <div className="p-4 bg-amber-900/50 border border-amber-600 rounded-lg">
+            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl backdrop-blur-xl shadow-lg">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-amber-800 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-amber-500/20 rounded-full flex items-center justify-center border border-amber-500/30">
                     <span className="text-lg">⚠️</span>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-amber-100 mb-1">Warnung: Fahrzeugkonflikt</h4>
-                  <p className="text-sm text-amber-200 mb-2">
+                  <h4 className="font-semibold text-amber-300 mb-1">Warnung: Fahrzeugkonflikt</h4>
+                  <p className="text-sm text-amber-200/80 mb-2">
                     Dieses Fahrzeug wurde heute bereits von einem anderen Fahrer eingetragen.
                   </p>
                   {showConflictDetails && (
-                    <div className="mt-3 p-3 bg-gray-800 rounded border border-amber-700">
-                      <p className="text-sm text-gray-200 mb-1">
+                    <div className="mt-3 p-3 bg-slate-900/50 rounded-xl border border-amber-500/20">
+                      <p className="text-sm text-slate-200 mb-1">
                         <strong>Fahrer:</strong> {vehicleConflict.driver.driver_name}
                       </p>
-                      <p className="text-sm text-gray-200 mb-1">
+                      <p className="text-sm text-slate-200 mb-1">
                         <strong>Fahrzeug:</strong> {vehicleConflict.entry.vehicle}
                       </p>
-                      <p className="text-sm text-gray-200">
+                      <p className="text-sm text-slate-200">
                         <strong>Arbeitszeit:</strong> {vehicleConflict.entry.start_time} - {vehicleConflict.entry.end_time}
                       </p>
                     </div>
@@ -535,7 +535,7 @@ export function DriverSubmission() {
                   <button
                     type="button"
                     onClick={() => setShowConflictDetails(!showConflictDetails)}
-                    className="mt-2 text-sm text-amber-300 hover:text-amber-100 underline"
+                    className="mt-2 text-sm text-amber-300 hover:text-amber-200 underline font-medium"
                   >
                     {showConflictDetails ? 'Details ausblenden' : 'Details anzeigen'}
                   </button>
@@ -546,10 +546,10 @@ export function DriverSubmission() {
 
           {message && (
             <div
-              className={`p-3 sm:p-4 rounded-lg text-sm sm:text-base ${
+              className={`p-3 sm:p-4 rounded-xl backdrop-blur-xl text-sm sm:text-base ${
                 message.type === 'success'
-                  ? 'bg-green-900/50 text-green-200 border border-green-700'
-                  : 'bg-red-900/50 text-red-200 border border-red-700'
+                  ? 'bg-green-500/10 text-green-300 border border-green-500/30 shadow-lg shadow-green-500/10'
+                  : 'bg-red-500/10 text-red-300 border border-red-500/30 shadow-lg shadow-red-500/10'
               }`}
             >
               {message.text}
@@ -559,17 +559,17 @@ export function DriverSubmission() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm sm:text-base"
+            className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl font-bold hover:from-blue-600 hover:to-cyan-600 focus:ring-4 focus:ring-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.02] active:scale-[0.98] text-sm sm:text-base"
           >
             {loading ? 'Wird gespeichert...' : vehicleConflict ? 'Trotzdem speichern' : 'Arbeitszeit speichern'}
           </button>
         </form>
 
-        <div className="mt-4 sm:mt-6 border-t border-gray-700 pt-4 sm:pt-6">
+        <div className="mt-4 sm:mt-6 border-t border-white/10 pt-4 sm:pt-6">
           <button
             type="button"
             onClick={() => setShowScan(true)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3 bg-blue-600 hover:bg-blue-700 border border-blue-500 hover:border-blue-600 text-white rounded-lg transition-colors text-sm sm:text-base font-medium"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 text-cyan-300 hover:text-cyan-200 rounded-xl transition-all text-sm sm:text-base font-semibold hover:scale-[1.02] active:scale-[0.98]"
           >
             <ScanLine className="w-5 h-5" />
             <span className="font-medium">Scan</span>
