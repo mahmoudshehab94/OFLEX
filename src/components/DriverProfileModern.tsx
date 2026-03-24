@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Lock, Camera, BarChart3, Calendar, Clock, Truck, ArrowLeft, LogOut, Eye, EyeOff, TrendingUp, Bell, CreditCard, X, AlertCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, Lock, Camera, BarChart3, Calendar, Clock, Truck, ArrowLeft, LogOut, Eye, EyeOff, TrendingUp, Bell, CreditCard, X, AlertCircle, Search, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, hashPassword } from '../lib/supabase';
 import { NotificationSettings } from './NotificationSettings';
@@ -470,7 +470,7 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
     }
   };
 
-  const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   const getCalendarDays = () => {
     const firstDay = new Date(selectedYear, selectedMonth - 1, 1);
@@ -498,110 +498,115 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#E8E5DD] flex items-center justify-center">
+      <div className="min-h-screen bg-[#D9D9D9] flex items-center justify-center">
         <div className="text-gray-800 text-xl">Laden...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#E8E5DD] flex">
-      <div className="w-64 bg-[#1A1A1A] text-white flex flex-col">
-        <div className="p-6">
-          <h2 className="text-xl font-bold tracking-wider">TRANSOFLEX</h2>
+    <div className="min-h-screen bg-[#D9D9D9] flex">
+      {/* Black Sidebar */}
+      <div className="w-72 bg-[#0A0A0A] text-white flex flex-col">
+        <div className="p-8">
+          <h2 className="text-xl font-bold tracking-widest">TRANSOFLEX</h2>
         </div>
 
-        <nav className="flex-1 px-4">
+        <nav className="flex-1 px-4 space-y-1">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-all ${
+            className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all text-sm ${
               activeTab === 'dashboard'
-                ? 'bg-gradient-to-r from-[#8B7355]/20 to-transparent border-l-4 border-[#8B7355]'
-                : 'hover:bg-white/5'
+                ? 'bg-[#2A2A2A] text-white'
+                : 'text-gray-400 hover:text-white hover:bg-[#1A1A1A]'
             }`}
           >
             <BarChart3 className="w-5 h-5" />
-            <span className="text-sm font-medium">DASHBOARD</span>
+            <span className="font-medium tracking-wide">DASHBOARD</span>
           </button>
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`w-full flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-all ${
+            className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all text-sm ${
               activeTab === 'settings'
-                ? 'bg-gradient-to-r from-[#8B7355]/20 to-transparent border-l-4 border-[#8B7355]'
-                : 'hover:bg-white/5'
+                ? 'bg-[#2A2A2A] text-white'
+                : 'text-gray-400 hover:text-white hover:bg-[#1A1A1A]'
             }`}
           >
-            <User className="w-5 h-5" />
-            <span className="text-sm font-medium">EINSTELLUNGEN</span>
+            <Settings className="w-5 h-5" />
+            <span className="font-medium tracking-wide">EINSTELLUNGEN</span>
           </button>
 
           <button
             onClick={() => setActiveTab('notifications')}
-            className={`w-full flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-all ${
+            className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all text-sm ${
               activeTab === 'notifications'
-                ? 'bg-gradient-to-r from-[#8B7355]/20 to-transparent border-l-4 border-[#8B7355]'
-                : 'hover:bg-white/5'
+                ? 'bg-[#2A2A2A] text-white'
+                : 'text-gray-400 hover:text-white hover:bg-[#1A1A1A]'
             }`}
           >
             <Bell className="w-5 h-5" />
-            <span className="text-sm font-medium">BENACHRICHTIGUNGEN</span>
+            <span className="font-medium tracking-wide">BENACHRICHTIGUNGEN</span>
           </button>
         </nav>
 
-        <div className="p-4 border-t border-gray-800">
-          <div className="flex items-center gap-3 px-2 py-3">
+        <div className="p-6 border-t border-gray-800">
+          <div className="flex items-center gap-3 mb-4">
             {getAvatarUrl(user?.avatar_url || null) ? (
               <img
                 src={getAvatarUrl(user?.avatar_url || null)!}
                 alt="Profile"
-                className="w-10 h-10 rounded-full object-cover"
+                className="w-12 h-12 rounded-full object-cover"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-[#8B7355] flex items-center justify-center">
-                <User className="w-5 h-5" />
+              <div className="w-12 h-12 rounded-full bg-[#2A2A2A] flex items-center justify-center">
+                <User className="w-6 h-6" />
               </div>
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{user?.username}</p>
-              <p className="text-xs text-gray-400">FAHRER</p>
+              <p className="text-xs text-gray-400 uppercase tracking-wide">FAHRER</p>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="p-8">
-          <div className="flex items-center justify-between mb-8">
+        <div className="p-10">
+          <div className="flex items-center justify-between mb-10">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900">Hallo {user?.username}</h1>
+              <h1 className="text-5xl font-bold text-gray-900 mb-2">Hallo {user?.username?.split(' ')[0] || user?.username}</h1>
               <button
                 onClick={onBack}
-                className="text-sm text-gray-600 hover:text-gray-900 mt-1 flex items-center gap-1"
+                className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1.5 uppercase tracking-wider"
               >
                 <ArrowLeft className="w-4 h-4" />
                 ZURÜCK ZUR ÜBERSICHT
               </button>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-2 bg-white rounded-full hover:bg-gray-100 transition">
-                <Search className="w-5 h-5 text-gray-600" />
+              <button className="p-3 bg-white rounded-full hover:bg-gray-100 transition shadow-sm">
+                <Search className="w-5 h-5 text-gray-700" />
+              </button>
+              <button className="p-3 bg-white rounded-full hover:bg-gray-100 transition shadow-sm">
+                <Bell className="w-5 h-5 text-gray-700" />
               </button>
               <button
                 onClick={logout}
-                className="p-2 bg-white rounded-full hover:bg-gray-100 transition"
+                className="p-3 bg-white rounded-full hover:bg-gray-100 transition shadow-sm"
               >
-                <LogOut className="w-5 h-5 text-gray-600" />
+                <LogOut className="w-5 h-5 text-gray-700" />
               </button>
             </div>
           </div>
 
           {message && (
             <div
-              className={`mb-6 p-4 rounded-2xl ${
+              className={`mb-6 p-5 rounded-3xl ${
                 message.type === 'success'
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
+                  ? 'bg-green-100 text-green-800 border border-green-200'
+                  : 'bg-red-100 text-red-800 border border-red-200'
               }`}
             >
               {message.text}
@@ -609,276 +614,321 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
           )}
 
           {activeTab === 'dashboard' && stats && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="bg-white rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">{driverInfo?.driver_name}</h3>
-                </div>
-                <div className="flex justify-center mb-6">
-                  {getAvatarUrl(user?.avatar_url || null) ? (
-                    <img
-                      src={getAvatarUrl(user?.avatar_url || null)!}
-                      alt="Profile"
-                      className="w-48 h-48 rounded-2xl object-cover"
-                    />
-                  ) : (
-                    <div className="w-48 h-48 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                      <User className="w-24 h-24 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">POSITION</span>
-                    <span className="font-semibold text-gray-900">FAHRER</span>
+            <div className="grid grid-cols-3 gap-6">
+              {/* Profile Card */}
+              <div className="bg-[#E8E5D8] rounded-[32px] p-8 shadow-sm">
+                {getAvatarUrl(user?.avatar_url || null) ? (
+                  <img
+                    src={getAvatarUrl(user?.avatar_url || null)!}
+                    alt="Profile"
+                    className="w-full aspect-[3/4] object-cover rounded-3xl mb-6"
+                  />
+                ) : (
+                  <div className="w-full aspect-[3/4] bg-gradient-to-br from-gray-200 to-gray-300 rounded-3xl mb-6 flex items-center justify-center">
+                    <User className="w-24 h-24 text-gray-400" />
                   </div>
-                </div>
+                )}
+                <h3 className="text-3xl font-bold text-gray-900 mb-2">{driverInfo?.driver_name}</h3>
+                <p className="text-sm text-gray-600 uppercase tracking-wider">FAHRER</p>
               </div>
 
-              <div className="bg-white rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">Arbeitsformat</h3>
+              {/* Working Format Card */}
+              <div className="bg-[#E8E5D8] rounded-[32px] p-8 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900">Working format</h3>
+                  <button className="text-gray-600 hover:text-gray-900">
+                    <span className="text-2xl">⋮</span>
+                  </button>
                 </div>
-                <div className="flex items-center justify-center my-8">
-                  <div className="relative w-48 h-48">
-                    <svg className="transform -rotate-90 w-48 h-48">
+                <div className="flex items-center justify-center my-10">
+                  <div className="relative w-56 h-56">
+                    <svg className="transform -rotate-90 w-56 h-56">
                       <circle
-                        cx="96"
-                        cy="96"
-                        r="80"
-                        stroke="#E8E5DD"
-                        strokeWidth="16"
+                        cx="112"
+                        cy="112"
+                        r="90"
+                        stroke="#C8E6C9"
+                        strokeWidth="20"
                         fill="none"
+                        opacity="0.3"
                       />
                       <circle
-                        cx="96"
-                        cy="96"
-                        r="80"
-                        stroke="#8B7355"
-                        strokeWidth="16"
+                        cx="112"
+                        cy="112"
+                        r="90"
+                        stroke="#81C784"
+                        strokeWidth="20"
                         fill="none"
-                        strokeDasharray={`${(stats.gesamtstunden / 200) * 502} 502`}
+                        strokeDasharray={`${(stats.arbeitstage / 30) * 565} 565`}
+                        strokeLinecap="round"
+                      />
+                      <circle
+                        cx="112"
+                        cy="112"
+                        r="70"
+                        stroke="#FFD54F"
+                        strokeWidth="20"
+                        fill="none"
+                        strokeDasharray={`${(stats.durchschnitt / 12) * 440} 440`}
+                        strokeLinecap="round"
+                      />
+                      <circle
+                        cx="112"
+                        cy="112"
+                        r="50"
+                        stroke="#E1BEE7"
+                        strokeWidth="20"
+                        fill="none"
+                        strokeDasharray={`${(stats.uberstunden / stats.gesamtstunden) * 314} 314`}
                         strokeLinecap="round"
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="text-4xl font-bold text-gray-900">{stats.gesamtstunden}</div>
-                      <div className="text-sm text-gray-600">STUNDEN</div>
+                      <div className="text-5xl font-bold text-gray-900">{stats.arbeitstage}</div>
+                      <div className="text-sm text-gray-600 uppercase tracking-wider mt-1">TAGE</div>
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 mt-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-3 h-3 rounded-full bg-[#8B7355]"></div>
-                      <span className="text-xs text-gray-600">Arbeitstage</span>
+                <div className="grid grid-cols-2 gap-4 mt-8">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#81C784]"></div>
+                    <div>
+                      <p className="text-xs text-gray-600">Arbeitstage</p>
+                      <p className="text-sm font-bold text-gray-900">{stats.arbeitstage}</p>
                     </div>
-                    <div className="text-lg font-bold text-gray-900">{stats.arbeitstage}</div>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-3 h-3 rounded-full bg-[#D4AF87]"></div>
-                      <span className="text-xs text-gray-600">Durchschnitt</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#FFD54F]"></div>
+                    <div>
+                      <p className="text-xs text-gray-600">Durchschnitt</p>
+                      <p className="text-sm font-bold text-gray-900">{stats.durchschnitt}h</p>
                     </div>
-                    <div className="text-lg font-bold text-gray-900">{stats.durchschnitt}h</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#E1BEE7]"></div>
+                    <div>
+                      <p className="text-xs text-gray-600">Überstunden</p>
+                      <p className="text-sm font-bold text-gray-900">{stats.uberstunden}h</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#90CAF9]"></div>
+                    <div>
+                      <p className="text-xs text-gray-600">Total</p>
+                      <p className="text-sm font-bold text-gray-900">{stats.gesamtstunden}h</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-[#F5F3ED] to-[#E8E5DD] rounded-3xl p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-6">Statistiken</h3>
+              {/* Tasks Card */}
+              <div className="bg-[#E8E5D8] rounded-[32px] p-8 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-2xl font-bold text-gray-900">Monatsbericht</h3>
+                  <div className="text-right">
+                    <div className="text-4xl font-bold text-gray-900">{Math.round((stats.arbeitstage / 22) * 100)}%</div>
+                    <div className="text-xs text-gray-600 uppercase tracking-wider">FORTSCHRITT</div>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="mb-8">
+                  <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                    <span>0%</span>
+                    <span>50%</span>
+                    <span>100%</span>
+                  </div>
+                  <div className="h-3 bg-gradient-to-r from-yellow-200 via-yellow-300 to-green-400 rounded-full"></div>
+                </div>
+
+                {/* Stats List */}
                 <div className="space-y-4">
-                  <div className="bg-white rounded-2xl p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <Calendar className="w-6 h-6 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Arbeitstage</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.arbeitstage}</p>
-                      </div>
+                  <div className="bg-white/60 rounded-2xl p-4 flex items-center gap-4">
+                    <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-600 uppercase tracking-wider mb-1">Arbeitstage</p>
+                      <p className="text-xl font-bold text-gray-900">{stats.arbeitstage}</p>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-2xl p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                        <Clock className="w-6 h-6 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Gesamtstunden</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.gesamtstunden}h</p>
-                      </div>
+                  <div className="bg-white/60 rounded-2xl p-4 flex items-center gap-4">
+                    <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-8 h-8 text-green-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-600 uppercase tracking-wider mb-1">Gesamtstunden</p>
+                      <p className="text-xl font-bold text-gray-900">{stats.gesamtstunden}h</p>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-2xl p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                        <TrendingUp className="w-6 h-6 text-orange-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Durchschnitt</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.durchschnitt}h</p>
-                      </div>
+                  <div className="bg-white/60 rounded-2xl p-4 flex items-center gap-4">
+                    <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                      <AlertCircle className="w-8 h-8 text-red-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-600 uppercase tracking-wider mb-1">Fehlende Tage</p>
+                      <p className="text-xl font-bold text-gray-900">{stats.fehlendeTage}</p>
                     </div>
                   </div>
 
                   {stats.mostUsedVehicle && (
-                    <div className="bg-white rounded-2xl p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                          <Truck className="w-6 h-6 text-yellow-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600">Fahrzeug</p>
-                          <p className="text-lg font-bold text-gray-900">{stats.mostUsedVehicle}</p>
-                        </div>
+                    <div className="bg-white/60 rounded-2xl p-4 flex items-center gap-4">
+                      <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <Truck className="w-8 h-8 text-yellow-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-600 uppercase tracking-wider mb-1">Fahrzeug</p>
+                        <p className="text-lg font-bold text-gray-900">{stats.mostUsedVehicle}</p>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
+              {/* Calendar Card - Spans 2 columns */}
+              <div className="col-span-2 bg-[#E8E5D8] rounded-[32px] p-8 shadow-sm">
+                <div className="flex items-center justify-between mb-8">
                   <button
                     onClick={handlePrevMonth}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition"
+                    className="p-2 hover:bg-white/50 rounded-lg transition"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-6 h-6 text-gray-700" />
                   </button>
-                  <h3 className="text-2xl font-bold text-gray-900">{monthNames[selectedMonth - 1]} {selectedYear}</h3>
+                  <h3 className="text-3xl font-bold text-gray-900">{monthNames[selectedMonth - 1]} {selectedYear}</h3>
                   <button
                     onClick={handleNextMonth}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition"
+                    className="p-2 hover:bg-white/50 rounded-lg transition"
                   >
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-6 h-6 text-gray-700" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-7 gap-2 mb-4">
-                  {['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'].map(day => (
-                    <div key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
-                      {day}
+                {/* Time labels */}
+                <div className="flex mb-4 text-sm text-gray-600">
+                  <div className="w-24 flex-shrink-0"></div>
+                  <div className="grid grid-cols-7 gap-2 flex-1">
+                    {['MON.3', 'TUE.4', 'WED.5', 'THU.6', 'FRI.7', 'SAT.8', 'SUN.9'].map(day => (
+                      <div key={day} className="text-center text-xs uppercase tracking-wider">
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="space-y-1">
+                  {['8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM'].map((time, idx) => (
+                    <div key={time} className="flex items-center">
+                      <div className="w-24 flex-shrink-0 text-xs text-gray-600 pr-4 text-right">{time}</div>
+                      <div className="grid grid-cols-7 gap-2 flex-1">
+                        {[...Array(7)].map((_, dayIdx) => {
+                          const hasEvent = idx === 1 && dayIdx === 0;
+                          return (
+                            <div
+                              key={dayIdx}
+                              className={`h-12 rounded-xl ${
+                                hasEvent ? 'bg-[#0A0A0A] flex items-center justify-center' : ''
+                              }`}
+                            >
+                              {hasEvent && (
+                                <div className="text-white text-xs px-2 py-1">
+                                  <div className="font-semibold">ARBEIT</div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   ))}
                 </div>
-
-                <div className="grid grid-cols-7 gap-2">
-                  {getCalendarDays().map((day, index) => {
-                    if (day === null) {
-                      return <div key={`empty-${index}`} className="aspect-square" />;
-                    }
-
-                    const dayEntries = getEntriesForDay(day);
-                    const hasEntry = dayEntries.length > 0;
-                    const totalHours = dayEntries.reduce((sum, e) => sum + e.hours_worked, 0);
-
-                    return (
-                      <div
-                        key={day}
-                        className={`aspect-square rounded-xl p-2 flex flex-col items-center justify-center text-sm transition-all ${
-                          hasEntry
-                            ? 'bg-[#1A1A1A] text-white cursor-pointer hover:scale-105'
-                            : 'bg-gray-50 text-gray-400'
-                        }`}
-                      >
-                        <div className="font-bold">{day}</div>
-                        {hasEntry && (
-                          <div className="text-xs mt-1">{totalHours}h</div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
 
-              <div className="bg-white rounded-3xl p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Monatsbericht</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Fehlende Tage</span>
-                    <span className="text-2xl font-bold text-gray-900">{stats.fehlendeTage}</span>
-                  </div>
-                  <div className="h-px bg-gray-200"></div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Überstunden</span>
-                    <span className="text-2xl font-bold text-gray-900">{stats.uberstunden}h</span>
-                  </div>
-                  <div className="h-px bg-gray-200"></div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Einträge</span>
-                    <span className="text-2xl font-bold text-gray-900">{stats.entries}</span>
-                  </div>
-                </div>
+              {/* Bottom Stats Cards */}
+              <div className="bg-[#E8E5D8] rounded-[32px] p-8 shadow-sm">
+                <h4 className="text-5xl font-bold text-gray-900 mb-2">{stats.arbeitstage}</h4>
+                <p className="text-sm text-gray-600 uppercase tracking-wider mb-1">TAGE IM UNTERNEHMEN</p>
+                <p className="text-xs text-green-600 font-semibold">+8% LETZTER MONAT</p>
+              </div>
+
+              <div className="bg-[#F5EDD8] rounded-[32px] p-8 shadow-sm">
+                <h4 className="text-5xl font-bold text-gray-900 mb-2">{stats.entries}</h4>
+                <p className="text-sm text-gray-600 uppercase tracking-wider mb-1">ABGESCHLOSSENE SCHICHTEN</p>
+                <p className="text-xs text-green-600 font-semibold">+4 LETZTER MONAT</p>
+              </div>
+
+              <div className="bg-[#E8DDD8] rounded-[32px] p-8 shadow-sm">
+                <h4 className="text-5xl font-bold text-gray-900 mb-2">{stats.fehlendeTage}</h4>
+                <p className="text-sm text-gray-600 uppercase tracking-wider mb-1">SCHICHTEN IM GANGE</p>
+                <p className="text-xs text-orange-600 font-semibold">+3 LETZTER MONAT</p>
               </div>
             </div>
           )}
 
           {activeTab === 'settings' && (
-            <div className="max-w-4xl space-y-6">
-              <div className="bg-white rounded-3xl p-8 shadow-sm">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <Camera className="w-6 h-6" />
+            <div className="max-w-5xl space-y-6">
+              <div className="bg-[#E8E5D8] rounded-[32px] p-10 shadow-sm">
+                <h3 className="text-3xl font-bold text-gray-900 mb-8 flex items-center gap-3">
+                  <Camera className="w-8 h-8" />
                   Profilbild
                 </h3>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-8">
                   {getAvatarUrl(user?.avatar_url || null) ? (
                     <img
                       src={getAvatarUrl(user?.avatar_url || null)!}
                       alt="Profile"
-                      className="w-32 h-32 rounded-2xl object-cover"
+                      className="w-40 h-40 rounded-3xl object-cover"
                     />
                   ) : (
-                    <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                      <User className="w-16 h-16 text-gray-400" />
+                    <div className="w-40 h-40 rounded-3xl bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                      <User className="w-20 h-20 text-gray-400" />
                     </div>
                   )}
                   <div className="flex-1">
                     <label className="block">
-                      <span className="sr-only">Profilbild auswählen</span>
                       <input
                         type="file"
                         accept="image/*"
                         onChange={handlePhotoUpload}
                         disabled={uploadingPhoto}
-                        className="block w-full text-sm text-gray-600
-                          file:mr-4 file:py-3 file:px-6
-                          file:rounded-2xl file:border-0
+                        className="block w-full text-base text-gray-700
+                          file:mr-4 file:py-4 file:px-8
+                          file:rounded-3xl file:border-0
                           file:text-sm file:font-semibold
-                          file:bg-[#1A1A1A] file:text-white
-                          hover:file:bg-[#2A2A2A]
+                          file:bg-[#0A0A0A] file:text-white
+                          hover:file:bg-[#1A1A1A]
                           file:cursor-pointer file:transition
                           disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </label>
-                    <p className="mt-3 text-sm text-gray-500">
+                    <p className="mt-4 text-sm text-gray-600">
                       {uploadingPhoto ? 'Wird hochgeladen...' : 'PNG, JPG bis zu 5MB'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-3xl p-8 shadow-sm">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <CreditCard className="w-6 h-6" />
+              <div className="bg-[#E8E5D8] rounded-[32px] p-10 shadow-sm">
+                <h3 className="text-3xl font-bold text-gray-900 mb-8 flex items-center gap-3">
+                  <CreditCard className="w-8 h-8" />
                   Ausweiscode
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {idBarcodePreview ? (
                     <div className="space-y-4">
                       <div
-                        className="relative inline-block cursor-pointer hover:opacity-90 transition rounded-2xl"
+                        className="relative inline-block cursor-pointer hover:opacity-90 transition rounded-3xl"
                         onClick={() => setShowBarcodeModal(true)}
                       >
                         <img
                           src={idBarcodePreview}
                           alt="ID Barcode"
-                          className="max-w-full h-auto rounded-2xl max-h-48 object-contain"
+                          className="max-w-full h-auto rounded-3xl max-h-64 object-contain"
                         />
                       </div>
-                      <div className="flex gap-3">
+                      <div className="flex gap-4">
                         <label className="flex-1">
                           <input
                             type="file"
@@ -890,7 +940,7 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                           />
                           <label
                             htmlFor="id-barcode-replace"
-                            className={`block w-full text-center px-6 py-3 bg-[#1A1A1A] text-white rounded-2xl font-semibold hover:bg-[#2A2A2A] transition cursor-pointer ${
+                            className={`block w-full text-center px-8 py-4 bg-[#0A0A0A] text-white rounded-3xl font-semibold hover:bg-[#1A1A1A] transition cursor-pointer ${
                               uploadingIdBarcode ? 'opacity-50 cursor-not-allowed' : ''
                             }`}
                           >
@@ -900,7 +950,7 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                         <button
                           onClick={handleIdBarcodeRemove}
                           disabled={uploadingIdBarcode}
-                          className="px-6 py-3 bg-red-600 text-white rounded-2xl font-semibold hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          className="px-8 py-4 bg-red-600 text-white rounded-3xl font-semibold hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
                         >
                           <X className="w-5 h-5" />
                           Entfernen
@@ -915,17 +965,17 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                           accept="image/*"
                           onChange={handleIdBarcodeUpload}
                           disabled={uploadingIdBarcode}
-                          className="block w-full text-sm text-gray-600
-                            file:mr-4 file:py-3 file:px-6
-                            file:rounded-2xl file:border-0
+                          className="block w-full text-base text-gray-700
+                            file:mr-4 file:py-4 file:px-8
+                            file:rounded-3xl file:border-0
                             file:text-sm file:font-semibold
-                            file:bg-[#1A1A1A] file:text-white
-                            hover:file:bg-[#2A2A2A]
+                            file:bg-[#0A0A0A] file:text-white
+                            hover:file:bg-[#1A1A1A]
                             file:cursor-pointer file:transition
                             disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </label>
-                      <p className="mt-3 text-sm text-gray-500">
+                      <p className="mt-4 text-sm text-gray-600">
                         {uploadingIdBarcode ? 'Wird hochgeladen...' : 'PNG, JPG bis zu 5MB'}
                       </p>
                     </div>
@@ -933,14 +983,14 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                 </div>
               </div>
 
-              <form onSubmit={handleNameUpdate} className="bg-white rounded-3xl p-8 shadow-sm">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <User className="w-6 h-6" />
+              <form onSubmit={handleNameUpdate} className="bg-[#E8E5D8] rounded-[32px] p-10 shadow-sm">
+                <h3 className="text-3xl font-bold text-gray-900 mb-8 flex items-center gap-3">
+                  <User className="w-8 h-8" />
                   Anzeigename ändern
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
-                    <label htmlFor="displayName" className="block text-sm font-semibold text-gray-700 mb-3">
+                    <label htmlFor="displayName" className="block text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">
                       Neuer Name
                     </label>
                     <input
@@ -948,28 +998,28 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                       id="displayName"
                       value={newDisplayName}
                       onChange={(e) => setNewDisplayName(e.target.value)}
-                      className="w-full px-5 py-4 bg-gray-50 border-0 text-gray-900 rounded-2xl focus:ring-2 focus:ring-[#8B7355] transition text-lg"
+                      className="w-full px-6 py-5 bg-white border-0 text-gray-900 rounded-3xl focus:ring-2 focus:ring-gray-400 transition text-lg"
                       required
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={updatingName}
-                    className="w-full bg-[#1A1A1A] text-white py-4 px-6 rounded-2xl font-semibold hover:bg-[#2A2A2A] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#0A0A0A] text-white py-5 px-8 rounded-3xl font-semibold text-lg hover:bg-[#1A1A1A] transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {updatingName ? 'Wird aktualisiert...' : 'Name aktualisieren'}
                   </button>
                 </div>
               </form>
 
-              <form onSubmit={handlePasswordChange} className="bg-white rounded-3xl p-8 shadow-sm">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <Lock className="w-6 h-6" />
+              <form onSubmit={handlePasswordChange} className="bg-[#E8E5D8] rounded-[32px] p-10 shadow-sm">
+                <h3 className="text-3xl font-bold text-gray-900 mb-8 flex items-center gap-3">
+                  <Lock className="w-8 h-8" />
                   Passwort ändern
                 </h3>
-                <div className="space-y-5">
+                <div className="space-y-6">
                   <div>
-                    <label htmlFor="currentPassword" className="block text-sm font-semibold text-gray-700 mb-3">
+                    <label htmlFor="currentPassword" className="block text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">
                       Aktuelles Passwort
                     </label>
                     <div className="relative">
@@ -978,21 +1028,21 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                         id="currentPassword"
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="w-full px-5 py-4 bg-gray-50 border-0 text-gray-900 rounded-2xl focus:ring-2 focus:ring-[#8B7355] transition pr-14 text-lg"
+                        className="w-full px-6 py-5 bg-white border-0 text-gray-900 rounded-3xl focus:ring-2 focus:ring-gray-400 transition pr-14 text-lg"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
-                        {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        {showCurrentPassword ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-700 mb-3">
+                    <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">
                       Neues Passwort
                     </label>
                     <div className="relative">
@@ -1001,21 +1051,21 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                         id="newPassword"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full px-5 py-4 bg-gray-50 border-0 text-gray-900 rounded-2xl focus:ring-2 focus:ring-[#8B7355] transition pr-14 text-lg"
+                        className="w-full px-6 py-5 bg-white border-0 text-gray-900 rounded-3xl focus:ring-2 focus:ring-gray-400 transition pr-14 text-lg"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
-                        {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        {showNewPassword ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-3">
+                    <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">
                       Neues Passwort bestätigen
                     </label>
                     <div className="relative">
@@ -1024,15 +1074,15 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                         id="confirmPassword"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full px-5 py-4 bg-gray-50 border-0 text-gray-900 rounded-2xl focus:ring-2 focus:ring-[#8B7355] transition pr-14 text-lg"
+                        className="w-full px-6 py-5 bg-white border-0 text-gray-900 rounded-3xl focus:ring-2 focus:ring-gray-400 transition pr-14 text-lg"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
-                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        {showConfirmPassword ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
                       </button>
                     </div>
                   </div>
@@ -1040,7 +1090,7 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                   <button
                     type="submit"
                     disabled={changingPassword}
-                    className="w-full bg-[#1A1A1A] text-white py-4 px-6 rounded-2xl font-semibold hover:bg-[#2A2A2A] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#0A0A0A] text-white py-5 px-8 rounded-3xl font-semibold text-lg hover:bg-[#1A1A1A] transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {changingPassword ? 'Wird geändert...' : 'Passwort ändern'}
                   </button>
@@ -1050,8 +1100,8 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
           )}
 
           {activeTab === 'notifications' && user && (
-            <div className="max-w-4xl">
-              <div className="bg-white rounded-3xl p-8 shadow-sm">
+            <div className="max-w-5xl">
+              <div className="bg-[#E8E5D8] rounded-[32px] p-10 shadow-sm">
                 <NotificationSettings
                   userAccountId={user.id}
                   role="driver"
