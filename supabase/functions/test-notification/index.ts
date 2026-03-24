@@ -38,7 +38,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { external_id, title, message } = await req.json();
+    const body = await req.json();
+    const { external_id, title, message } = body;
 
     if (!external_id) {
       return new Response(
@@ -53,12 +54,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("Environment check:");
+    console.log("ONESIGNAL_APP_ID:", ONESIGNAL_APP_ID);
+    console.log("ONESIGNAL_APP_ID length:", ONESIGNAL_APP_ID.length);
+    console.log("ONESIGNAL_REST_API_KEY length:", ONESIGNAL_REST_API_KEY.length);
+
     const notificationMessage = {
       app_id: ONESIGNAL_APP_ID,
       include_external_user_ids: [external_id],
-      headings: { en: title || "🧪 اختبار التنبيهات" },
+      headings: { en: title || "Test Alert" },
       contents: {
-        en: message || "هذا إشعار تجريبي للتأكد من عمل النظام بشكل صحيح!",
+        en: message || "This is a test notification",
       },
       data: {
         type: "test_notification",
@@ -67,7 +73,7 @@ Deno.serve(async (req: Request) => {
     };
 
     console.log("📤 Sending test notification to:", external_id);
-    console.log("Message:", notificationMessage);
+    console.log("Message:", JSON.stringify(notificationMessage));
 
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
