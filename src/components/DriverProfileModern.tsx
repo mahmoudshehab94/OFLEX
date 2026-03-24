@@ -664,9 +664,9 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
 
         {activeTab === 'settings' && (
           <div className="space-y-6">
-            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-lg">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Camera className="w-5 h-5" />
+            <div className="backdrop-blur-xl bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-lg">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Camera className="w-5 h-5 text-blue-400" />
                 Profilbild
               </h3>
               <div className="flex items-center gap-4">
@@ -674,11 +674,11 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                   <img
                     src={getAvatarUrl(user?.avatar_url || null)!}
                     alt="Profile"
-                    className="w-20 h-20 rounded-full border-2 border-slate-600 object-cover"
+                    className="w-20 h-20 rounded-full border-2 border-blue-500/30 object-cover ring-4 ring-blue-500/10"
                   />
                 ) : (
-                  <div className="w-20 h-20 rounded-full bg-slate-700 border-2 border-slate-600 flex items-center justify-center">
-                    <User className="w-10 h-10 text-gray-400" />
+                  <div className="w-20 h-20 rounded-full bg-slate-700/50 border-2 border-blue-500/30 flex items-center justify-center ring-4 ring-blue-500/10">
+                    <User className="w-10 h-10 text-blue-400" />
                   </div>
                 )}
                 <div className="flex-1">
@@ -689,39 +689,39 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                       accept="image/*"
                       onChange={handlePhotoUpload}
                       disabled={uploadingPhoto}
-                      className="block w-full text-sm text-gray-300
+                      className="block w-full text-sm text-slate-300
                         file:mr-4 file:py-2 file:px-4
                         file:rounded-lg file:border-0
                         file:text-sm file:font-semibold
-                        file:bg-blue-600 file:text-white
-                        hover:file:bg-blue-700
+                        file:bg-blue-500 file:text-white
+                        hover:file:bg-blue-600
                         file:cursor-pointer file:transition
                         disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </label>
-                  <p className="mt-2 text-xs text-gray-400">
+                  <p className="mt-2 text-xs text-slate-400 font-medium">
                     {uploadingPhoto ? 'Wird hochgeladen...' : 'PNG, JPG bis zu 5MB'}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-lg">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
+            <div className="backdrop-blur-xl bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-lg">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-cyan-400" />
                 Ausweiscode
               </h3>
               <div className="space-y-4">
                 {idBarcodePreview ? (
                   <div className="space-y-4">
-                    <div className="relative inline-block cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all rounded-lg"
+                    <div className="relative inline-block cursor-pointer hover:ring-2 hover:ring-cyan-400 transition-all rounded-lg"
                       onClick={() => setShowBarcodeModal(true)}
                       title="Klicken für Vollbild"
                     >
                       <img
                         src={idBarcodePreview}
                         alt="ID Barcode"
-                        className="max-w-full h-auto rounded-lg border-2 border-slate-600 max-h-48 object-contain"
+                        className="max-w-full h-auto rounded-lg border-2 border-cyan-500/30 max-h-48 object-contain"
                       />
                     </div>
                     <div className="flex gap-2">
@@ -737,7 +737,7 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                         />
                         <label
                           htmlFor="id-barcode-replace"
-                          className={`block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition cursor-pointer ${
+                          className={`block w-full text-center px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition cursor-pointer ${
                             uploadingIdBarcode ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         >
@@ -747,7 +747,7 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                       <button
                         onClick={handleIdBarcodeRemove}
                         disabled={uploadingIdBarcode}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <X className="w-4 h-4" />
                         Entfernen
@@ -763,17 +763,17 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                         accept="image/*"
                         onChange={handleIdBarcodeUpload}
                         disabled={uploadingIdBarcode}
-                        className="block w-full text-sm text-gray-300
+                        className="block w-full text-sm text-slate-300
                           file:mr-4 file:py-2 file:px-4
                           file:rounded-lg file:border-0
                           file:text-sm file:font-semibold
-                          file:bg-blue-600 file:text-white
-                          hover:file:bg-blue-700
+                          file:bg-blue-500 file:text-white
+                          hover:file:bg-blue-600
                           file:cursor-pointer file:transition
                           disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </label>
-                    <p className="mt-2 text-xs text-gray-400">
+                    <p className="mt-2 text-xs text-slate-400 font-medium">
                       {uploadingIdBarcode ? 'Wird hochgeladen...' : 'PNG, JPG bis zu 5MB'}
                     </p>
                   </div>
@@ -781,14 +781,14 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
               </div>
             </div>
 
-            <form onSubmit={handleNameUpdate} className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-lg">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <User className="w-5 h-5" />
+            <form onSubmit={handleNameUpdate} className="backdrop-blur-xl bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-lg">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <User className="w-5 h-5 text-emerald-400" />
                 Anzeigename ändern
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="displayName" className="block text-sm font-medium text-gray-300 mb-2">
+                  <label htmlFor="displayName" className="block text-sm font-semibold text-slate-300 mb-2">
                     Neuer Name
                   </label>
                   <input
@@ -796,28 +796,28 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                     id="displayName"
                     value={newDisplayName}
                     onChange={(e) => setNewDisplayName(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition placeholder:text-slate-500"
                     required
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={updatingName}
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-blue-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-600 focus:ring-4 focus:ring-blue-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {updatingName ? 'Wird aktualisiert...' : 'Name aktualisieren'}
                 </button>
               </div>
             </form>
 
-            <form onSubmit={handlePasswordChange} className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-lg">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Lock className="w-5 h-5" />
+            <form onSubmit={handlePasswordChange} className="backdrop-blur-xl bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-lg">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-rose-400" />
                 Passwort ändern
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-300 mb-2">
+                  <label htmlFor="currentPassword" className="block text-sm font-semibold text-slate-300 mb-2">
                     Aktuelles Passwort
                   </label>
                   <div className="relative">
@@ -826,13 +826,13 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                       id="currentPassword"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition pr-12"
+                      className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition pr-12 placeholder:text-slate-500"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
                     >
                       {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -840,7 +840,7 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                 </div>
 
                 <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-300 mb-2">
+                  <label htmlFor="newPassword" className="block text-sm font-semibold text-slate-300 mb-2">
                     Neues Passwort
                   </label>
                   <div className="relative">
@@ -849,13 +849,13 @@ export function DriverProfileModern({ onBack }: DriverProfileProps) {
                       id="newPassword"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-700 border border-slate-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition pr-12"
+                      className="w-full px-4 py-3 bg-slate-900/50 border border-white/10 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition pr-12 placeholder:text-slate-500"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
                     >
                       {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
