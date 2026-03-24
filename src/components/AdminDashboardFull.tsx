@@ -987,37 +987,45 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
+      <header className="relative z-10 backdrop-blur-xl bg-slate-800/50 shadow-lg border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Admin-Dashboard</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-blue-100 to-cyan-200 bg-clip-text text-transparent">Admin-Dashboard</h1>
           <button
             onClick={onLogout}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="group relative flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 text-red-400 hover:text-red-300 rounded-xl transition-all border border-red-500/30 hover:border-red-500/50 hover:scale-105 active:scale-95 shadow-lg shadow-red-500/10 hover:shadow-red-500/20 overflow-hidden"
             title="Abmelden"
             aria-label="Abmelden"
           >
-            <LogOut className="w-5 h-5" />
+            <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+            <LogOut className="w-5 h-5 relative z-10 group-hover:rotate-12 transition-transform" />
+            <span className="font-semibold relative z-10">Abmelden</span>
           </button>
         </div>
       </header>
 
       {message && (
-        <div className="max-w-7xl mx-auto px-4 mt-4">
-          <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 mt-4">
+          <div className={`p-4 rounded-xl backdrop-blur-xl shadow-lg ${message.type === 'success' ? 'bg-green-500/10 text-green-300 border border-green-500/30 shadow-green-500/10' : 'bg-red-500/10 text-red-300 border border-red-500/30 shadow-red-500/10'}`}>
             {message.text}
           </div>
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 mt-6">
-        <div className="flex space-x-2 border-b border-gray-200">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 mt-6">
+        <div className="backdrop-blur-xl bg-slate-800/30 rounded-2xl border border-white/10 p-2 flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm rounded-xl transition-all ${
               activeTab === 'dashboard'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'text-white bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/40 shadow-lg shadow-blue-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
             }`}
           >
             <BarChart3 className="w-5 h-5" />
@@ -1025,10 +1033,10 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
           </button>
           <button
             onClick={() => setActiveTab('reports')}
-            className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm rounded-xl transition-all ${
               activeTab === 'reports'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'text-white bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/40 shadow-lg shadow-blue-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
             }`}
           >
             <FileText className="w-5 h-5" />
@@ -1036,21 +1044,21 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
           </button>
           <button
             onClick={() => setActiveTab('entries')}
-            className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm rounded-xl transition-all ${
               activeTab === 'entries'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'text-white bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/40 shadow-lg shadow-blue-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
             }`}
           >
-            <FileText className="w-5 h-5" />
+            <Clock className="w-5 h-5" />
             <span>Einträge</span>
           </button>
           <button
             onClick={() => setActiveTab('drivers')}
-            className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm rounded-xl transition-all ${
               activeTab === 'drivers'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'text-white bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/40 shadow-lg shadow-blue-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
             }`}
           >
             <Users className="w-5 h-5" />
@@ -1058,10 +1066,10 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
           </button>
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm rounded-xl transition-all ${
               activeTab === 'settings'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'text-white bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/40 shadow-lg shadow-blue-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
             }`}
           >
             <Settings className="w-5 h-5" />
@@ -1070,72 +1078,72 @@ export default function AdminDashboardFull({ onLogout }: { onLogout: () => void 
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-6">
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             {loadingDashboard ? (
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
               </div>
             ) : dashboardStats ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="bg-white rounded-lg shadow p-6">
+                  <div className="backdrop-blur-xl bg-slate-800/50 rounded-2xl border border-white/10 p-6 shadow-lg hover:shadow-green-500/20 transition-all hover:scale-105">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-gray-600">Heute: Eingetragen</h3>
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <Check className="w-5 h-5 text-green-600" />
+                      <h3 className="text-sm font-semibold text-slate-300">Heute: Eingetragen</h3>
+                      <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center border border-green-500/30">
+                        <Check className="w-5 h-5 text-green-400" />
                       </div>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">{dashboardStats.driversSubmittedToday}</p>
-                    <p className="text-xs text-gray-500 mt-1">Fahrer</p>
+                    <p className="text-3xl font-bold text-white">{dashboardStats.driversSubmittedToday}</p>
+                    <p className="text-xs text-slate-400 mt-1 font-medium">Fahrer</p>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
+                  <div className="backdrop-blur-xl bg-slate-800/50 rounded-2xl border border-white/10 p-6 shadow-lg hover:shadow-amber-500/20 transition-all hover:scale-105">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-gray-600">Heute: Nicht eingetragen</h3>
-                      <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                        <X className="w-5 h-5 text-amber-600" />
+                      <h3 className="text-sm font-semibold text-slate-300">Heute: Nicht eingetragen</h3>
+                      <div className="w-10 h-10 bg-amber-500/20 rounded-full flex items-center justify-center border border-amber-500/30">
+                        <X className="w-5 h-5 text-amber-400" />
                       </div>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">{dashboardStats.driversNotSubmittedToday.length}</p>
-                    <p className="text-xs text-gray-500 mt-1">Fahrer</p>
+                    <p className="text-3xl font-bold text-white">{dashboardStats.driversNotSubmittedToday.length}</p>
+                    <p className="text-xs text-slate-400 mt-1 font-medium">Fahrer</p>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
+                  <div className="backdrop-blur-xl bg-slate-800/50 rounded-2xl border border-white/10 p-6 shadow-lg hover:shadow-blue-500/20 transition-all hover:scale-105">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-gray-600">Gesamtstunden heute</h3>
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Clock className="w-5 h-5 text-blue-600" />
+                      <h3 className="text-sm font-semibold text-slate-300">Gesamtstunden heute</h3>
+                      <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center border border-blue-500/30">
+                        <Clock className="w-5 h-5 text-blue-400" />
                       </div>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">{formatHours(dashboardStats.totalHoursToday)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Stunden</p>
+                    <p className="text-3xl font-bold text-white">{formatHours(dashboardStats.totalHoursToday)}</p>
+                    <p className="text-xs text-slate-400 mt-1 font-medium">Stunden</p>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
+                  <div className="backdrop-blur-xl bg-slate-800/50 rounded-2xl border border-white/10 p-6 shadow-lg hover:shadow-purple-500/20 transition-all hover:scale-105">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-medium text-gray-600">Überstunden heute</h3>
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Plus className="w-5 h-5 text-purple-600" />
+                      <h3 className="text-sm font-semibold text-slate-300">Überstunden heute</h3>
+                      <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center border border-purple-500/30">
+                        <Plus className="w-5 h-5 text-purple-400" />
                       </div>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">{formatHours(dashboardStats.overtimeToday)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Stunden</p>
+                    <p className="text-3xl font-bold text-white">{formatHours(dashboardStats.overtimeToday)}</p>
+                    <p className="text-xs text-slate-400 mt-1 font-medium">Stunden</p>
                   </div>
                 </div>
 
                 {dashboardStats.driversNotSubmittedToday.length > 0 && (
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Fahrer ohne Eintrag heute</h3>
+                  <div className="backdrop-blur-xl bg-slate-800/50 rounded-2xl border border-white/10 p-6 shadow-lg">
+                    <h3 className="text-lg font-bold text-white mb-4">Fahrer ohne Eintrag heute</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {dashboardStats.driversNotSubmittedToday.map(driver => (
-                        <div key={driver.id} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                            <Users className="w-4 h-4 text-gray-600" />
+                        <div key={driver.id} className="flex items-center gap-2 p-3 bg-slate-900/50 rounded-xl border border-white/10 hover:bg-slate-900/70 transition-all">
+                          <div className="w-8 h-8 bg-slate-700/50 rounded-full flex items-center justify-center border border-slate-600/50">
+                            <Users className="w-4 h-4 text-slate-300" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{driver.driver_name || 'Unbekannt'}</p>
+                            <p className="text-sm font-semibold text-white truncate">{driver.driver_name || 'Unbekannt'}</p>
                             <p className="text-xs text-gray-500">{driver.driver_code}</p>
                           </div>
                         </div>
