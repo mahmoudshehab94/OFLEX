@@ -1,0 +1,47 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background similar to the logo -->
+  <rect width="512" height="512" rx="100" fill="#1e293b"/>
+
+  <!-- Stylized truck icon inspired by the logo -->
+  <g transform="translate(80, 140)">
+    <!-- Main truck body - simplified modern design -->
+    <g>
+      <!-- Cargo container -->
+      <rect x="90" y="80" width="240" height="140" rx="8" fill="#3b82f6"/>
+
+      <!-- Cabin -->
+      <path d="M 50 100 L 50 180 L 10 180 L 10 140 C 10 117 25 100 50 100 Z" fill="#2563eb"/>
+
+      <!-- Cabin to cargo connector -->
+      <rect x="50" y="100" width="45" height="120" fill="#2563eb"/>
+
+      <!-- Windshield -->
+      <path d="M 45 115 L 45 155 L 20 155 L 20 130 C 20 120 28 115 45 115 Z" fill="#60a5fa" opacity="0.7"/>
+
+      <!-- Door line on cabin -->
+      <line x1="70" y1="130" x2="70" y2="200" stroke="#1e40af" stroke-width="3"/>
+
+      <!-- Cargo door lines -->
+      <line x1="210" y1="95" x2="210" y2="205" stroke="#1e40af" stroke-width="3"/>
+
+      <!-- Side windows on cargo -->
+      <rect x="110" y="100" width="80" height="50" rx="4" fill="#60a5fa" opacity="0.5"/>
+      <rect x="230" y="100" width="80" height="50" rx="4" fill="#60a5fa" opacity="0.5"/>
+
+      <!-- Front wheel -->
+      <circle cx="80" cy="220" r="38" fill="#374151"/>
+      <circle cx="80" cy="220" r="25" fill="#6b7280"/>
+      <circle cx="80" cy="220" r="12" fill="#9ca3af"/>
+
+      <!-- Rear wheel -->
+      <circle cx="280" cy="220" r="38" fill="#374151"/>
+      <circle cx="280" cy="220" r="25" fill="#6b7280"/>
+      <circle cx="280" cy="220" r="12" fill="#9ca3af"/>
+
+      <!-- Motion lines -->
+      <line x1="340" y1="110" x2="365" y2="110" stroke="#3b82f6" stroke-width="7" stroke-linecap="round"/>
+      <line x1="340" y1="140" x2="360" y2="140" stroke="#3b82f6" stroke-width="7" stroke-linecap="round"/>
+      <line x1="340" y1="170" x2="362" y2="170" stroke="#3b82f6" stroke-width="7" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>
